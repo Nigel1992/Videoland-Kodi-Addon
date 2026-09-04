@@ -33,7 +33,28 @@
 - **Secure Credential Storage**: Email and password are encrypted with a device-bound key before they ever reach disk; sessions are stored encrypted and **auto-relogin** refreshes expired sessions silently.
 - **Dialog-Based Login**: Credentials are entered once at login and never shown again in the add-on settings.
 - **Main Menu Icons**: Flat, consistent, brand-styled icons for every main menu entry.
-- **DRM Support**: Widevine-protected streams via `inputstream.adaptive`.
+- **DRM Support**: Widevine-protected DASH streams via `inputstream.adaptive`.
+
+---
+
+## 📺 Playback Quality & DRM (important)
+
+Stream resolution is determined by your device's **Widevine security level** — the add-on cannot increase it beyond what the DRM grants to the device.
+
+| Device type | Widevine level | Typical Videoland quality |
+|---|---|---|
+| **L1 (hardware-backed)** — certified Android TV boxes, NVIDIA Shield, Amazon Fire TV, many Chromebooks, select Android phones | L1 | **Up to Full HD / HDR** where the service provides it |
+| **L3 (software)** — e.g. **Raspberry Pi 5**, many LibreELEC/PC/software-CDM setups | L3 | **540p (SD)** — Videoland only issues SD keys to software-only security |
+
+**Why 540p?** Videoland's DRM (Widevine via DRMtoday) refuses to emit HD/UHD content keys to devices running a **software (L3)** Widevine security level. On such devices — including most Raspberry Pi and general-purpose LibreELEC hardware — playback is capped at **540p**. This is a provider-side DRM restriction, not something the add-on can bypass.
+
+**About the quality setting:** The add-on offers a *Preferred quality* setting:
+- **Software L3 (default)** — reliably decodes on devices like the Pi 5 (`CDM "kNoKey"` failures on the L1 rendition are avoided).
+- **Best available (DASH)** — selects the highest stream reported, but the resolution is **still bounded by the Widevine security level**. On an **L1** device this is where you get Full HD/HDR; on an L3 device you'll still see 540p.
+
+> 💡 **Tip:** For Full HD/HDR, use a Kodi device with **L1 (hardware-backed) Widevine** and set *Preferred quality* to **Best available (DASH)**.
+
+This add-on does **not** bypass DRM or subscription checks; it simply plays the streams your device is entitled to.
 
 ---
 
