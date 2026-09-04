@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+.DS_Store
+*.zip
+.vscode/
+/.idea/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+env/
+venv/
+node_modules/
+
+# Local build output
+build/
+package_build/
+
+# Sensitive local captures / notes (may contain account data)
+*.har
+v2.videoland.com*.har
+credentials.txt
+*.log
+
+# Local dev test fixtures
+local/
+tmp/

@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Videoland Official Site
+    url: https://www.videoland.com
+    about: "Check your Videoland subscription and account settings"
+  - name: Kodi Documentation
+    url: https://kodi.wiki/
+    about: "Learn more about Kodi features and troubleshooting"
+  - name: Paste Kodi Logs
+    url: https://paste.kodi.tv/
+    about: "Upload your debug logs here for easier sharing"

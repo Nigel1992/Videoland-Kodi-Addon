@@ -1,0 +1,104 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: plugin.video.videoland.nl 0.2.1\n"
+"Report-Msgid-Bugs-To: https://github.com/\n"
+"POT-Creation-Date: 2026-09-03\n"
+"PO-Revision-Date: 2026-09-03\n"
+"Last-Translator: \n"
+"Language-Team: Dutch\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: nl_NL\n"
+
+msgctxt "#31000"
+msgid "E-mailadres"
+msgstr "Account"
+
+msgctxt "#31001"
+msgid "E-mailadres van het Videoland-account waarmee je aanmeldt."
+msgstr ""
+
+msgctxt "#31002"
+msgid "Videoland e-mailadres"
+msgstr ""
+
+msgctxt "#31003"
+msgid "Sessie (intern)"
+msgstr ""
+
+msgctxt "#31004"
+msgid "Profiel-ID (intern)"
+msgstr ""
+
+msgctxt "#31005"
+msgid "Apparaat-ID (intern)"
+msgstr ""
+
+msgctxt "#31010"
+msgid "Afspelen"
+msgstr ""
+
+msgctxt "#31011"
+msgid "Voorkeurskwaliteit"
+msgstr ""
+
+msgctxt "#31012"
+msgid "Kies welke stream-renditie Videoland moet leveren."
+msgstr ""
+
+msgctxt "#31013"
+msgid "Best beschikbaar (DASH)"
+msgstr ""
+
+msgctxt "#31014"
+msgid "Software L3 (Widevine / Pi 5)"
+msgstr ""
+
+msgctxt "#31020"
+msgid "Cache"
+msgstr ""
+
+msgctxt "#31021"
+msgid "Layout-antwoorden cachen"
+msgstr ""
+
+msgctxt "#31022"
+msgid "Bewaar navigatie- en layout-antwoorden op schijf om sneller te bladeren."
+msgstr ""
+
+msgctxt "#31023"
+msgid "Cacheduur"
+msgstr ""
+
+msgctxt "#31024"
+msgid "Hoe lang gecachte antwoorden bewaard blijven voordat ze opnieuw worden opgehaald."
+msgstr ""
+
+msgctxt "#31025"
+msgid "30 minuten"
+msgstr ""
+
+msgctxt "#31026"
+msgid "6 uur"
+msgstr ""
+
+msgctxt "#31027"
+msgid "1 dag"
+msgstr ""
+
+msgctxt "#31028"
+msgid "3 dagen"
+msgstr ""
+
+msgctxt "#31029"
+msgid "1 week"
+msgstr ""
+
+msgctxt "#31030"
+msgid "Cache wissen"
+msgstr ""
+
+msgctxt "#31031"
+msgid "Verwijder alle gecachte layout- en navigatie-antwoorden."
+msgstr ""
