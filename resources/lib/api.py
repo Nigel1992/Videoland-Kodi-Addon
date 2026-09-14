@@ -76,10 +76,11 @@ class VideolandApi:
             detail = re.sub(r"[\w.+-]+@[\w.-]+", "[email]", str(detail))
             detail = re.sub(r"eyJ[A-Za-z0-9_.-]{20,}", "[token]", detail)
             suffix = ": " + detail[:300] if detail else ""
-            # 401/403 on the authenticated Bedrock endpoints means the session
+            # 498 is Videoland's invalid/expired-token response. Like 401/403,
+            # it means the session
             # (JWT or Gigya signature) is stale. Surface this distinctly so the
             # caller can re-login and retry instead of surfacing a dead end.
-            if exc.code in (401, 403):
+            if exc.code in (401, 403, 498):
                 raise AuthError("Authenticatie verlopen ({})".format(exc.code)) from exc
             raise ApiError("HTTP {} from {}{}".format(exc.code, url.split("?", 1)[0], suffix)) from exc
         except URLError as exc:
@@ -254,7 +255,11 @@ def _block_context(value):
     title = tealium.get("block_title") if tealium else None
     if not feature and not title and not value.get("blockId"):
         return None
-    return {"feature": feature or "", "block_title": title or ""}
+    context = {"feature": feature or "", "block_title": title or ""}
+    content = value.get("content") or {}
+    if isinstance(content, dict) and content.get("contentTemplateId"):
+        context["template"] = content["contentTemplateId"]
+    return context
 
 
 def walk_item_content(value, block=None):
@@ -318,6 +323,21 @@ def is_related_block(block):
     if "trail" in title:
         return True
     return False
+
+
+def is_hero_block(block):
+    """Return True when a block is the page hero (Jumbotron).
+
+    The hero often re-uses the featured/latest episode's target id. It is real
+    content (a film's playable teaser is only listed here), so it must not be
+    filtered outright; callers prefer the real episode/movie card instead when
+    the same id also appears in a regular listing block.
+    """
+    if not block:
+        return False
+    if str((block or {}).get("template") or "").casefold() == "jumbotron":
+        return True
+    return str((block or {}).get("feature") or "").casefold() == "feature.info_by_program"
 
 
 def block_season(block):

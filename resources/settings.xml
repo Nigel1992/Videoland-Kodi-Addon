@@ -3,6 +3,13 @@
   <section id="plugin.video.videoland.nl">
     <category id="account" label="31000">
       <group id="1">
+        <setting id="clear_login" type="action" label="31006" help="31007">
+          <level>0</level>
+          <default>plugin://plugin.video.videoland.nl/?action=logout</default>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
         <setting id="auth_json" type="string" label="31003">
           <level>4</level>
           <default></default>

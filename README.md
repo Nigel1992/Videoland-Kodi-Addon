@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Nigel1992/Videoland-Kodi-Addon?style=social)](https://github.com/Nigel1992/Videoland-Kodi-Addon)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
-**Latest release:** v1.0.0 — 2026-09-04. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+**Latest release:** v1.0.1 — 2026-09-15. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
 
 <sub>Unofficial Videoland Kodi Addon - Watch movies, series, programs, and more from Videoland directly in Kodi using your own subscription.</sub>
 
@@ -32,7 +32,13 @@
 - **Profile Management**: Switch between user profiles from the Kodi UI.
 - **Secure Credential Storage**: Email and password are encrypted with a device-bound key before they ever reach disk; sessions are stored encrypted and **auto-relogin** refreshes expired sessions silently.
 - **Dialog-Based Login**: Credentials are entered once at login and never shown again in the add-on settings.
-- **Main Menu Icons**: Flat, consistent, brand-styled icons for every main menu entry.
+- **Main Menu Icons**: Flat, consistent, brand-styled icons for every main menu entry — including a teddy-bear Kids icon and dedicated profile/watchlist icons.
+- **Collection & Genre Menus**: Series, Programma's, Kids, Home and catalogue folders share a consistent collection/genre submenu layout while keeping each page's own routes and section labels.
+- **Per-Episode Details**: Episode lists show the real episode title and a per-episode synopsis, recovered from each episode's own page instead of relying on bare cards.
+- **Hero Backgrounds**: Widescreen movie/show artwork from the title-page hero is used as the selected item's background throughout season and episode lists.
+- **Category Breadcrumbs**: Every folder shows its readable navigation path (categories, genres, shows, seasons, home rails, search) instead of internal SEO names.
+- **Account Tools**: An in-settings button clears saved credentials, session, selected profile and cached content; signing out and switching profiles are one click away.
+- **Expired-Session Resilience**: Stale sessions (including Videoland's HTTP 498 token response) trigger a silent re-login and single retry.
 - **DRM Support**: Widevine-protected DASH streams via `inputstream.adaptive`.
 
 ---
@@ -58,13 +64,18 @@ This add-on does **not** bypass DRM or subscription checks; it simply plays the 
 
 ---
 
-### New in v1.0.0
+### New in v1.0.1
 
-- Cryptographically stored credentials (device-bound encryption) — passwords never appear in `settings.xml`.
-- Automatic, silent re-login and retry when a session or JWT expires.
-- Flat professional icon set for all main menu entries, in a consistent brand style.
-- Add-on renamed to **Videoland**.
-- Home screen rails grouped to match the official Videoland homepage.
+- **Correct episode titles & descriptions** — every episode in a season folder shows its real name and synopsis (previously cards had none).
+- **Kids icon** — the Kids main-menu tile is now a teddy-bear glyph instead of a generic star.
+- **Collection/genre submenus** shared across Series, Programma's, Kids, Home and catalogue folders, preserving each page's own routes.
+- **Films** collections get their own submenus (Top 10, recently added, themed lists) plus a single **Genres** submenu.
+- **Dedicated icons** for recurring functions (continue watching, recommendations, preview, new arrivals, popularity lists) and a neutral icon for editorial collections.
+- **Widescreen hero artwork** as the selected item's background throughout season and episode lists.
+- **Readable navigation breadcrumbs** instead of internal SEO names in Kodi's category heading.
+- **Account settings button** to clear saved credentials, session, profile and cache; support for the HTTP 498 stale-token response with automatic re-login.
+
+See the [Changelog](CHANGELOG.md) for the full list of changes.
 
 ---
 
@@ -118,9 +129,10 @@ scripts/run-addon-check-local.sh --branch omega
 - [X] **Flat listings for Films, Series and Programma's**
 - [X] **Secure (encrypted) credential storage and auto-relogin**
 - [X] **Professional icon set for the main menu**
+- [X] **Per-episode titles and descriptions in season folders**
+- [X] **Automated unit tests for routing, layout parsing and authentication**
 - [ ] **Improve error messages and user feedback**
 - [ ] **Add more debug and diagnostic tools**
-- [ ] **Add unit tests for routing, playback metadata, and authentication**
 - [ ] **Accessibility improvements for screen readers**
 
 ## 💖 Support the Project

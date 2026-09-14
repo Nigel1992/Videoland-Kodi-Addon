@@ -1,10 +1,35 @@
 # Changelog
 
-> **Latest Version:** v1.0.0 (September 4, 2026)
+> **Latest Version:** v1.0.1 (September 15, 2026)
 
 All notable changes to this project are recorded in this file.
 
-## [Unreleased]
+## [1.0.1] - 2026-09-15
+
+### Added
+- Per-episode details: season folders now show the real episode title and a per-episode synopsis, recovered from each episode's own (cached) video page instead of relying on bare cards that carry neither.
+- Dedicated small icons for recurring functions (continue watching, recommendations, preview, new arrivals and popularity lists); catalogue/editorial collections retain neutral icons. Promotional banner metadata takes precedence over wording.
+- Shared collection and genre navigation across Series, Programma's, Kids, Home and other catalogue folders, retaining each page's own routes and section labels.
+- Matching charcoal/red icons for each movie collection, including Top 10, Genres, recently added, romance, action and award winners.
+- Films collections now have their own submenus, including Top 10, recently added and themed lists, preserving titles shared across multiple collections.
+- Films now groups the twelve requested movie genre folders under a single Genres submenu.
+- Widescreen movie/show artwork as the selected item's background, with dark cinematic menu fanart as a fallback.
+- Consistent charcoal/red menu icons, dedicated profile/watchlist icons, and browsing category labels.
+- Account settings button to clear saved login information, including legacy credentials, the session, selected profile and cached content.
+- Local addon-check script (`scripts/run-addon-check-local.sh`) mirroring the CI addon-check workflow.
+
+### Changed
+- Kids menu icon is now a teddy-bear glyph instead of a generic star, matching the flat charcoal/red tile style of the other menu icons.
+- Legacy pre-polished icons were removed; the icon set is generated from vector sources via `scripts/build-menu-icons.py`.
+
+### Fixed
+- Rotating editorial collections use a neutral collection icon instead of guessing a theme from their names.
+- Every folder carries its visible navigation path (categories, genres, shows, seasons, home rails and search), replacing internal SEO names in Kodi's category heading.
+- Fetch the title-page Jumbotron hero for movie/show backgrounds instead of reusing catalogue thumbnails; use the same hero throughout season and episode lists.
+- The Jumbotron hero no longer shadows the latest episode's real card, so season folders keep every episode (e.g. EWOUT Season 5 Episode 1).
+- HTTP 498 (invalid or expired token) now triggers silent re-login using the existing encrypted credentials and retries the action once.
+- Navigation and parallel program lookups propagate authentication failures so session renewal can run.
+- Session renewal preserves the existing encrypted credential blob instead of rewriting it.
 
 ## [1.0.0] - 2026-09-04
 

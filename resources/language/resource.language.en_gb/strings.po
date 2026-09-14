@@ -12,7 +12,7 @@ msgstr ""
 "Language: en_GB\n"
 
 msgctxt "#31000"
-msgid "E-mail address"
+msgid "Account"
 msgstr "Account"
 
 msgctxt "#31001"
@@ -33,6 +33,18 @@ msgstr ""
 
 msgctxt "#31005"
 msgid "Device ID (internal)"
+msgstr ""
+
+msgctxt "#31006"
+msgid "Clear saved login information"
+msgstr ""
+
+msgctxt "#31007"
+msgid "Sign out and remove saved credentials, session, selected profile and cached account content. You will need to sign in again."
+msgstr ""
+
+msgctxt "#31008"
+msgid "Saved login information cleared"
 msgstr ""
 
 msgctxt "#31010"

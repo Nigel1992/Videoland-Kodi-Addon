@@ -12,7 +12,7 @@ msgstr ""
 "Language: nl_NL\n"
 
 msgctxt "#31000"
-msgid "E-mailadres"
+msgid "Account"
 msgstr "Account"
 
 msgctxt "#31001"
@@ -34,6 +34,18 @@ msgstr ""
 msgctxt "#31005"
 msgid "Apparaat-ID (intern)"
 msgstr ""
+
+msgctxt "#31006"
+msgid "Clear saved login information"
+msgstr "Opgeslagen inloggegevens wissen"
+
+msgctxt "#31007"
+msgid "Sign out and remove saved credentials, session, selected profile and cached account content. You will need to sign in again."
+msgstr "Meld af en verwijder opgeslagen inloggegevens, de sessie, het gekozen profiel en gecachte accountinhoud. Je moet daarna opnieuw inloggen."
+
+msgctxt "#31008"
+msgid "Saved login information cleared"
+msgstr "Opgeslagen inloggegevens gewist"
 
 msgctxt "#31010"
 msgid "Afspelen"
