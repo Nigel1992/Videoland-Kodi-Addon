@@ -1024,6 +1024,14 @@ def search(query=""):
 
 
 def play(video_id, seo="", parent_id="", parent_seo=""):
+    import inputstreamhelper
+
+    # Run setup before requesting the short-lived playback/DRM credentials.
+    helper = inputstreamhelper.Helper("mpd", drm="com.widevine.alpha")
+    if not helper.check_inputstream():
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        return
+
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
@@ -1045,7 +1053,7 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     item = xbmcgui.ListItem(path=asset["path"])
     item.setMimeType("application/dash+xml")
     item.setContentLookup(False)
-    item.setProperty("inputstream", "inputstream.adaptive")
+    item.setProperty("inputstream", helper.inputstream_addon)
     item.setProperty("inputstream.adaptive.manifest_type", "mpd")
     item.setProperty("inputstream.adaptive.license_type", "com.widevine.alpha")
     # DRMtoday is strict about this request shape. In particular, its CENC

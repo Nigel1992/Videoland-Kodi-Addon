@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Nigel1992/Videoland-Kodi-Addon?style=social)](https://github.com/Nigel1992/Videoland-Kodi-Addon)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
-**Latest version:** v1.0.2 — 2026-09-15. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+**Latest version:** v1.1.0 — 2026-09-16. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
 
 <sub>Unofficial Videoland Kodi Addon - Watch movies, series, programs, and more from Videoland directly in Kodi using your own subscription.</sub>
 
@@ -39,30 +39,32 @@
 - **Category Breadcrumbs**: Every folder shows its readable navigation path (categories, genres, shows, seasons, home rails, search) instead of internal SEO names.
 - **Account Tools**: An in-settings button clears saved credentials, session, selected profile and cached content; signing out and switching profiles are one click away.
 - **Expired-Session Resilience**: Stale sessions (including Videoland's HTTP 498 token response) trigger a silent re-login and single retry.
-- **DRM Support**: Widevine-protected DASH streams via `inputstream.adaptive`.
+- **Guided DRM Setup**: InputStream Helper checks InputStream Adaptive and Widevine before playback and guides installation or enabling on supported platforms.
 
 ---
 
 ## 📺 Playback Quality & DRM (important)
 
-Stream resolution is determined by your device's **Widevine security level** — the add-on cannot increase it beyond what the DRM grants to the device.
+Playback quality depends on the available streams, the licence granted for the device/session, and Kodi's playback capabilities. Widevine L3 does not itself specify a fixed 540p or 720p limit, and L1 alone does not guarantee HD in this addon.
 
-| Device type | Widevine level | Typical Videoland quality |
-|---|---|---|
-| **L1 (hardware-backed)** — certified Android TV boxes, NVIDIA Shield, Amazon Fire TV, many Chromebooks, select Android phones | L1 | **Up to Full HD / HDR** where the service provides it |
-| **L3 (software)** — e.g. **Raspberry Pi 5**, many LibreELEC/PC/software-CDM setups | L3 | **540p (SD)** — Videoland only issues SD keys to software-only security |
-
-**Why 540p?** Videoland's DRM (Widevine via DRMtoday) refuses to emit HD/UHD content keys to devices running a **software (L3)** Widevine security level. On such devices — including most Raspberry Pi and general-purpose LibreELEC hardware — playback is capped at **540p**. This is a provider-side DRM restriction, not something the add-on can bypass.
+**What we have verified:** For *The Mirror Crack’d*, Videoland's software DRM manifest tops out at **960×540**. Its hardware DRM manifest additionally offers **1280×720** and **1920×1080**, using a separate key ID. That HD key ID matches the `kNoKey` errors observed on the tested LibreELEC device. Two captured Linux Chrome sessions also received manifests capped at 540p, with successful DRMtoday responses listing only an SD track. These observations do not establish a universal limit for every title or device.
 
 **About the quality setting:** The add-on offers a *Preferred quality* setting:
-- **Software L3 (default)** — reliably decodes on devices like the Pi 5 (`CDM "kNoKey"` failures on the L1 rendition are avoided).
-- **Best available (DASH)** — selects the highest stream reported, but the resolution is **still bounded by the Widevine security level**. On an **L1** device this is where you get Full HD/HDR; on an L3 device you'll still see 540p.
 
-> 💡 **Tip:** For Full HD/HDR, use a Kodi device with **L1 (hardware-backed) Widevine** and set *Preferred quality* to **Best available (DASH)**.
+- **Software L3 (default)** — prefers the asset marked `software` by Videoland, falling back to the first DASH asset if absent.
+- **Best available (DASH)** — uses the first DASH asset returned by Videoland. It does not sort assets by resolution or guarantee that the selected tracks can be decrypted.
+
+See [the playback investigation](docs/playback-quality-investigation.md) for the evidence and its limits.
 
 This add-on does **not** bypass DRM or subscription checks; it simply plays the streams your device is entitled to.
 
 ---
+
+### New in v1.1.0
+
+- **Guided Widevine setup** through InputStream Helper 0.8.6 or newer, installed as a required dependency.
+- Playback checks DRM readiness before requesting short-lived playback credentials; cancelling setup stops playback cleanly.
+- Updated playback-quality documentation based on browser captures and live LibreELEC tests. This release does not add HD support to the tested L3 setup.
 
 ### New in v1.0.2
 
@@ -95,10 +97,12 @@ Coming soon...
 
 ## 🚀 Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+1. Download **`plugin.video.videoland.nl-1.1.0.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
 2. In Kodi, go to **Add-ons > Install from zip file** and select the downloaded zip.
 3. Open the add-on and use **Aanmelden** to authenticate with Videoland the first time.
-4. Install `inputstream.adaptive` for DRM playback.
+4. Start a video and follow InputStream Helper's prompts to install or enable InputStream Adaptive and set up Widevine on supported platforms. Kodi installs InputStream Helper as an add-on dependency. If you cancel setup, playback stops; start the video again when you are ready to finish setup.
+
+To upgrade, install the new ZIP over the existing addon. Saved login, profiles and settings are retained. Keep Kodi’s official addon repository enabled so Kodi can install InputStream Helper.
 
 ### Local Addon Check (Filtered Source)
 

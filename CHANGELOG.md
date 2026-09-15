@@ -1,8 +1,21 @@
 # Changelog
 
-> **Latest Version:** v1.0.2 (September 15, 2026)
+> **Latest Version:** v1.1.0 (September 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.1.0] - 2026-09-16
+
+### Added
+- Required dependency on InputStream Helper 0.8.6 or newer for guided InputStream Adaptive and Widevine setup on supported platforms.
+- DRM readiness check before requesting short-lived playback credentials, with clean cancellation when setup is declined or unavailable.
+- Regression tests covering setup cancellation and successful playback preparation.
+
+### Changed
+- Use the InputStream addon selected by InputStream Helper for playback.
+- Update installation and upgrade instructions for automatic helper dependency installation.
+- Correct playback-quality guidance: available streams and granted licences determine usable resolution; L3 does not imply a universal fixed resolution and L1 alone does not guarantee HD.
+- Document the live LibreELEC investigation: tested 720p requests still received SD-only licence metadata, while the 540p control had no missing-key errors. No experimental licence or playback changes are included in this release.
 
 ## [1.0.2] - 2026-09-15
 

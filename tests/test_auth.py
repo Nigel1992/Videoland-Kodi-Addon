@@ -25,6 +25,43 @@ def load_plugin():
 
 
 class AuthenticationTests(unittest.TestCase):
+    def test_playback_stops_before_api_calls_when_drm_setup_is_cancelled(self):
+        plugin = load_plugin()
+        plugin.api = MagicMock()
+        helper_module = MagicMock()
+        helper_module.Helper.return_value.check_inputstream.return_value = False
+        with patch.dict(sys.modules, {'inputstreamhelper': helper_module}):
+            plugin.play('123')
+        helper_module.Helper.assert_called_once_with('mpd', drm='com.widevine.alpha')
+        plugin.api.assert_not_called()
+        plugin.xbmcplugin.setResolvedUrl.assert_called_once_with(
+            plugin.HANDLE, False, plugin.xbmcgui.ListItem.return_value)
+
+    def test_playback_checks_drm_before_requesting_credentials(self):
+        plugin = load_plugin()
+        helper_module = MagicMock()
+        helper = helper_module.Helper.return_value
+        helper.inputstream_addon = 'inputstream.adaptive'
+        helper.check_inputstream.return_value = True
+        client = MagicMock()
+        def make_client():
+            helper.check_inputstream.assert_called_once_with()
+            return client
+        plugin.api = make_client
+        plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
+        plugin.ensure_profile = MagicMock()
+        plugin.video_assets = MagicMock(return_value=[{
+            'format': 'dash', 'path': 'https://example.invalid/video.mpd'}])
+        client.upfront_token.return_value = 'token'
+        client.LICENSE_URL = 'https://example.invalid/license'
+        with patch.dict(sys.modules, {'inputstreamhelper': helper_module}):
+            plugin.play('123')
+        client.upfront_token.assert_called_once_with('user', '123')
+        plugin.xbmcgui.ListItem.return_value.setProperty.assert_any_call(
+            'inputstream', 'inputstream.adaptive')
+        plugin.xbmcplugin.setResolvedUrl.assert_called_once_with(
+            plugin.HANDLE, True, plugin.xbmcgui.ListItem.return_value)
+
     def test_settings_clear_cache_action_removes_cache_without_refresh(self):
         settings = ElementTree.parse(os.path.join(os.path.dirname(__file__), '../resources/settings.xml'))
         button = settings.find(".//setting[@id='clear_cache']")
