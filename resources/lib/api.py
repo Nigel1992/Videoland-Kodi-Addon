@@ -1,4 +1,5 @@
 import base64
+import copy
 import hashlib
 import json
 import os
@@ -106,7 +107,16 @@ class VideolandApi:
                         return json.load(fh)
             except (OSError, ValueError):
                 pass
-        result = self._request(url, headers)
+        for attempt in range(3):
+            try:
+                result = self._request(url, headers)
+                break
+            except ApiError as exc:
+                cause = exc.__cause__
+                if (attempt == 2 or not isinstance(cause, HTTPError)
+                        or cause.code not in (500, 502, 503, 504)):
+                    raise
+                time.sleep(0.5 * (attempt + 1))
         if path:
             try:
                 os.makedirs(self.cache_dir, exist_ok=True)
@@ -210,15 +220,84 @@ class VideolandApi:
         )
         return self._cached_get(url, self._headers())
 
-    def layout(self, kind="alias", entity_id="home", location=None, query=None):
+    def layout(self, kind="alias", entity_id="home", location=None, query=None, complete=False,
+               block_filter=None):
         location = location or "https://v2.videoland.com/"
         url = self.LAYOUT + "/front/v1/{}/{}/main/token-web-31/{}/{}/layout".format(
             self.CUSTOMER, self.PLATFORM, kind, entity_id
         )
         query_parameters = {"blockPage": 1, "nbPages": 2}
         query_parameters.update(query or {})
-        url += "?" + urlencode(query_parameters)
-        return self._cached_get(url, self._headers(location), extra=location)
+        headers = self._headers(location)
+
+        def fetch(parameters):
+            return self._cached_get(url + "?" + urlencode(parameters), headers, extra=location)
+
+        result = fetch(query_parameters)
+        if not complete:
+            return result
+        result = copy.deepcopy(result)
+        blocks = result.setdefault("blocks", [])
+        seen_pages = {query_parameters["blockPage"]}
+        page = (result.get("pagination") or {}).get("nextPage")
+        while page is not None:
+            if page in seen_pages:
+                raise ApiError("Layout pagination did not advance")
+            seen_pages.add(page)
+            following = fetch(dict(query_parameters, blockPage=page))
+            if not following.get("blocks"):
+                raise ApiError("Layout pagination returned an empty page")
+            blocks.extend(following["blocks"])
+            page = (following.get("pagination") or {}).get("nextPage")
+        if "pagination" in result:
+            result["pagination"]["nextPage"] = None
+
+        # blockPage pages through sections. Each section has its own item
+        # cursor and endpoint; changing blockPage cannot load more titles.
+        for block in blocks:
+            if block_filter is not None and not block_filter(block):
+                continue
+            content = block.get("content") or {}
+            page = (content.get("pagination") or {}).get("nextPage")
+            if page is None:
+                continue
+            block_id = block.get("blockId")
+            if not block_id or not isinstance(content.get("items"), list):
+                raise ApiError("Paginated block is missing its ID or items")
+            block_url = url.rsplit("/", 1)[0] + "/block/" + str(block_id)
+            seen_pages = set()
+            pages_per_request = 8
+            seen_items = {json.dumps(item, sort_keys=True) for item in content["items"]}
+            while page is not None:
+                if page in seen_pages:
+                    raise ApiError("Item pagination did not advance")
+                seen_pages.add(page)
+                parameters = dict(query or {}, page=page, nbPages=pages_per_request)
+                parameters.pop("blockPage", None)
+                try:
+                    following = self._cached_get(block_url + "?" + urlencode(parameters), headers, extra=location)
+                except ApiError as exc:
+                    cause = exc.__cause__
+                    if (pages_per_request == 1 or not isinstance(cause, HTTPError)
+                            or cause.code not in (500, 502, 503, 504)):
+                        raise
+                    # Some blocks reject a large batch while individual pages
+                    # work. Retry the same cursor without dropping any titles.
+                    pages_per_request = 1
+                    parameters["nbPages"] = 1
+                    following = self._cached_get(block_url + "?" + urlencode(parameters), headers, extra=location)
+                next_content = following.get("content") or {}
+                for item in next_content.get("items") or []:
+                    key = json.dumps(item, sort_keys=True)
+                    if key not in seen_items:
+                        seen_items.add(key)
+                        content["items"].append(item)
+                # Some editorial rails overstate totalItems and yield empty
+                # pages before their final cursor. Follow the cursor even on
+                # an empty/overlapping page; repeated cursors still fail above.
+                content["pagination"] = next_content.get("pagination") or {}
+                page = content["pagination"].get("nextPage")
+        return result
 
     def upfront_token(self, uid, video_id):
         url = self.DRM + "/v1/customers/{}/platforms/{}/services/videoland/users/{}/videos/{}/upfront-token".format(

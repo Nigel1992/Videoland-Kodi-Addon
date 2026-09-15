@@ -478,7 +478,20 @@ def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
     location_suffixes = {"program": "p", "video": "c", "folder": "f"}
     if kind in location_suffixes and seo:
         location += "{}-{}_{}".format(seo, location_suffixes[kind], entity_id.replace("clip_", ""))
-    data = client.layout(kind, entity_id, location)
+    catalog = (kind == "folder" or (kind == "alias" and entity_id == "home")) and group != "genre"
+
+    def load_block(block):
+        tealium = (block.get("analytics") or {}).get("tealium") or {}
+        if not catalog:
+            return not is_related_block({"feature": tealium.get("from"), "block_title": tealium.get("block_title")})
+        title = str(tealium.get("block_title") or "").strip()
+        if group == "genres" or (group is None and section is None):
+            # Menus need all genre folders, but only a preview of each rail
+            # to create its submenu. Load titles when that submenu is opened.
+            return title.casefold() in ("genres", "genre", "categorieën", "categorieen", "wat wil je kijken?")
+        return title == ("" if group == "featured" else section)
+
+    data = client.layout(kind, entity_id, location, complete=True, block_filter=load_block)
     if BREADCRUMB == ["Videoland"]:
         # Compatibility with old favourites/URLs that lack a breadcrumb.
         label = {("alias", "home"): "Home", ("folder", "580"): "Series",
@@ -502,7 +515,6 @@ def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
         if season is not None:
             parts.append("Seizoen {}".format(season))
         set_breadcrumb(parts)
-    catalog = kind == "folder" or (kind == "alias" and entity_id == "home")
     show_items(data, season=season, section=section, client=client,
                grouped_catalog=catalog, genres_only=group == "genres",
                collection_section="" if group == "featured" else section,
@@ -756,6 +768,14 @@ def _render_rows(rows, client=None, page_art=None):
                 pending.append(("episode", target_id, item, target, target_kind))
 
     if pending:
+        if len(pending) >= 25 and setting("loading_notice_shown") != "true":
+            xbmcgui.Dialog().notification(
+                "Videoland — {} titels laden".format(len(pending)),
+                "Bij veel films of series kan de eerste keer laden even duren.",
+                time=8000, sound=False,
+            )
+            save("loading_notice_shown", "true")
+
         def _peek(args):
             kind, target_id, item, target, target_kind = args
             try:
@@ -828,8 +848,11 @@ def _render_rows(rows, client=None, page_art=None):
                 parent_id=parent.get("id", ""), parent_seo=parent.get("seo", "")
             ), False, art, info, playable=True)
         else:
+            route = {}
+            if is_genre((item, target, target_kind, block)):
+                route["group"] = "genre"
             add(label, url(
-                action="layout", kind=target_kind, entity_id=target_id, seo=target.get("seo", "")
+                action="layout", kind=target_kind, entity_id=target_id, seo=target.get("seo", ""), **route
             ), True, art, info)
 
 
@@ -996,7 +1019,7 @@ def search(query=""):
     auth = ensure_login()
     ensure_profile(client, auth)
     location = "https://v2.videoland.com/zoeken?" + urlencode({"query": query})
-    data = client.layout("frontspace", "search", location, {"query": query})
+    data = client.layout("frontspace", "search", location, {"query": query}, complete=True)
     show_items(data, client=client)
 
 
@@ -1053,7 +1076,8 @@ def dispatch(params):
         xbmc.executebuiltin("Container.Refresh")
     elif action == "clear_cache":
         removed = VideolandApi.clear_cache(cache_dir())
-        xbmc.executebuiltin("Container.Refresh")
+        if params.get("refresh") != "false":
+            xbmc.executebuiltin("Container.Refresh")
         xbmcgui.Dialog().notification("Videoland", "Cache gewist ({})".format(removed), time=3000)
     elif action == "logout":
         store_auth({})

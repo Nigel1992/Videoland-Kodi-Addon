@@ -34,6 +34,27 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install kodi-addon-checker
 
+      - name: Patch kodi-addon-checker Repository bug
+        run: |
+          python -c "
+          import kodi_addon_checker.addons.Repository as R
+          import inspect
+          src = inspect.getsource(R.Repository.__init__)
+          if 'self.addons = []' not in src.split('try:')[0]:
+              path = inspect.getfile(R.Repository)
+              with open(path) as f:
+                  content = f.read()
+              content = content.replace(
+                  '    def __init__(self, version, path):\n        super().__init__()\n        self.version = version\n        self.path = path',
+                  '    def __init__(self, version, path):\n        super().__init__()\n        self.version = version\n        self.path = path\n        self.addons = []'
+              )
+              with open(path, 'w') as f:
+                  f.write(content)
+              print('Patched Repository.__init__ to initialize self.addons')
+          else:
+              print('Patch not needed')
+          "
+
       - name: Read addon id from addon.xml
         id: addon_meta
         run: |

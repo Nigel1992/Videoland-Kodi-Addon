@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 from urllib.parse import parse_qsl, urlsplit
+from xml.etree import ElementTree
 
 from resources.lib.api import ApiError, AuthError, VideolandApi
 
@@ -24,6 +25,75 @@ def load_plugin():
 
 
 class AuthenticationTests(unittest.TestCase):
+    def test_settings_clear_cache_action_removes_cache_without_refresh(self):
+        settings = ElementTree.parse(os.path.join(os.path.dirname(__file__), '../resources/settings.xml'))
+        button = settings.find(".//setting[@id='clear_cache']")
+        action = button.findtext('data')
+        self.assertTrue(action.startswith('RunPlugin('))
+        self.assertEqual(button.findtext('control/close'), 'false')
+        params = dict(parse_qsl(urlsplit(action[len('RunPlugin('):-1]).query))
+        plugin = load_plugin()
+        with tempfile.TemporaryDirectory() as directory:
+            plugin.cache_dir = lambda: directory
+            for name in ('cache_one.json', 'cache_two.json', 'keep.txt'):
+                with open(os.path.join(directory, name), 'w') as file:
+                    file.write('{}')
+            plugin.dispatch(params)
+            self.assertEqual(os.listdir(directory), ['keep.txt'])
+            plugin.xbmc.executebuiltin.assert_not_called()
+            plugin.xbmcgui.Dialog().notification.assert_called_with(
+                'Videoland', 'Cache gewist (2)', time=3000)
+            plugin.dispatch(params)
+            plugin.xbmcgui.Dialog().notification.assert_called_with(
+                'Videoland', 'Cache gewist (0)', time=3000)
+
+    def test_genre_link_opens_complete_title_list_without_submenu(self):
+        plugin = load_plugin()
+        plugin.add = MagicMock()
+        plugin._render_rows([
+            ({"title": "Drama"}, {"id": "2", "seo": "main-films-6"},
+             "folder", {"block_title": "Genres"})
+        ])
+        route = dict(parse_qsl(urlsplit(plugin.add.call_args.args[1]).query))
+        self.assertEqual(route["group"], "genre")
+        self.assertEqual(route["entity_id"], "2")
+        client = MagicMock()
+        client.layout.return_value = {"blocks": []}
+        plugin.api = lambda: client
+        plugin.ensure_login = MagicMock(return_value={})
+        plugin.ensure_profile = MagicMock()
+        plugin.show_items = MagicMock()
+        plugin.show_layout("folder", "2", group="genre")
+        self.assertFalse(plugin.show_items.call_args.kwargs["grouped_catalog"])
+        options = client.layout.call_args.kwargs
+        self.assertTrue(options["complete"])
+        self.assertTrue(options["block_filter"]({"analytics": {"tealium": {
+            "block_title": "Drama", "from": "feature.programs_by_tags"}}}))
+
+    def test_browsing_completes_genres_selected_collections_and_episodes(self):
+        plugin = load_plugin()
+        client = MagicMock()
+        client.layout.return_value = {"blocks": []}
+        plugin.api = lambda: client
+        plugin.ensure_login = MagicMock(return_value={})
+        plugin.ensure_profile = MagicMock()
+        plugin.show_items = MagicMock()
+        def block(title, feature="feature.programs_by_tags"):
+            return {"analytics": {"tealium": {"block_title": title, "from": feature}}}
+        plugin.show_layout("folder", "581")
+        options = client.layout.call_args.kwargs
+        self.assertTrue(options["complete"])
+        self.assertTrue(options["block_filter"](block("Genres")))
+        self.assertFalse(options["block_filter"](block("Drama")))
+        plugin.show_layout("folder", "2", section="Drama", group="collection")
+        select = client.layout.call_args.kwargs["block_filter"]
+        self.assertTrue(select(block("Drama")))
+        self.assertFalse(select(block("Other collection")))
+        plugin.show_layout("program", "1", season=1)
+        select = client.layout.call_args.kwargs["block_filter"]
+        self.assertTrue(select(block("Seizoen 1", "feature.videos_by_season_by_program")))
+        self.assertFalse(select(block("Anderen kijken ook", "feature.recommended_programs_by_program")))
+
     def test_http_authentication_errors(self):
         for status in (401, 403, 498, 500):
             with self.subTest(status=status):

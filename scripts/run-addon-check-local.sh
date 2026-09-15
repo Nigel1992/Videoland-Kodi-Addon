@@ -42,6 +42,23 @@ if ! command -v kodi-addon-checker >/dev/null 2>&1; then
   exit 1
 fi
 
+# Patch kodi-addon-checker bug: Repository.__init__ must initialize self.addons
+# before the HTTP request so that network failures don't cause AttributeError.
+python3 -c "
+import kodi_addon_checker.addons.Repository as R
+import inspect, pathlib
+src = inspect.getsource(R.Repository.__init__)
+if 'self.addons = []' not in src.split('try:')[0]:
+    path = pathlib.Path(inspect.getfile(R.Repository))
+    text = path.read_text()
+    text = text.replace(
+        '    def __init__(self, version, path):\n        super().__init__()\n        self.version = version\n        self.path = path',
+        '    def __init__(self, version, path):\n        super().__init__()\n        self.version = version\n        self.path = path\n        self.addons = []'
+    )
+    path.write_text(text)
+    print('Patched kodi-addon-checker Repository.__init__')
+"
+
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "${WORKDIR}"' EXIT
 

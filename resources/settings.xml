@@ -34,6 +34,11 @@
           <constraints><allowempty>true</allowempty></constraints>
           <control type="edit" format="string"><hidden>true</hidden></control>
         </setting>
+        <setting id="loading_notice_shown" type="string" label="Loading notice shown">
+          <level>4</level>
+          <default>false</default>
+          <control type="edit" format="string"><hidden>true</hidden></control>
+        </setting>
       </group>
     </category>
     <category id="playback" label="31010">
@@ -80,7 +85,7 @@
         </setting>
         <setting id="clear_cache" type="action" label="31030" help="31031">
           <level>0</level>
-          <default>plugin://plugin.video.videoland.nl/?action=clear_cache</default>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=clear_cache&amp;refresh=false)</data>
           <control type="button" format="action">
             <close>false</close>
           </control>

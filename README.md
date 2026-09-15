@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Nigel1992/Videoland-Kodi-Addon?style=social)](https://github.com/Nigel1992/Videoland-Kodi-Addon)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
-**Latest release:** v1.0.1 — 2026-09-15. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+**Latest version:** v1.0.2 — 2026-09-15. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
 
 <sub>Unofficial Videoland Kodi Addon - Watch movies, series, programs, and more from Videoland directly in Kodi using your own subscription.</sub>
 
@@ -63,6 +63,10 @@ Stream resolution is determined by your device's **Widevine security level** —
 This add-on does **not** bypass DRM or subscription checks; it simply plays the streams your device is entitled to.
 
 ---
+
+### New in v1.0.2
+
+- Complete genre, collection, episode and search lists: all pages are loaded, including previously hidden genre folders and titles beyond the first 24.
 
 ### New in v1.0.1
 

@@ -1,8 +1,22 @@
 # Changelog
 
-> **Latest Version:** v1.0.1 (September 15, 2026)
+> **Latest Version:** v1.0.2 (September 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.0.2] - 2026-09-15
+
+### Added
+- A quiet loading notice for lists with at least 25 title lookups, explaining that the first load can take a while for many films or series.
+
+### Fixed
+- Wire Settings → Cache → Clear Cache to an executable Kodi action, keeping settings open and avoiding an immediate cache refill.
+- Genre folders open their complete title list directly, removing the repeated genre submenu for films and series. Genres with multiple rails combine their titles without duplicates.
+- Show the first-load notice only once, remembering it across directory visits and Kodi restarts.
+- Follow both section and item pagination when browsing genres, collections, seasons and search results. Genre lists no longer stop at 24 titles, and all genre folders are available.
+- Preserve section membership and search parameters across pages, discard overlapping items within a section, and report stalled pagination instead of silently showing incomplete results.
+- Keep artwork and playback metadata lookups lightweight by fetching additional pages only for directory browsing.
+- Retry temporary server errors on cached GET requests, so a brief API failure does not abort a long list halfway through.
 
 ## [1.0.1] - 2026-09-15
 
