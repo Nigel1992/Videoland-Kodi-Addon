@@ -1,8 +1,26 @@
 # Changelog
 
-> **Latest Version:** v1.1.0 (September 16, 2026)
+> **Latest Version:** v1.2.0 (September 18, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.2.0] - 2026-09-18
+
+### Added
+- Fresh Videoland resume prompts with explicit resume, restart and cancel choices.
+- Cloud progress saves after seeks, pauses, stops and completion, plus periodic updates. Failed saves persist across Kodi restarts and retry in the background.
+- A playback history source setting: Videoland cloud or this Kodi device only. Local mode uses Kodi resume points and watched status, ignores cloud bookmarks and pauses cloud saves and retries.
+- Categorized English and Dutch settings with detailed help, optional sync notifications and a cloud sync status screen. Cloud controls depend on the selected history mode.
+- Active profile names and a clear explanation when an account has only one profile.
+- Fresh Continue Watching browsing and a cloud-backed Remove from Continue Watching context menu.
+- Others also watch context menus on films, programmes and episodes, opening Videoland's related titles.
+
+### Fixed
+- Resume seeks include the duration required by Kodi to honour the saved position.
+- Back, Escape and Cancel dismiss the cloud resume prompt without starting playback or saving zero progress.
+- Cloud mode suppresses Kodi-local resume and watched indicators; local mode preserves Kodi's native controls.
+- Serialize queued and live cloud saves; removing a title discards matching queued updates and prevents older playback sessions from restoring it.
+- Retry temporary 502/503/504 responses and timeouts when removing Continue Watching entries.
 
 ## [1.1.0] - 2026-09-16
 

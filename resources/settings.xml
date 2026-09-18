@@ -28,16 +28,60 @@
           <constraints><allowempty>true</allowempty></constraints>
           <control type="edit" format="string"><hidden>true</hidden></control>
         </setting>
+        <setting id="profile_name" type="string" label="31066">
+          <level>4</level>
+          <default></default>
+          <constraints><allowempty>true</allowempty></constraints>
+          <control type="edit" format="string"><hidden>true</hidden></control>
+        </setting>
         <setting id="device_id" type="string" label="31005">
           <level>4</level>
           <default></default>
           <constraints><allowempty>true</allowempty></constraints>
           <control type="edit" format="string"><hidden>true</hidden></control>
         </setting>
-        <setting id="loading_notice_shown" type="string" label="Loading notice shown">
+        <setting id="loading_notice_shown" type="string" label="31009">
           <level>4</level>
           <default>false</default>
           <control type="edit" format="string"><hidden>true</hidden></control>
+        </setting>
+      </group>
+    </category>
+    <category id="history" label="31090">
+      <group id="1">
+        <setting id="history_source" type="string" label="31091" help="31092">
+          <level>0</level>
+          <default>cloud</default>
+          <constraints><options>
+            <option label="31093">cloud</option>
+            <option label="31094">local</option>
+          </options></constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+      </group>
+      <group id="2" label="31095">
+        <setting id="sync_progress" type="boolean" label="31040" help="31041">
+          <level>0</level>
+          <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="sync_notifications" type="boolean" label="31042" help="31043" parent="sync_progress">
+          <level>0</level>
+          <default>false</default>
+          <dependencies>
+            <dependency type="enable"><and>
+              <condition setting="history_source" operator="is">cloud</condition>
+              <condition setting="sync_progress" operator="is">true</condition>
+            </and></dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+        <setting id="sync_status" type="action" label="31062" help="31063">
+          <level>0</level>
+          <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=sync_status)</data>
+          <control type="button" format="action"><close>false</close></control>
         </setting>
       </group>
     </category>

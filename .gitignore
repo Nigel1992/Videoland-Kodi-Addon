@@ -27,3 +27,9 @@ credentials.txt
 # Local dev test fixtures
 local/
 tmp/
+
+# Local editor backups and test artifacts
+*.bak
+*.backup*
+/MagicMock/
+/.claude/

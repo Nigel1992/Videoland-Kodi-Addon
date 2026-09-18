@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Nigel1992/Videoland-Kodi-Addon?style=social)](https://github.com/Nigel1992/Videoland-Kodi-Addon)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
-**Latest version:** v1.1.0 — 2026-09-16. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+**Latest version:** v1.2.0 — 2026-09-18. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
 
 <sub>Unofficial Videoland Kodi Addon - Watch movies, series, programs, and more from Videoland directly in Kodi using your own subscription.</sub>
 
@@ -29,6 +29,8 @@
 - **Trending**: See what's trending right now.
 - **Search**: Find series, movies, and programs by title.
 - **Watchlist (Mijn Kijklijst)**: Access your saved content.
+- **Cloud Playback Progress**: Resume from Videoland and save Kodi progress to the same profile after seeking, pausing or stopping, and periodically during playback. Failed saves are retained on this device and retried while Kodi is running, including after a restart. Turning off progress saving pauses retries; signing out removes pending saves. **Settings → Playback history → Cloud progress status** shows the last successful save, pending updates and any save error for the active profile. Sync notifications are optional and off by default. In cloud mode, browse items hide Kodi-local progress and watched markers; the resume popup uses fresh cloud progress.
+- **Active Profile and Continue Watching**: The main menu shows the active profile name and offers **Refresh Continue Watching**, which fetches the current list directly from Videoland without using the browsing cache. On supported Continue Watching cards, use the context menu → **Remove from Continue Watching** to remove the title from the selected cloud profile. Older pending saves for that title are discarded; explicitly playing it again can add it back.
 - **Profile Management**: Switch between user profiles from the Kodi UI.
 - **Secure Credential Storage**: Email and password are encrypted with a device-bound key before they ever reach disk; sessions are stored encrypted and **auto-relogin** refreshes expired sessions silently.
 - **Dialog-Based Login**: Credentials are entered once at login and never shown again in the add-on settings.
@@ -59,6 +61,14 @@ See [the playback investigation](docs/playback-quality-investigation.md) for the
 This add-on does **not** bypass DRM or subscription checks; it simply plays the streams your device is entitled to.
 
 ---
+
+### New in v1.2.0
+
+- Choose Videoland cloud history or local Kodi resume points and watched status.
+- Resume reliably, sync progress with optional notifications, and retry failed saves in the background.
+- Refresh or remove titles from cloud Continue Watching, and see the active profile.
+- Right-click a title for **Others also watch / Anderen kijken ook** recommendations.
+- Clear English and Dutch settings explain which history and sync options are active.
 
 ### New in v1.1.0
 
@@ -97,7 +107,7 @@ Coming soon...
 
 ## 🚀 Installation
 
-1. Download **`plugin.video.videoland.nl-1.1.0.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
+1. Download **`plugin.video.videoland.nl-1.2.0.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
 2. In Kodi, go to **Add-ons > Install from zip file** and select the downloaded zip.
 3. Open the add-on and use **Aanmelden** to authenticate with Videoland the first time.
 4. Start a video and follow InputStream Helper's prompts to install or enable InputStream Adaptive and set up Widevine on supported platforms. Kodi installs InputStream Helper as an add-on dependency. If you cancel setup, playback stops; start the video again when you are ready to finish setup.
@@ -167,3 +177,9 @@ Creative Commons Attribution-NonCommercial 4.0 International. See [LICENSE](LICE
 ## ⚠️ Disclaimer
 
 This project is not affiliated with or endorsed by Videoland. Use at your own risk. For personal, non-commercial use only.
+
+### Playback history source
+
+Settings → Playback history → Save and resume using selects Videoland cloud (default) or This Kodi device only. Cloud mode uses Videoland resume prompts and hides Kodi resume/watched marks; saving to Videoland is a separate switch. Local mode leaves resume and watched status to Kodi, ignores cloud bookmarks and their duration, hides cloud Continue Watching, and pauses cloud writes/retries. Kodi's normal resume thresholds and watched rules apply. Local history is tied to the Kodi profile and shared between Videoland profiles on the device. Switching sources does not migrate or erase history. Pending cloud saves may resume after switching back with cloud saving enabled.
+
+Right-click a film, programme or episode and choose **Others also watch / Anderen kijken ook** to browse Videoland’s related titles. This works with either playback history source.

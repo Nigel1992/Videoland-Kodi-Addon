@@ -1,6 +1,8 @@
 import json
+import math
 import os
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -23,6 +25,8 @@ from .api import (
     walk_item_content,
 )
 from .crypto import CipherError, decrypt_json, encrypt_json
+from .progress import ProgressWriter, heartbeat_config, monitor_class
+from .sync_store import DurableWriter, SyncStore
 
 
 ADDON = xbmcaddon.Addon()
@@ -53,6 +57,21 @@ def read_breadcrumb(value):
 
 def setting(name, default=""):
     return ADDON.getSettingString(name) or default
+
+
+def local_history():
+    return ADDON.getSettingString("history_source") == "local"
+
+
+def cloud_sync_enabled():
+    return not local_history() and setting_bool("sync_progress", True)
+
+
+def require_cloud_history():
+    if local_history():
+        xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(31096))
+        return False
+    return True
 
 
 def setting_bool(name, default=False):
@@ -121,7 +140,35 @@ def url(**params):
     return BASE_URL + "?" + urlencode(params)
 
 
-def add(label, route, folder=True, art=None, info=None, playable=False, icon_key=None):
+def get_resume_position(layout, video_id):
+    """Read the selected video's server resume time, never a related episode's."""
+    for item, _block in walk_item_content(layout):
+        video = item.get("video")
+        if not isinstance(video, dict) or str(video.get("id")) != str(video_id):
+            continue
+        progress = video.get("progress")
+        if not isinstance(progress, dict):
+            continue
+        position = progress.get("tcResume")
+        if (isinstance(position, (int, float)) and not isinstance(position, bool)
+                and math.isfinite(position) and position > 0):
+            return int(position)
+    return 0
+
+
+def get_video_duration(layout, video_id):
+    for item, _block in walk_item_content(layout):
+        video = item.get("video")
+        if not isinstance(video, dict) or str(video.get("id")) != str(video_id):
+            continue
+        duration = video.get("duration")
+        if (isinstance(duration, (int, float)) and not isinstance(duration, bool)
+                and math.isfinite(duration) and duration > 0):
+            return float(duration)
+    return 0.0
+
+
+def add(label, route, folder=True, art=None, info=None, playable=False, icon_key=None, context_menu=None):
     if folder:
         # Carry the actual labels through every route, including seasons/rails.
         # SEO slugs are request identifiers, not names suitable for navigation.
@@ -146,9 +193,18 @@ def add(label, route, folder=True, art=None, info=None, playable=False, icon_key
     if info:
         item.setInfo("video", info)
     if playable:
+        item.setProperty("ForceResolvePlugin", "true")
+        if not local_history():
+            # Explicit empty state prevents Kodi filling these fields from its DB.
+            tag = item.getVideoInfoTag()
+            tag.setPlaycount(0)
+            tag.setResumePoint(0.0, 1.0)
+            item.setProperty("OverrideInfotag", "true")
         # Mark the item as a directly playable video so pressing Enter triggers
         # playback immediately instead of requiring right-click -> Play.
         item.setProperty("IsPlayable", "true")
+    if context_menu:
+        item.addContextMenuItems(context_menu)
     xbmcplugin.addDirectoryItem(HANDLE, route, item, folder)
 
 
@@ -368,8 +424,36 @@ def ensure_profile(client, auth):
     if not profile_id:
         raise ApiError("Het gekozen profiel heeft geen ID")
     save("profile_id", profile_id)
+    save("profile_name", selected.get("username") or "")
     client.jwt(auth, profile_id)  # Validate and activate the profile session.
     return profile_id
+
+
+def choose_profile():
+    client = api()
+    auth = ensure_login()
+    client.jwt(auth)
+    profiles = client.profiles(auth["uid"])
+    if not profiles:
+        raise ApiError("Geen Videoland-profielen gevonden")
+    labels = [p.get("username") or ADDON.getLocalizedString(31053).format(i + 1)
+              for i, p in enumerate(profiles)]
+    if len(profiles) == 1:
+        xbmcgui.Dialog().ok(ADDON.getLocalizedString(31050),
+                           ADDON.getLocalizedString(31051).format(labels[0]))
+        return
+    index = xbmcgui.Dialog().select(ADDON.getLocalizedString(31050), labels)
+    if index < 0:
+        return
+    profile_id = profiles[index].get("uid")
+    if not profile_id:
+        raise ApiError("Het gekozen profiel heeft geen ID")
+    client.jwt(auth, profile_id)
+    save("profile_id", profile_id)
+    save("profile_name", labels[index])
+    VideolandApi.clear_cache(cache_dir())
+    xbmc.executebuiltin("Container.Refresh")
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31052).format(labels[index]))
 
 
 def _resolve_profile(client, auth):
@@ -386,6 +470,96 @@ def _resolve_profile(client, auth):
         raise ApiError("Geen Videoland-profielen gevonden")
     client.jwt(auth, pid)
     return pid
+
+
+def active_profile_name(client, auth):
+    name = setting("profile_name")
+    if name:
+        return name
+    profile_id = setting("profile_id")
+    client.jwt(auth)
+    profiles = client.profiles(auth["uid"])
+    client.jwt(auth, profile_id)
+    name = next((p.get("username") for p in profiles if p.get("uid") == profile_id), None)
+    name = name or ADDON.getLocalizedString(31076)
+    save("profile_name", name)
+    return name
+
+
+def show_sync_status():
+    if not require_cloud_history():
+        return
+    auth = auth_data()
+    state = SyncStore(data_dir()).status(auth.get("uid", ""), setting("profile_id"))
+    saved = state.get("saved_at")
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(saved)) if saved else ADDON.getLocalizedString(31072)
+    position = state.get("position")
+    if position is not None:
+        stamp += " ({}:{:02d})".format(int(position) // 60, int(position) % 60)
+    error = ADDON.getLocalizedString(31074 if state.get("error") == "auth" else 31075) if state.get("error") else ADDON.getLocalizedString(31073)
+    lines = [ADDON.getLocalizedString(31060).format(setting("profile_name") or ADDON.getLocalizedString(31076)),
+             ADDON.getLocalizedString(31067).format(stamp),
+             ADDON.getLocalizedString(31068).format(state['pending']),
+             ADDON.getLocalizedString(31069).format(error),
+             ADDON.getLocalizedString(31070 if setting_bool("sync_progress", True) else 31071)]
+    xbmcgui.Dialog().textviewer(ADDON.getLocalizedString(31062), "\n\n".join(lines))
+
+
+def continue_removal_id(item):
+    for action in item.get("secondaryActions") or []:
+        if not isinstance(action, dict):
+            continue
+        target = action.get("target") or {}
+        app = target.get("value_app") or {}
+        if target.get("type") == "app" and app.get("reference") == "remove_from_continuous_watching":
+            content_id = (app.get("details") or {}).get("id")
+            if content_id is not None:
+                return str(content_id)
+    return None
+
+
+def remove_continue_watching(content_id, profile_id, title):
+    if not require_cloud_history():
+        return
+    # A context menu from a previously selected profile must never remove from
+    # the profile now active in Kodi.
+    if not profile_id or setting("profile_id") != profile_id:
+        raise ApiError(ADDON.getLocalizedString(31082))
+    client = api()
+    auth = ensure_login()
+    client.jwt(auth, profile_id)
+    SyncStore(data_dir()).remove_content(
+        auth["uid"], profile_id, content_id, lambda: client.remove_continue_watching(content_id))
+    VideolandApi.clear_cache(cache_dir())
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31081).format(title),
+                                 time=3000, sound=False)
+    xbmc.executebuiltin("Container.Refresh")
+
+
+def continue_watching():
+    if not require_cloud_history():
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    # This action explicitly reloads from Videoland, including every rail page.
+    client.cache_dir = None
+    client.cache_ttl = 0
+    def is_continue(block):
+        metadata = (block.get("analytics") or {}).get("tealium") or {}
+        return (metadata.get("from") == "feature.recommended_videos_by_user"
+                or str(metadata.get("block_title", "")).casefold() == "verder kijken")
+    data = client.layout("alias", "home", complete=True, block_filter=is_continue)
+    data = dict(data, blocks=[b for b in data.get("blocks", []) if is_continue(b)])
+    set_breadcrumb(["Videoland", ADDON.getLocalizedString(31079)])
+    xbmcplugin.setContent(HANDLE, "videos")
+    add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
+    rows = _build_rows(data)
+    if not rows:
+        xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(31078))
+    _render_rows(rows, client, hero_art(data))
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
 def root():
@@ -407,7 +581,10 @@ def root():
         added = add_navigation(navigation)
         if not added:
             add_default_navigation()
-        add("Profiel opnieuw kiezen", url(action="profiles"), False, icon_key="profiel")
+        name = active_profile_name(client, auth)
+        add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
+        if not local_history():
+            add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
         add("Afmelden", url(action="logout"), False, icon_key="afmelden")
     add("Cache wissen", url(action="clear_cache"), False, icon_key="cache")
     xbmcplugin.endOfDirectory(HANDLE)
@@ -520,6 +697,44 @@ def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
                collection_section="" if group == "featured" else section,
                catalog_route={"kind": kind, "entity_id": entity_id, "seo": seo})
 
+
+
+def is_recommendation_block(block):
+    feature = str(block.get("feature") or "").casefold()
+    title = str(block.get("block_title") or "").strip().casefold()
+    if any(word in feature or word in title for word in ("trailer", "advertis")):
+        return False
+    return (title in ("anderen kijken ook", "others also watch")
+            or (feature.endswith("by_program")
+                and any(word in feature for word in ("recommend", "related", "similar"))))
+
+
+def show_related(kind, entity_id, seo="", title=""):
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    def load_block(block):
+        metadata = (block.get("analytics") or {}).get("tealium") or {}
+        return is_recommendation_block({"feature": metadata.get("from"),
+                                        "block_title": metadata.get("block_title")})
+    location = program_location(seo, entity_id) if kind == "program" else "https://v2.videoland.com/"
+    data = client.layout(kind, entity_id, location, complete=True, block_filter=load_block)
+    # Older video cards may lack a parent in their action. Resolve it from the
+    # detail hero so recommendations still come from the containing programme.
+    if kind == "video":
+        parent = _program_identity(data)
+        if parent and parent.get("kind") == "program":
+            data = client.layout("program", parent["entity_id"],
+                                 program_location(parent.get("seo", ""), parent["entity_id"]),
+                                 complete=True, block_filter=load_block)
+    heading = ADDON.getLocalizedString(31100)
+    set_breadcrumb(["Videoland"] + ([title] if title else []) + [heading])
+    xbmcplugin.setContent(HANDLE, "videos")
+    rows = _build_rows(data, recommendations_only=True)
+    if not rows:
+        xbmcgui.Dialog().ok(heading, ADDON.getLocalizedString(31101))
+    _render_rows(rows, client)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
 def _episode_number(item):
@@ -680,7 +895,7 @@ def _play_target(client, item, target, target_kind, program_data=None):
     return None
 
 
-def _build_rows(data, per_section=False):
+def _build_rows(data, per_section=False, recommendations_only=False):
     """Collect and de-duplicate the real content items from a layout.
 
     De-duplication is scoped per block (its title) when ``per_section`` is set,
@@ -694,6 +909,10 @@ def _build_rows(data, per_section=False):
     seen = {}
     rows = []
     for item, block in walk_item_content(data):
+        if local_history() and (continue_removal_id(item)
+                or block.get("feature") == "feature.recommended_videos_by_user"
+                or str(block.get("block_title", "")).casefold() in ("verder kijken", "continue watching")):
+            continue
         target = action_target(item)
         if not target:
             continue
@@ -704,7 +923,10 @@ def _build_rows(data, per_section=False):
         ):
             continue
         # Drop recommendation/trailer/hero/ad rails; keep only real content.
-        if is_related_block(block):
+        if recommendations_only:
+            if not is_recommendation_block(block):
+                continue
+        elif is_related_block(block):
             continue
         if per_section:
             bucket = str((block or {}).get("block_title") or "")
@@ -830,6 +1052,22 @@ def _render_rows(rows, client=None, page_art=None):
         art.update(backgrounds.get(target_id, {}))
         plot = (item.get("description") or "").strip() or episode_plot or ""
         info = {"title": label, "plot": plot}
+        context_menu = []
+        if target_kind in ("program", "details", "video"):
+            related_target = target
+            related_kind = "video" if target_kind == "video" or target_id.startswith("clip_") else "program"
+            parent = target.get("parent") or {}
+            if related_kind == "video" and parent.get("id"):
+                related_target = parent
+                related_kind = "program"
+            context_menu.append((ADDON.getLocalizedString(31100), "Container.Update({})".format(url(
+                action="related", kind=related_kind, entity_id=related_target.get("id", target_id),
+                seo=related_target.get("seo", ""), title=label))))
+        content_id = continue_removal_id(item)
+        if content_id and not local_history():
+            context_menu.append((ADDON.getLocalizedString(31080), "RunPlugin({})".format(url(
+                action="remove_continue_watching", content_id=content_id,
+                profile_id=setting("profile_id"), title=label))))
         episode_no = _episode_number(item)
         season_no = block_season(block)
         if episode_no is not None:
@@ -846,14 +1084,14 @@ def _render_rows(rows, client=None, page_art=None):
                 action="play", video_id=play_target.get("id", target_id),
                 seo=play_target.get("seo", ""),
                 parent_id=parent.get("id", ""), parent_seo=parent.get("seo", "")
-            ), False, art, info, playable=True)
+            ), False, art, info, playable=True, context_menu=context_menu)
         else:
             route = {}
             if is_genre((item, target, target_kind, block)):
                 route["group"] = "genre"
             add(label, url(
                 action="layout", kind=target_kind, entity_id=target_id, seo=target.get("seo", ""), **route
-            ), True, art, info)
+            ), True, art, info, context_menu=context_menu)
 
 
 def _all_seasons(rows):
@@ -1023,6 +1261,34 @@ def search(query=""):
     show_items(data, client=client)
 
 
+def progress_tracker(client, auth, layout, video_id, location, stream):
+    if local_history():
+        return None
+    config = heartbeat_config(layout, video_id)
+    if not config:
+        xbmc.log("[Videoland] No cloud progress metadata for selected video", xbmc.LOGWARNING)
+        return None
+    # Bind writes to the profile that resolved this video, even if settings change.
+    writer = DurableWriter(
+        ProgressWriter(client, auth, setting("profile_id"), config, location),
+        SyncStore(data_dir()), cloud_sync_enabled)
+    client.timeout = 8
+
+    def notify(success, position):
+        if not cloud_sync_enabled() or not setting_bool("sync_notifications", False):
+            return
+        message = ADDON.getLocalizedString(31044 if success else 31045)
+        if success:
+            seconds = int(position)
+            message = message.format("{}:{:02d}".format(seconds // 60, seconds % 60))
+        xbmcgui.Dialog().notification("Videoland", message, time=2500, sound=False)
+
+    return monitor_class(xbmc)(
+        writer, stream, cloud_sync_enabled, notify,
+        lambda message, error: xbmc.log("[Videoland] " + message,
+                                      xbmc.LOGWARNING if error else xbmc.LOGINFO))
+
+
 def play(video_id, seo="", parent_id="", parent_seo=""):
     import inputstreamhelper
 
@@ -1039,6 +1305,29 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     if parent_id and parent_seo and seo:
         location += "{}-p_{}/{}-c_{}".format(parent_seo, parent_id, seo, video_id.replace("clip_", ""))
     layout = client.layout("video", video_id, location)
+
+    # Check for resume position
+    use_local = local_history()
+    resume_position = 0 if use_local else get_resume_position(layout, video_id)
+    if resume_position > 0:
+        # Ask user if they want to resume
+        dialog = xbmcgui.Dialog()
+        ret = dialog.yesnocustom(
+            "Verder kijken",
+            f"Er is een hervatingspunt gevonden op {resume_position // 60}:{resume_position % 60:02d}. " +
+            "Wilt u vanaf hier verder kijken?",
+            customlabel="Annuleren",
+            yeslabel="Hervatten",
+            nolabel="Vanaf het begin"
+        )
+        # yesno() conflates Back/Escape with the explicit restart button.
+        # Only the two playback choices may resolve a stream or start syncing.
+        if ret not in (0, 1):
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            return
+        if ret == 0:
+            resume_position = 0  # Explicitly selected "Vanaf het begin".
+
     assets = list(video_assets(layout, video_id))
     dash = [a for a in assets if a.get("format") == "dash" or ".mpd" in a.get("path", "")]
     if not dash:
@@ -1071,7 +1360,27 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
         "inputstream.adaptive.license_key",
         client.LICENSE_URL + "?specConform=true|" + license_headers + "|R{SSM}|R",
     )
+
+    # Kodi's plugin resolver forces resume from the resolved video info tag.
+    # StartOffset alone is not carried through that resolver on Kodi 21.
+    # CBookmark::IsSet requires a positive total duration, even for restart.
+    tracker = None
+    if not use_local:
+        duration = get_video_duration(layout, video_id)
+        item.getVideoInfoTag().setResumePoint(
+            float(resume_position), max(duration, float(resume_position) + 1.0))
+        item.setProperty("StartOffset", str(resume_position))
+        xbmc.log("[Videoland] {}: selected playback position {} seconds".format(
+            video_id, resume_position), xbmc.LOGINFO)
+        tracker = progress_tracker(client, auth, layout, video_id, location, asset["path"])
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
+    if tracker:
+        tracker.run()
+        # Kodi updates the visible item with its local bookmark on stop/end.
+        # Rebuild only our active listing, restoring cloud-only browse metadata.
+        if (not local_history() and not xbmc.Player().isPlaying()
+                and xbmc.getInfoLabel("Container.FolderPath").startswith(BASE_URL)):
+            xbmc.executebuiltin("Container.Refresh")
 
 
 def dispatch(params):
@@ -1091,6 +1400,8 @@ def dispatch(params):
         store_auth({})
         store_credentials(None, None)
         save("profile_id", "")
+        save("profile_name", "")
+        SyncStore(data_dir()).clear()
         # Older installations may still contain the original login fields.
         save("email", "")
         save("password", "")
@@ -1098,10 +1409,16 @@ def dispatch(params):
         xbmc.executebuiltin("Container.Refresh")
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31008))
     elif action == "profiles":
-        save("profile_id", "")
-        client = api()
-        ensure_profile(client, ensure_login())
-        xbmcgui.Dialog().notification("Videoland", "Profiel gekozen")
+        choose_profile()
+    elif action == "sync_status":
+        show_sync_status()
+    elif action == "continue_watching":
+        continue_watching()
+    elif action == "remove_continue_watching":
+        remove_continue_watching(params.get("content_id", ""), params.get("profile_id", ""), params.get("title", ""))
+    elif action == "related":
+        show_related(params.get("kind", "program"), params.get("entity_id", ""),
+                     params.get("seo", ""), params.get("title", ""))
     elif action == "layout":
         season = params.get("season")
         show_layout(

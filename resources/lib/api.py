@@ -58,10 +58,10 @@ class VideolandApi:
             headers["Authorization"] = "Bearer " + self.token
         return headers
 
-    def _request(self, url, headers=None, data=None):
+    def _request(self, url, headers=None, data=None, allow_empty=False, timeout=None):
         request = Request(url, data=data, headers=headers or {}, method="POST" if data is not None else "GET")
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with urlopen(request, timeout=self.timeout if timeout is None else timeout) as response:
                 raw = response.read()
         except HTTPError as exc:
             raw_error = exc.read(4096).decode("utf-8", "replace")
@@ -86,6 +86,8 @@ class VideolandApi:
             raise ApiError("HTTP {} from {}{}".format(exc.code, url.split("?", 1)[0], suffix)) from exc
         except URLError as exc:
             raise ApiError("Network error contacting {}: {}".format(url.split("?", 1)[0], exc.reason)) from exc
+        if allow_empty and not raw.strip():
+            return {}
         try:
             return json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -98,8 +100,8 @@ class VideolandApi:
         digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()
         return os.path.join(self.cache_dir, "cache_" + digest + ".json")
 
-    def _cached_get(self, url, headers, extra=""):
-        path = self._cache_key(url, extra)
+    def _cached_get(self, url, headers, extra="", use_cache=True):
+        path = self._cache_key(url, extra) if use_cache else None
         if self.cache_ttl > 0 and path and os.path.exists(path):
             try:
                 if time.time() - os.path.getmtime(path) < self.cache_ttl:
@@ -231,7 +233,9 @@ class VideolandApi:
         headers = self._headers(location)
 
         def fetch(parameters):
-            return self._cached_get(url + "?" + urlencode(parameters), headers, extra=location)
+            # Video layouts contain profile progress and short-lived stream URLs.
+            return self._cached_get(url + "?" + urlencode(parameters), headers,
+                                    extra=location, use_cache=kind != "video")
 
         result = fetch(query_parameters)
         if not complete:
@@ -298,6 +302,48 @@ class VideolandApi:
                 content["pagination"] = next_content.get("pagination") or {}
                 page = content["pagination"].get("nextPage")
         return result
+
+    def _progress_post(self, endpoint, uid, payload, authenticated=True):
+        headers = self._headers(authenticated=authenticated)
+        headers["Content-Type"] = "application/json"
+        body = dict(payload, platformCode=self.PLATFORM, uid=uid, uidType="gigya")
+        url = "https://heartbeat-v2.videoland.bedrock.tech/v2/platforms/{}/notify/{}".format(
+            self.PLATFORM, endpoint)
+        return self._request(url, headers, json.dumps(body).encode("utf-8"))
+
+    def remove_continue_watching(self, content_id):
+        """Use the website's visibility action; content ID comes from its card."""
+        if not isinstance(content_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", content_id):
+            raise ApiError("Invalid Continue Watching content ID")
+        url = "https://heartbeat-v3.videoland.bedrock.tech/v3/{}/{}/watched_contents_visibility".format(
+            self.CUSTOMER, self.PLATFORM)
+        headers = self._headers()
+        headers["Content-Type"] = "application/json"
+        body = json.dumps({content_id: True}).encode("utf-8")
+        # Setting visibility to true is idempotent: safely repeat after a gateway
+        # timeout, even if the server already applied the first request.
+        for attempt in range(3):
+            try:
+                return self._request(url, headers, body, allow_empty=True, timeout=min(self.timeout, 10))
+            except ApiError as exc:
+                cause = exc.__cause__
+                if (attempt == 2 or not isinstance(cause, HTTPError)
+                        or cause.code not in (502, 503, 504)):
+                    raise
+            except TimeoutError:
+                if attempt == 2:
+                    raise ApiError("Videoland removal request timed out") from None
+            time.sleep(0.5 * (attempt + 1))
+
+    def progress_session(self, uid, session):
+        result = self._progress_post("session", uid, session)
+        session_id = result.get("sessionId")
+        if not session_id:
+            raise ApiError("Videoland did not return a playback session")
+        return session_id
+
+    def progress_view(self, uid, view):
+        return self._progress_post("view", uid, view)
 
     def upfront_token(self, uid, video_id):
         url = self.DRM + "/v1/customers/{}/platforms/{}/services/videoland/users/{}/videos/{}/upfront-token".format(

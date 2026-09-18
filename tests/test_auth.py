@@ -145,7 +145,7 @@ class AuthenticationTests(unittest.TestCase):
     def test_startup_renews_repeatedly_using_encrypted_saved_credentials(self):
         plugin = load_plugin()
         with tempfile.TemporaryDirectory() as directory:
-            settings = {'profile_id': 'saved-profile'}
+            settings = {'profile_id': 'saved-profile', 'profile_name': 'Saved profile'}
             plugin.data_dir = lambda: directory
             plugin.setting = lambda key, default='': settings.get(key, default)
             plugin.save = lambda key, value: settings.__setitem__(key, value)
