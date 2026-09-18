@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Nigel1992/Videoland-Kodi-Addon?style=social)](https://github.com/Nigel1992/Videoland-Kodi-Addon)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
-**Latest version:** v1.2.0 — 2026-09-18. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
+**Latest version:** v1.2.1 — 2026-09-18. See the [Changelog](CHANGELOG.md) or [Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases).
 
 <sub>Unofficial Videoland Kodi Addon - Watch movies, series, programs, and more from Videoland directly in Kodi using your own subscription.</sub>
 
@@ -22,6 +22,7 @@
 ## ✨ Features
 
 - **Home Screen Rails**: The home page mirrors the official Videoland app, grouping content into the same titled rails/sections for a native feel.
+- **Live TV (TV en Gids)**: Browse the six linear channels (RTL 4, RTL 5, TELEKIDS, RTL 7, RTL 8, RTL Z) and start live playback with a single click. Each channel's description shows the currently airing programme and the one next with broadcast times. Live streams carry no watched status, resume progress or cloud history.
 - **Series**: Browse and play series with full season/episode navigation.
 - **Movies**: Discover and watch movies from the Videoland catalog.
 - **Programma's**: Browse programs and catch-up content.
@@ -61,6 +62,13 @@ See [the playback investigation](docs/playback-quality-investigation.md) for the
 This add-on does **not** bypass DRM or subscription checks; it simply plays the streams your device is entitled to.
 
 ---
+
+### New in v1.2.1
+
+- **Live TV channels, instantly playable** — TV en Gids shows the six linear Videoland channels (RTL 4, RTL 5, TELEKIDS, RTL 7, RTL 8, RTL Z) as a flat zapper; pressing Enter starts the live stream right away.
+- **EPG in each channel** — the description shows the currently airing programme (`Nu:`) and the one next (`Vervolgens:`) with their broadcast times.
+- **Widevine live streams** — live playback uses Videoland's direct DRMtoday DASH source with fresh licence tokens; the FairPlay-only HLS variants are never used.
+- **No history for live** — live channels are never marked watched, get no resume progress, and live playback does not touch Videoland cloud history.
 
 ### New in v1.2.0
 
@@ -107,7 +115,7 @@ Coming soon...
 
 ## 🚀 Installation
 
-1. Download **`plugin.video.videoland.nl-1.2.0.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
+1. Download **`plugin.video.videoland.nl-1.2.1.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
 2. In Kodi, go to **Add-ons > Install from zip file** and select the downloaded zip.
 3. Open the add-on and use **Aanmelden** to authenticate with Videoland the first time.
 4. Start a video and follow InputStream Helper's prompts to install or enable InputStream Adaptive and set up Widevine on supported platforms. Kodi installs InputStream Helper as an add-on dependency. If you cancel setup, playback stops; start the video again when you are ready to finish setup.
@@ -132,8 +140,6 @@ scripts/run-addon-check-local.sh --branch omega
 
 ## 🛣️ Roadmap / Coming Soon
 
-- **Live TV support**.
-- **Playback history and resume**.
 - **Enhanced search**: filter by genre, year, release date, and more.
 - **Better artwork and fanart for all content**.
 - **Automated Testing**: expanded CI/CD pipeline for code quality and automated releases.

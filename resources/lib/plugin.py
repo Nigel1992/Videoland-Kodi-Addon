@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import xbmc
@@ -168,7 +169,7 @@ def get_video_duration(layout, video_id):
     return 0.0
 
 
-def add(label, route, folder=True, art=None, info=None, playable=False, icon_key=None, context_menu=None):
+def add(label, route, folder=True, art=None, info=None, playable=False, icon_key=None, context_menu=None, suppress_watched=False):
     if folder:
         # Carry the actual labels through every route, including seasons/rails.
         # SEO slugs are request identifiers, not names suitable for navigation.
@@ -194,7 +195,9 @@ def add(label, route, folder=True, art=None, info=None, playable=False, icon_key
         item.setInfo("video", info)
     if playable:
         item.setProperty("ForceResolvePlugin", "true")
-        if not local_history():
+        # Live TV must never surface a watched/resume state, even when local
+        # history is enabled: linear channels have no meaningful resume point.
+        if suppress_watched or not local_history():
             # Explicit empty state prevents Kodi filling these fields from its DB.
             tag = item.getVideoInfoTag()
             tag.setPlaycount(0)
@@ -240,6 +243,7 @@ _ICON_MAP = {
     "profiel": "profiel",
     "mijn kijklijst": "kijklijst",
     "kijklijst": "kijklijst",
+    "live tv": "collection",
 }
 
 
@@ -593,6 +597,7 @@ def root():
 def add_navigation(navigation):
     """Add the useful desktop navigation entries returned by Videoland."""
     added = set()
+    live_tv_added = False
     app_routes = {
         "search": ("search", "search", "Zoeken"),
         "account_bookmarks": ("layout", "bookmarks", "Mijn Kijklijst"),
@@ -606,8 +611,14 @@ def add_navigation(navigation):
             value = target.get("value_layout") or {}
             kind = value.get("type")
             entity_id = str(value.get("id") or "")
+            if kind == "frontspace" and entity_id == "epggrid":
+                live_tv_added = True
+                add(label, url(action="live"), True, icon_key=label)
+                continue
             if kind not in ("alias", "folder") or not entity_id:
                 continue
+            if label and "live tv" in label.lower():
+                live_tv_added = True
             key = (kind, entity_id)
             if key in added:
                 continue
@@ -630,6 +641,9 @@ def add_navigation(navigation):
                 add(label, url(action="search"), True, icon_key=label)
             else:
                 add(label, url(action="layout", kind="frontspace", entity_id=entity_id), True, icon_key=label)
+    if not live_tv_added:
+        # Add Live TV entry as a fallback if not present in API navigation
+        add("Live TV", url(action="live"), True, icon_key="Live TV")
     return bool(added)
 
 
@@ -642,12 +656,20 @@ def add_default_navigation():
         ("Programma's", "582", "programmas-menu-videoland"),
         ("Kids", "583", "videoland-kids-menu-videoland"),
         ("Trending", "25", "main-menu-2-mobile"),
+        ("Live TV", "epggrid", "epggrid"),
     ):
-        add(label, url(action="layout", kind="folder", entity_id=entity_id, seo=seo), True, icon_key=label)
+        if label == "Live TV":
+            add(label, url(action="live"), True, icon_key=label)
+            continue
+        add(label, url(action="layout", kind="frontspace", entity_id=entity_id, seo=seo), True, icon_key=label)
     add("Zoeken", url(action="search"), True, icon_key="zoeken")
 
 
 def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
+    if kind == "frontspace" and entity_id == "epggrid":
+        # Legacy favourites/URLs target the EPG grid directly; the Live TV
+        # page renders the channels as directly playable entries instead.
+        return live_tv()
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
@@ -871,7 +893,7 @@ def _play_target(client, item, target, target_kind, program_data=None):
     of presenting the film as a navigable series folder. Series keep their
     folder/season UI.
     """
-    if target_kind == "video":
+    if target_kind in ("video", "live"):
         return target
     if target_kind not in ("program", "details"):
         return None
@@ -919,7 +941,7 @@ def _build_rows(data, per_section=False, recommendations_only=False):
         target_id = str(target.get("id") or "")
         target_kind = target.get("type")
         if not target_id or target_kind not in (
-            "program", "video", "alias", "folder", "service", "season", "details"
+            "program", "video", "alias", "folder", "service", "season", "details", "live"
         ):
             continue
         # Drop recommendation/trailer/hero/ad rails; keep only real content.
@@ -1078,7 +1100,12 @@ def _render_rows(rows, client=None, page_art=None):
             play_target = resolve[target_id]
         else:
             play_target = _play_target(client, item, target, target_kind)
-        if play_target:
+        if target_kind == "live":
+            add(label, url(
+                action="play_live", channel_id=target.get("id", target_id),
+                seo=target.get("seo", ""),
+            ), False, art, info, playable=True, context_menu=context_menu)
+        elif play_target:
             parent = play_target.get("parent") or {}
             add(label, url(
                 action="play", video_id=play_target.get("id", target_id),
@@ -1289,6 +1316,32 @@ def progress_tracker(client, auth, layout, video_id, location, stream):
                                       xbmc.LOGWARNING if error else xbmc.LOGINFO))
 
 
+def _dash_item(helper, asset, drm_token):
+    """Build the inputstream.adaptive ListItem for a Widevine DASH asset."""
+    item = xbmcgui.ListItem(path=asset["path"])
+    item.setMimeType("application/dash+xml")
+    item.setContentLookup(False)
+    item.setProperty("inputstream", helper.inputstream_addon)
+    item.setProperty("inputstream.adaptive.manifest_type", "mpd")
+    item.setProperty("inputstream.adaptive.license_type", "com.widevine.alpha")
+    # DRMtoday is strict about this request shape. In particular, its CENC
+    # endpoint expects an explicitly empty Content-Type for the raw CDM
+    # challenge rather than application/x-www-form-urlencoded.
+    license_headers = urlencode({
+        "Content-Type": "",
+        "User-Agent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 Chrome/150 Safari/537.36",
+        "Host": "lic.drmtoday.com",
+        "Origin": "https://v2.videoland.com",
+        "Referer": "https://v2.videoland.com/",
+        "x-dt-auth-token": drm_token,
+    })
+    item.setProperty(
+        "inputstream.adaptive.license_key",
+        VideolandApi.LICENSE_URL + "?specConform=true|" + license_headers + "|R{SSM}|R",
+    )
+    return item
+
+
 def play(video_id, seo="", parent_id="", parent_seo=""):
     import inputstreamhelper
 
@@ -1339,27 +1392,7 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     prefer_software = setting_int("preferred_quality", 1) == 1
     asset = (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
     drm_token = client.upfront_token(auth["uid"], video_id)
-    item = xbmcgui.ListItem(path=asset["path"])
-    item.setMimeType("application/dash+xml")
-    item.setContentLookup(False)
-    item.setProperty("inputstream", helper.inputstream_addon)
-    item.setProperty("inputstream.adaptive.manifest_type", "mpd")
-    item.setProperty("inputstream.adaptive.license_type", "com.widevine.alpha")
-    # DRMtoday is strict about this request shape. In particular, its CENC
-    # endpoint expects an explicitly empty Content-Type for the raw CDM
-    # challenge rather than application/x-www-form-urlencoded.
-    license_headers = urlencode({
-        "Content-Type": "",
-        "User-Agent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 Chrome/150 Safari/537.36",
-        "Host": "lic.drmtoday.com",
-        "Origin": "https://v2.videoland.com",
-        "Referer": "https://v2.videoland.com/",
-        "x-dt-auth-token": drm_token,
-    })
-    item.setProperty(
-        "inputstream.adaptive.license_key",
-        client.LICENSE_URL + "?specConform=true|" + license_headers + "|R{SSM}|R",
-    )
+    item = _dash_item(helper, asset, drm_token)
 
     # Kodi's plugin resolver forces resume from the resolved video info tag.
     # StartOffset alone is not carried through that resolver on Kodi 21.
@@ -1381,6 +1414,186 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
         if (not local_history() and not xbmc.Player().isPlaying()
                 and xbmc.getInfoLabel("Container.FolderPath").startswith(BASE_URL)):
             xbmc.executebuiltin("Container.Refresh")
+
+
+def _live_display_name(channel_id):
+    """Friendly channel name from its Bedrock id as a fallback for the title."""
+    name = str(channel_id or "").replace("videoland_", "")
+    if name.startswith("rtl"):
+        return "RTL " + name[3:].upper()
+    return " ".join(name.replace("-", " ").split()).title()
+
+
+def _live_channel_rows(data):
+    """Collect the linear TV channels from the EPG-grid layout as flat rows.
+
+    Returns a list of ``(channel_id, seo, channel_name, art)`` tuples. Only the
+    real channels are kept; special events (e.g. pay-per-view boxing) are
+    excluded so the list stays a plain channel zapper instead of sub-folders.
+    """
+    channels = {}
+    order = []
+    for item, _block in walk_item_content(data):
+        target = action_target(item)
+        if not target or target.get("type") != "live":
+            continue
+        channel_id = str(target.get("id") or "")
+        if not channel_id or channel_id.startswith("videoland_event"):
+            continue
+        if channel_id not in channels:
+            channels[channel_id] = {"seo": target.get("seo") or "", "title": None, "image": None}
+            order.append(channel_id)
+        row = channels[channel_id]
+        # The EPG strip item carries the canonical channel name and logo; the
+        # card item only shows the currently airing program as its caption.
+        channel = item.get("channel")
+        if row["title"] is None and isinstance(channel, dict):
+            row["title"] = str(channel.get("title") or "").strip()
+            image = (channel.get("image") or {}).get("id")
+            if image:
+                row["image"] = str(image)
+    rows = []
+    for channel_id in order:
+        row = channels[channel_id]
+        title = row["title"] or _live_display_name(channel_id)
+        art = {}
+        if row["image"]:
+            image_url = "https://images-fio.videoland.bedrock.tech/v2/images/{}/raw".format(row["image"])
+            art.update(thumb=image_url, icon=image_url)
+        rows.append((channel_id, row["seo"], title, art))
+    return rows
+
+
+def _live_guide_rows(data):
+    """Collect the current and next EPG program per live channel.
+
+    Returns ``{channel_id: {"now": program, "next": program}}`` where each
+    program is a dict with ``title``, ``extra``, ``start_time`` and
+    ``end_time`` (display-only time strings).  Channels without a schedule or
+    with unparseable timestamps are omitted.
+    """
+    guides = {}
+    for block in data.get("blocks") or []:
+        content = block.get("content") or {}
+        if content.get("contentTemplateId") != "HorizontalEpg":
+            continue
+        for wrapper in content.get("items") or []:
+            item = wrapper.get("itemContent") or {}
+            target = (item.get("action") or {}).get("target") or {}
+            waypoint = target.get("value_layout") or {}
+            if waypoint.get("type") != "live":
+                continue
+            channel_id = str(waypoint.get("id") or "")
+            if not channel_id or channel_id.startswith("videoland_event"):
+                continue
+            programs = []
+            for entry in item.get("epgBox") or []:
+                start = entry.get("start") or {}
+                end = entry.get("end") or {}
+                try:
+                    start_dt = datetime.fromisoformat(start.get("date") or "")
+                    end_dt = datetime.fromisoformat(end.get("date") or "")
+                except (TypeError, ValueError):
+                    continue
+                programs.append({
+                    "title": str(entry.get("title") or "").strip(),
+                    "extra": str(entry.get("extraTitle") or "").strip(),
+                    "start_time": str(start.get("title") or ""),
+                    "end_time": str(end.get("title") or ""),
+                    "start_dt": start_dt,
+                    "end_dt": end_dt,
+                })
+            programs.sort(key=lambda p: p["start_dt"])
+            # Determine the reference time using the first parseable entry's
+            # timezone so comparisons are always zone-aware.
+            tz = None
+            for p in programs:
+                if p["start_dt"].tzinfo is not None:
+                    tz = p["start_dt"].tzinfo
+                    break
+            now = datetime.now(tz) if tz else datetime.now()
+            first_open_index = None
+            for idx, program in enumerate(programs):
+                if program["end_dt"] > program["start_dt"] and program["end_dt"] > now:
+                    first_open_index = idx
+                    break
+            if first_open_index is None:
+                continue
+            first_open = programs[first_open_index]
+            if first_open["start_dt"] <= now:
+                current = first_open
+                nxt = programs[first_open_index + 1] if first_open_index + 1 < len(programs) else None
+            else:
+                current = None
+                nxt = first_open
+            guides[channel_id] = {"now": current, "next": nxt}
+    return guides
+
+
+def live_tv():
+    """Show only the live TV channels; each entry starts playback immediately."""
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    set_breadcrumb(["Videoland", "Live TV"])
+    xbmcplugin.setContent(HANDLE, "videos")
+    data = client.layout("frontspace", "epggrid", "https://v2.videoland.com/tv-programmagids", complete=True)
+    channels = _live_channel_rows(data)
+    if not channels:
+        xbmcgui.Dialog().ok("Videoland", "Geen live tv-zenders gevonden")
+    guides = _live_guide_rows(data)
+    for channel_id, seo, title, art in channels:
+        plot = "Kijk live naar {}.".format(title)
+        guide = guides.get(channel_id) or {}
+        for prefix, key in (("Nu", "now"), ("Vervolgens", "next")):
+            program = guide.get(key)
+            if not program or not program.get("title"):
+                continue
+            headline = program["title"]
+            extra = program.get("extra") or ""
+            if extra and extra.strip().casefold() != headline.strip().casefold():
+                headline += " - " + extra
+            plot += "\n{}: {} ({}-{})".format(
+                prefix, headline, program["start_time"], program["end_time"])
+        add(title, url(action="play_live", channel_id=channel_id, seo=seo),
+            False, art, {"title": title, "plot": plot},
+            playable=True, suppress_watched=True)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def _live_stream(client, channel_id, seo):
+    """Resolve the playable Widevine DASH asset of a live channel."""
+    location = "https://v2.videoland.com/"
+    if seo:
+        location += "{}/live".format(seo)
+    layout = client.layout("live", seo or channel_id, location, complete=True)
+    assets = list(video_assets(layout, channel_id))
+    dash = [a for a in assets if a.get("provider") != "yospace"
+            and (a.get("format") == "dashcenc" or ".mpd" in a.get("path", ""))]
+    if not dash:
+        raise ApiError("Geen live DASH-stream gevonden")
+    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
+    prefer_software = setting_int("preferred_quality", 1) == 1
+    return (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
+
+
+def play_live(channel_id, seo=""):
+    """Start instant playback of a live TV channel."""
+    import inputstreamhelper
+
+    helper = inputstreamhelper.Helper("mpd", drm="com.widevine.alpha")
+    if not helper.check_inputstream():
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    asset = _live_stream(client, channel_id, seo)
+    config = (asset.get("drm") or {}).get("config") or {}
+    asset_id = config.get("contentId") or "dashcenc_" + channel_id
+    drm_token = client.live_upfront_token(auth["uid"], asset_id)
+    item = _dash_item(helper, asset, drm_token)
+    xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
 def dispatch(params):
@@ -1433,6 +1646,10 @@ def dispatch(params):
         search(params.get("query", ""))
     elif action == "play":
         play(params["video_id"], params.get("seo", ""), params.get("parent_id", ""), params.get("parent_seo", ""))
+    elif action == "live":
+        live_tv()
+    elif action == "play_live":
+        play_live(params["channel_id"], params.get("seo", ""))
 
 
 def run():

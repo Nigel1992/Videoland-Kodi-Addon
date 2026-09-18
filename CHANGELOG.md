@@ -1,8 +1,20 @@
 # Changelog
 
-> **Latest Version:** v1.2.0 (September 18, 2026)
+> **Latest Version:** v1.2.1 (September 18, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.2.1] - 2026-09-18
+
+### Added
+- **Live TV ("TV en Gids")**: the six linear Videoland channels (RTL 4, RTL 5, TELEKIDS, RTL 7, RTL 8 and RTL Z) now render as directly playable entries — pressing Enter starts the channel's live stream instantly, no further browsing needed.
+- **EPG in every channel**: each channel's description shows the currently airing programme and the one next (`Nu:` and `Vervolgens:`) with their broadcast times, taken from the EPG-grid layout.
+- **Widevine live playback**: live DRTM licence tokens are fetched from Videoland's live `upfront-token` endpoint and streams play from the direct bedrrock DASH source. The `hlsfp` HLS assets are FairPlay-encrypted (`skd://`) and unusable in Kodi, so they are never selected.
+- **No history for live**: live channels carry no watched status or resume progress, and live playback neither saves progress nor writes anything to Videoland cloud history.
+- Legacy Live TV/EPG-grid shortcuts now open the same flat channel zapper instead of the on-site layout page.
+
+### Tests
+- 11 regression tests covering channel parsing, current/next EPG selection, live stream resolution, instant playback wiring and the no-history guarantees.
 
 ## [1.2.0] - 2026-09-18
 

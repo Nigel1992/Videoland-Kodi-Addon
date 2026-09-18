@@ -355,6 +355,24 @@ class VideolandApi:
             raise ApiError("Videoland did not return a DRM token")
         return token
 
+    def live_upfront_token(self, uid, asset_id):
+        """Licence token for a live channel (LIVE uses video content_id).
+
+        Live channels expose DRM assets under ``services/videoland_root`` with a
+        ``live/<content_id>/upfront-token`` endpoint instead of the on-demand
+        video URL. The header licence flow (DRMtoday) is identical afterwards.
+        """
+        if not isinstance(asset_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", asset_id):
+            raise ApiError("Invalid live DRM asset ID")
+        url = self.DRM + "/v1/customers/{}/platforms/{}/services/videoland_root/users/{}/live/{}/upfront-token".format(
+            self.CUSTOMER, self.PLATFORM, uid, asset_id
+        )
+        result = self._request(url, self._headers())
+        token = result.get("token")
+        if not token:
+            raise ApiError("Videoland did not return a live DRM token")
+        return token
+
     @staticmethod
     def jwt_claims(token):
         try:
