@@ -1,8 +1,14 @@
 # Changelog
 
-> **Latest Version:** v1.9.10 (November 14, 2026)
+> **Latest Version:** v1.9.11 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.9.11] - 2026-11-14
+
+### Gewijzigd
+- **Net-elders-gekeken titels komen vooraan.** Bij het overnemen van je kijkpositie schrijft Videoland nu ook de tijd mee (`lastplayed`), zodat een aflevering die je zojuist op je telefoon keek vooraan in de skin-rij "Afleveringen die je kijkt" verschijnt (die sorteert op laatst gekeken), en niet ergens in het midden.
+- **Geen onnodige verversing meer.** De sync laat het beeld niet meer apart verversen; Kodi werkt de bibliotheekrijen op het hoofdscherm vanzelf bij. Zo springt een lijst waar je op dat moment doorheen bladert niet meer op het verkeerde moment terug.
 
 ## [1.9.10] - 2026-11-14
 

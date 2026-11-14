@@ -2789,16 +2789,19 @@ def sync_resume(background=True):
             return library_resume.plugin_content_id(text, addon_id, "video_id")
         return None
 
+    # Stored with each changed item so freshly-progressed episodes sort to the
+    # front of the skin's "Afleveringen die je kijkt" row (ordered by lastplayed).
+    now_text = time.strftime("%Y-%m-%d %H:%M:%S")
     calls = []
     try:
         episodes = _library_rpc("VideoLibrary.GetEpisodes",
                                 {"properties": ["file", "runtime", "resume"]}).get("episodes", [])
         calls += library_resume.build_calls(
-            episodes, positions, "episodeid", "VideoLibrary.SetEpisodeDetails", _cid_for)
+            episodes, positions, "episodeid", "VideoLibrary.SetEpisodeDetails", _cid_for, now_text)
         movies = _library_rpc("VideoLibrary.GetMovies",
                               {"properties": ["file", "runtime", "resume"]}).get("movies", [])
         calls += library_resume.build_calls(
-            movies, positions, "movieid", "VideoLibrary.SetMovieDetails", _cid_for)
+            movies, positions, "movieid", "VideoLibrary.SetMovieDetails", _cid_for, now_text)
     except Exception as exc:
         xbmc.log("[Videoland] Resume sync could not read the library ({})".format(
             type(exc).__name__), xbmc.LOGWARNING)
@@ -2810,9 +2813,10 @@ def sync_resume(background=True):
             done += 1
         except Exception:
             pass
+    # No Container.Refresh: SetEpisodeDetails/SetMovieDetails already fire
+    # VideoLibrary.OnUpdate, which reloads the library rows on Home on its own.
+    # A manual refresh would disturb whatever list the user is browsing.
     xbmc.log("[Videoland] Resume sync updated {} library item(s)".format(done), xbmc.LOGINFO)
-    if done:
-        xbmc.executebuiltin("Container.Refresh")
 
 
 def recommended():
