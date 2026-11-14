@@ -240,7 +240,7 @@ def repair_dateadded_once(addon):
     """One-off: give existing library episodes a dateadded based on their air
     date, so "recently added" widgets order by when an episode aired. Updates
     Kodi's database directly, so already-scanned episodes are fixed too."""
-    if addon.getSettingBool('dateadded_repaired'):
+    if addon.getSettingBool('dateadded_repaired_v2'):
         return
     marker = 'plugin.video.videoland.nl/library'
     try:
@@ -264,7 +264,7 @@ def repair_dateadded_once(addon):
         except Exception:
             pass
     try:
-        addon.setSetting('dateadded_repaired', 'true')
+        addon.setSetting('dateadded_repaired_v2', 'true')
     except Exception:
         pass
     xbmc.log('[Videoland] dateadded repaired for {} episodes'.format(changed), xbmc.LOGINFO)
@@ -334,7 +334,7 @@ def run():
                     xbmc.log('[Videoland] Library artwork set for {} titles'.format(fixed), xbmc.LOGINFO)
             except Exception as exc:
                 xbmc.log('[Videoland] Library artwork repair failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
-        if now - started >= LIBRARY_STARTUP_DELAY and not addon.getSettingBool('dateadded_repaired'):
+        if now - started >= LIBRARY_STARTUP_DELAY and not addon.getSettingBool('dateadded_repaired_v2'):
             try:
                 repair_dateadded_once(addon)
             except Exception as exc:

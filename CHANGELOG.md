@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.8 (November 14, 2026)
+> **Latest Version:** v1.9.9 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.9] - 2026-11-14
+
+### Fixed
+- **Datum-reparatie draait één keer opnieuw met de melding.** In 1.9.7 draaide de reparatie al stil; hij draait nu nog één keer en toont "Bibliotheekdatums bijgewerkt (N afleveringen)".
 ## [1.9.8] - 2026-11-14
 
 ### Added
