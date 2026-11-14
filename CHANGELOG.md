@@ -1,8 +1,19 @@
 # Changelog
 
-> **Latest Version:** v1.6.0 (November 14, 2026)
+> **Latest Version:** v1.6.1 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.6.1] - 2026-11-14
+
+### Changed
+- **Settings → Library** is now right below Account and split into groups with a heading: Folders, Lists to the library, Automatic updates, Extra metadata and Maintenance.
+
+### Added
+- **Profile for the library**: choose whose watchlist goes into the Kodi library (Settings → Library → My watchlist to the library); by default the active profile.
+
+### Development
+- Modules shared with the other add-on are listed in `scripts/sync-shared.py` and pinned in `SHARED.lock`; a test fails when one is changed without copying it to the other add-on.
 
 ## [1.6.0] - 2026-11-14
 

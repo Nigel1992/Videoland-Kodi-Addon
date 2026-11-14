@@ -623,3 +623,35 @@ msgstr "Andere zoekterm..."
 msgctxt "#31163"
 msgid "TMDb title set; details and artwork are updated"
 msgstr "TMDb-titel ingesteld; gegevens en plaatjes worden bijgewerkt"
+
+msgctxt "#31164"
+msgid "Profile for the library"
+msgstr "Profiel voor de bibliotheek"
+
+msgctxt "#31165"
+msgid "The active profile"
+msgstr "Het actieve profiel"
+
+msgctxt "#31166"
+msgid "Whose watchlist goes into the Kodi library. Handy when the family uses several profiles but the library should follow one."
+msgstr "Van welk profiel de kijklijst in de Kodi-bibliotheek komt. Handig als het gezin meerdere profielen gebruikt, maar de bibliotheek er één moet volgen."
+
+msgctxt "#31167"
+msgid "Choose the profile for the library"
+msgstr "Profiel voor de bibliotheek kiezen"
+
+msgctxt "#31168"
+msgid "Folders"
+msgstr "Mappen"
+
+msgctxt "#31169"
+msgid "My watchlist to the library"
+msgstr "Mijn Kijklijst naar de bibliotheek"
+
+msgctxt "#31170"
+msgid "Automatic updates"
+msgstr "Automatisch bijwerken"
+
+msgctxt "#31171"
+msgid "Maintenance"
+msgstr "Onderhoud"

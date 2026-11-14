@@ -47,6 +47,177 @@
         </setting>
       </group>
     </category>
+
+    <category id="library" label="31120">
+      <group id="1" label="31168">
+        <setting id="library_tv_path" type="path" label="31124" help="31125">
+          <level>0</level>
+          <default>special://profile/addon_data/plugin.video.videoland.nl/library/TV Shows</default>
+          <constraints>
+            <writable>true</writable>
+          </constraints>
+          <control type="button" format="path">
+            <heading>31124</heading>
+          </control>
+        </setting>
+        <setting id="library_movies_path" type="path" label="31126" help="31127">
+          <level>0</level>
+          <default>special://profile/addon_data/plugin.video.videoland.nl/library/Movies</default>
+          <constraints>
+            <writable>true</writable>
+          </constraints>
+          <control type="button" format="path">
+            <heading>31126</heading>
+          </control>
+        </setting>
+      </group>
+      <group id="2" label="31169">
+        <setting id="library_watchlist_sync" type="boolean" label="31153" help="31154">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_watchlist_remove" type="boolean" label="31155" help="31156" parent="library_watchlist_sync">
+          <level>0</level>
+          <default>false</default>
+          <dependencies>
+            <dependency type="enable" setting="library_watchlist_sync">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_profile_name" type="string" label="31164" help="31166">
+          <level>0</level>
+          <default/>
+          <constraints><allowempty>true</allowempty></constraints>
+          <enable>false</enable>
+          <control type="edit" format="string">
+            <heading>31164</heading>
+          </control>
+        </setting>
+        <setting id="library_choose_profile" type="action" label="31167">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=choose_library_profile)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+        <setting id="library_profile_id" type="string" label="31164">
+          <level>0</level>
+          <default/>
+          <constraints><allowempty>true</allowempty></constraints>
+          <visible>false</visible>
+          <control type="edit" format="string"/>
+        </setting>
+        <setting id="library_from_watchlist_now" type="action" label="31152">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_from_watchlist)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+      </group>
+      <group id="3" label="31170">
+        <setting id="library_auto_update" type="boolean" label="31128" help="31129">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_update_hours" type="integer" label="31130" parent="library_auto_update">
+          <level>0</level>
+          <default>12</default>
+          <constraints>
+            <minimum>1</minimum>
+            <step>1</step>
+            <maximum>168</maximum>
+          </constraints>
+          <dependencies>
+            <dependency type="enable" setting="library_auto_update">true</dependency>
+          </dependencies>
+          <control type="slider" format="integer">
+            <popup>false</popup>
+          </control>
+        </setting>
+        <setting id="library_scan_after" type="boolean" label="31131">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_clean_after" type="boolean" label="31132">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+      </group>
+      <group id="4" label="31135">
+        <setting id="library_enrich" type="boolean" label="31136" help="31137">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="tmdb_api_key" type="string" label="31138" help="31139" parent="library_enrich">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="edit" format="string">
+            <heading>31138</heading>
+          </control>
+        </setting>
+        <setting id="check_tmdb_key" type="action" label="31140" parent="library_enrich">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=check_tmdb_key)</data>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+        <setting id="art_tmdb_first" type="boolean" label="31159" help="31160">
+          <level>0</level>
+          <default>true</default>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+        <setting id="browse_logos" type="boolean" label="31157" help="31158" parent="library_enrich">
+          <level>0</level>
+          <default>true</default>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+      </group>
+      <group id="5" label="31171">
+        <setting id="library_update_now" type="action" label="31121">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_update)</data>
+          <control type="button" format="action">
+            <close>false</close>
+          </control>
+        </setting>
+        <setting id="library_repair_art" type="action" label="31145">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=repair_library_art)</data>
+          <control type="button" format="action">
+            <close>false</close>
+          </control>
+        </setting>
+        <setting id="run_diagnostics" type="action" label="31148" help="31149">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=diagnostics)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+      </group>
+    </category>
     <category id="history" label="31090">
       <group id="1">
         <setting id="history_source" type="string" label="31091" help="31092">
@@ -100,149 +271,6 @@
             </options>
           </constraints>
           <control type="spinner" format="string"/>
-        </setting>
-      </group>
-    </category>
-    <category id="library" label="31120">
-      <group id="1">
-        <setting id="library_tv_path" type="path" label="31124" help="31125">
-          <level>0</level>
-          <default>special://profile/addon_data/plugin.video.videoland.nl/library/TV Shows</default>
-          <constraints>
-            <writable>true</writable>
-          </constraints>
-          <control type="button" format="path">
-            <heading>31124</heading>
-          </control>
-        </setting>
-        <setting id="library_movies_path" type="path" label="31126" help="31127">
-          <level>0</level>
-          <default>special://profile/addon_data/plugin.video.videoland.nl/library/Movies</default>
-          <constraints>
-            <writable>true</writable>
-          </constraints>
-          <control type="button" format="path">
-            <heading>31126</heading>
-          </control>
-        </setting>
-      </group>
-      <group id="2">
-        <setting id="library_watchlist_sync" type="boolean" label="31153" help="31154">
-          <level>0</level>
-          <default>false</default>
-          <control type="toggle"/>
-        </setting>
-        <setting id="library_watchlist_remove" type="boolean" label="31155" help="31156" parent="library_watchlist_sync">
-          <level>0</level>
-          <default>false</default>
-          <dependencies>
-            <dependency type="enable" setting="library_watchlist_sync">true</dependency>
-          </dependencies>
-          <control type="toggle"/>
-        </setting>
-        <setting id="library_from_watchlist_now" type="action" label="31152">
-          <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_from_watchlist)</data>
-          <control type="button" format="action">
-            <close>true</close>
-          </control>
-        </setting>
-        <setting id="library_auto_update" type="boolean" label="31128" help="31129">
-          <level>0</level>
-          <default>true</default>
-          <control type="toggle"/>
-        </setting>
-        <setting id="library_update_hours" type="integer" label="31130" parent="library_auto_update">
-          <level>0</level>
-          <default>12</default>
-          <constraints>
-            <minimum>1</minimum>
-            <step>1</step>
-            <maximum>168</maximum>
-          </constraints>
-          <dependencies>
-            <dependency type="enable" setting="library_auto_update">true</dependency>
-          </dependencies>
-          <control type="slider" format="integer">
-            <popup>false</popup>
-          </control>
-        </setting>
-        <setting id="library_scan_after" type="boolean" label="31131">
-          <level>0</level>
-          <default>true</default>
-          <control type="toggle"/>
-        </setting>
-        <setting id="library_clean_after" type="boolean" label="31132">
-          <level>0</level>
-          <default>true</default>
-          <control type="toggle"/>
-        </setting>
-        <setting id="library_update_now" type="action" label="31121">
-          <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_update)</data>
-          <control type="button" format="action">
-            <close>false</close>
-          </control>
-        </setting>
-        <setting id="library_repair_art" type="action" label="31145">
-          <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=repair_library_art)</data>
-          <control type="button" format="action">
-            <close>false</close>
-          </control>
-        </setting>
-        <setting id="run_diagnostics" type="action" label="31148" help="31149">
-          <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=diagnostics)</data>
-          <control type="button" format="action">
-            <close>true</close>
-          </control>
-        </setting>
-      </group>
-      <group id="3" label="31135">
-        <setting id="library_enrich" type="boolean" label="31136" help="31137">
-          <level>0</level>
-          <default>true</default>
-          <control type="toggle"/>
-        </setting>
-        <setting id="tmdb_api_key" type="string" label="31138" help="31139" parent="library_enrich">
-          <level>0</level>
-          <default/>
-          <constraints>
-            <allowempty>true</allowempty>
-          </constraints>
-          <dependencies>
-            <dependency type="enable" setting="library_enrich">true</dependency>
-          </dependencies>
-          <control type="edit" format="string">
-            <heading>31138</heading>
-          </control>
-        </setting>
-        <setting id="art_tmdb_first" type="boolean" label="31159" help="31160">
-          <level>0</level>
-          <default>true</default>
-          <dependencies>
-            <dependency type="enable" setting="library_enrich">true</dependency>
-          </dependencies>
-          <control type="toggle"/>
-        </setting>
-        <setting id="browse_logos" type="boolean" label="31157" help="31158" parent="library_enrich">
-          <level>0</level>
-          <default>true</default>
-          <dependencies>
-            <dependency type="enable" setting="library_enrich">true</dependency>
-          </dependencies>
-          <control type="toggle"/>
-        </setting>
-        <setting id="check_tmdb_key" type="action" label="31140" parent="library_enrich">
-          <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=check_tmdb_key)</data>
-          <dependencies>
-            <dependency type="enable" setting="library_enrich">true</dependency>
-          </dependencies>
-          <control type="button" format="action">
-            <close>true</close>
-          </control>
         </setting>
       </group>
     </category>

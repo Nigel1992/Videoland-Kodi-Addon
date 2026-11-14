@@ -2177,11 +2177,46 @@ def watchlist_titles(client):
     return titles
 
 
+def _watchlist_of_library_profile(client):
+    """Watchlist of the profile chosen for the library (default: the active one)."""
+    profile_id = setting("library_profile_id")
+    active = setting("profile_id")
+    if not profile_id or profile_id == active:
+        return watchlist_titles(client)
+    auth = auth_data()
+    client.jwt(auth, profile_id)
+    try:
+        return watchlist_titles(client)
+    finally:
+        client.jwt(auth, active)
+
+
+def choose_library_profile():
+    """Settings: which profile's watchlist the library follows."""
+    client = api()
+    auth = ensure_login()
+    client.jwt(auth)
+    profiles = client.profiles(auth["uid"]) or []
+    labels = [ADDON.getLocalizedString(31165)] + [
+        p.get("username") or ADDON.getLocalizedString(31053).format(i + 1) for i, p in enumerate(profiles)]
+    index = xbmcgui.Dialog().select(ADDON.getLocalizedString(31164), labels)
+    if index < 0:
+        return
+    if index == 0:
+        save("library_profile_id", "")
+        save("library_profile_name", ADDON.getLocalizedString(31165))
+    else:
+        save("library_profile_id", profiles[index - 1].get("uid") or "")
+        save("library_profile_name", labels[index])
+    ensure_profile(client, auth)
+    xbmcgui.Dialog().notification("Videoland", setting("library_profile_name"), time=3000)
+
+
 def sync_watchlist_to_library(client, lib, progress=None):
     """Add every watchlist title that is not in the library yet; optionally
     remove titles that were added from the watchlist and left it.
     Returns (added, removed, failed)."""
-    titles = watchlist_titles(client)
+    titles = _watchlist_of_library_profile(client)
     added = failed = removed = 0
     wanted = set()
     for index, (kind, item_id, seo, title, poster, fanart) in enumerate(titles):
@@ -2405,6 +2440,8 @@ def dispatch(params):
         run_diagnostics()
     elif action == "check_tmdb_key":
         check_tmdb_key()
+    elif action == "choose_library_profile":
+        choose_library_profile()
     elif action == "choose_tmdb":
         choose_tmdb(params.get("kind", ""), params.get("id", ""))
     elif action == "library_from_watchlist":

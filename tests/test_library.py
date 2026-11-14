@@ -313,3 +313,23 @@ class WatchlistSyncTests(unittest.TestCase):
             self.assertEqual(store.get("series", "s1")["source"], "watchlist")
             self.assertTrue(store.has("series", "own"))
             self.assertFalse(store.has("series", "gone"))
+
+
+class LibraryProfileTests(unittest.TestCase):
+    def test_watchlist_of_chosen_profile_then_back_to_active(self):
+        plugin = load_plugin()
+        values = {"library_profile_id": "kids", "profile_id": "me"}
+        plugin.setting = lambda name, default="": values.get(name, default)
+        plugin.auth_data = lambda: {"uid": "u"}
+        seen = []
+        plugin.watchlist_titles = lambda client: seen.append(client.jwt.call_args.args[1]) or ["x"]
+        client = MagicMock()
+        self.assertEqual(plugin._watchlist_of_library_profile(client), ["x"])
+        self.assertEqual(seen, ["kids"])
+        self.assertEqual(client.jwt.call_args.args, ({"uid": "u"}, "me"))
+
+        values["library_profile_id"] = ""
+        plugin.watchlist_titles = lambda client: []
+        client = MagicMock()
+        plugin._watchlist_of_library_profile(client)
+        client.jwt.assert_not_called()

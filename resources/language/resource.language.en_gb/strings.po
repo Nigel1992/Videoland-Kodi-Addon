@@ -553,3 +553,35 @@ msgstr ""
 msgctxt "#31163"
 msgid "TMDb title set; details and artwork are updated"
 msgstr ""
+
+msgctxt "#31164"
+msgid "Profile for the library"
+msgstr ""
+
+msgctxt "#31165"
+msgid "The active profile"
+msgstr ""
+
+msgctxt "#31166"
+msgid "Whose watchlist goes into the Kodi library. Handy when the family uses several profiles but the library should follow one."
+msgstr ""
+
+msgctxt "#31167"
+msgid "Choose the profile for the library"
+msgstr ""
+
+msgctxt "#31168"
+msgid "Folders"
+msgstr ""
+
+msgctxt "#31169"
+msgid "My watchlist to the library"
+msgstr ""
+
+msgctxt "#31170"
+msgid "Automatic updates"
+msgstr ""
+
+msgctxt "#31171"
+msgid "Maintenance"
+msgstr ""
