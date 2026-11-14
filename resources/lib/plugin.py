@@ -69,6 +69,7 @@ from . import metadata as metadata_mod
 from . import library_art
 from . import errors as errors_mod
 from . import diagnostics as diagnostics_mod
+from . import search_filters
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -1080,7 +1081,7 @@ def _item_label(item, fallback=""):
     return label if isinstance(label, str) else str(label)
 
 
-def _render_rows(rows, client=None, page_art=None):
+def _render_rows(rows, client=None, page_art=None, only_kind=None):
     """Add every collected row as a directory/playable entry."""
     # Resolve film-vs-series for whole program-list pages in parallel so a big
     # list (e.g. Films, ~90 movies) does not serialize one slow page fetch per
@@ -1186,6 +1187,15 @@ def _render_rows(rows, client=None, page_art=None):
             play_target = resolve[target_id]
         else:
             play_target = _play_target(client, item, target, target_kind)
+        if only_kind:
+            if target_kind == "live":
+                row_kind = "live"
+            elif play_target:
+                row_kind = "movie" if target_kind in ("program", "details") else "episode"
+            else:
+                row_kind = "series" if target_kind == "program" else "other"
+            if row_kind != only_kind:
+                continue
         library_kind = None
         if target_kind in ("program", "details") and play_target:
             library_kind = "movie"
@@ -1373,7 +1383,7 @@ def show_items(data, season=None, section=None, client=None, sectioned=False,
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def search(query=""):
+def search(query="", period=None, genre=None, kind=None):
     query = (query or xbmcgui.Dialog().input("Zoeken in Videoland")).strip()
     if not query:
         xbmcplugin.endOfDirectory(HANDLE)
@@ -1384,9 +1394,84 @@ def search(query=""):
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
+    data = _search_layout(client, query)
+    if not (period or genre or kind):
+        # Without a filter keep the familiar sectioned result page, with the
+        # Filter entry on top.
+        _add_search_filter_entry(query)
+        show_items(data, client=client)
+        return
+    xbmcplugin.setContent(HANDLE, "videos")
+    _add_search_filter_entry(query, period, genre, kind)
+    rows = _build_rows(data)
+    wanted = {id(item) for item in search_filters.apply([row[0] for row in rows], period, genre)}
+    rows = [row for row in rows if id(row[0]) in wanted]
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    if not rows:
+        xbmcgui.Dialog().notification("Videoland", t["empty"], time=3000)
+    _render_rows(rows, client, hero_art(data), only_kind=kind)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def _search_layout(client, query):
     location = "https://v2.videoland.com/zoeken?" + urlencode({"query": query})
-    data = client.layout("frontspace", "search", location, {"query": query}, complete=True)
-    show_items(data, client=client)
+    return client.layout("frontspace", "search", location, {"query": query}, complete=True)
+
+
+def _add_search_filter_entry(query, period=None, genre=None, kind=None):
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    params = {"action": "search_filter", "query": query}
+    for key, value in (("period", period), ("genre", genre), ("kind", kind)):
+        if value:
+            params[key] = value
+    add("{}  [{}]".format(t["filter"], search_filters.describe(t, period, genre, kind)),
+        url(**params), False, icon_key="zoeken")
+
+
+def search_filter(query, period=None, genre=None, kind=None):
+    """Ask for a type, period or genre and reopen the search results with it."""
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    client = api()
+    ensure_profile(client, ensure_login())
+    items = [row[0] for row in _build_rows(_search_layout(client, query))]
+    periods, genres = search_filters.options(items)
+    choices, actions = [t["kind"]], ["kind"]
+    if periods:
+        choices.append(t["period"])
+        actions.append("period")
+    if genres:
+        choices.append(t["genre"])
+        actions.append("genre")
+    if period or genre or kind:
+        choices.append(t["clear"])
+        actions.append("clear")
+    picked = xbmcgui.Dialog().select(t["filter"], choices)
+    if picked < 0:
+        return
+    action = actions[picked]
+    if action == "kind":
+        kinds = ["series", "movie", "episode"]
+        index = xbmcgui.Dialog().select(t["kind"], [t["all"]] + [t[k] for k in kinds])
+        if index < 0:
+            return
+        kind = kinds[index - 1] if index > 0 else None
+    elif action == "period":
+        index = xbmcgui.Dialog().select(t["period"], [t["all"]] + [t[k] for k in periods])
+        if index < 0:
+            return
+        period = periods[index - 1] if index > 0 else None
+    elif action == "genre":
+        index = xbmcgui.Dialog().select(t["genre"], [t["all"]] + genres)
+        if index < 0:
+            return
+        genre = genres[index - 1] if index > 0 else None
+    else:
+        period = genre = kind = None
+    params = {"action": "search", "query": query}
+    for key, value in (("period", period), ("genre", genre), ("kind", kind)):
+        if value:
+            params[key] = value
+    xbmc.executebuiltin("Container.Update({},replace)".format(url(**params)))
 
 
 def progress_tracker(client, auth, layout, video_id, location, stream):
@@ -2040,7 +2125,9 @@ def dispatch(params):
             params.get("group"),
         )
     elif action == "search":
-        search(params.get("query", ""))
+        search(params.get("query", ""), params.get("period"), params.get("genre"), params.get("kind"))
+    elif action == "search_filter":
+        search_filter(params.get("query", ""), params.get("period"), params.get("genre"), params.get("kind"))
     elif action == "play":
         play(params["video_id"], params.get("seo", ""), params.get("parent_id", ""), params.get("parent_seo", ""))
     elif action == "live":

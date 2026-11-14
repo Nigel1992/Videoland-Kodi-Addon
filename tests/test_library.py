@@ -236,3 +236,20 @@ class ArtworkTests(unittest.TestCase):
         self.assertTrue(plugin.ratio_image(image, ("2:3",)).endswith("/tall/raw"))
         self.assertTrue(plugin.ratio_image(image, ("16:9",)).endswith("/wide/raw"))
         self.assertEqual(plugin.ratio_image({"id": "x"}, ("2:3",)), "")
+
+
+class SearchKindFilterTests(unittest.TestCase):
+    def test_only_kind_keeps_matching_rows(self):
+        plugin = load_plugin()
+        plugin.menu_icon = MagicMock(return_value=None)
+        plugin.add = MagicMock()
+        plugin._library_has = MagicMock(return_value=False)
+        plugin._play_target = lambda client, item, target, kind, program_data=None: (
+            {"id": "clip_1"} if target["id"] == "film" else (target if kind == "video" else None))
+        rows = [({"title": "Serie"}, {"id": "serie", "type": "program"}, "program", {}),
+                ({"title": "Film"}, {"id": "film", "type": "program"}, "program", {}),
+                ({"title": "Afl"}, {"id": "clip_9", "type": "video"}, "video", {})]
+        for kind, expected in (("series", "Serie"), ("movie", "Film"), ("episode", "Afl")):
+            plugin.add.reset_mock()
+            plugin._render_rows(rows, only_kind=kind)
+            self.assertEqual([c.args[0] for c in plugin.add.call_args_list], [expected])
