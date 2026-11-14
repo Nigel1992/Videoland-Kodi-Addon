@@ -103,6 +103,69 @@
         </setting>
       </group>
     </category>
+    <category id="library" label="31120">
+      <group id="1">
+        <setting id="library_tv_path" type="path" label="31124" help="31125">
+          <level>0</level>
+          <default>special://profile/addon_data/plugin.video.videoland.nl/library/TV Shows</default>
+          <constraints>
+            <writable>true</writable>
+          </constraints>
+          <control type="button" format="path">
+            <heading>31124</heading>
+          </control>
+        </setting>
+        <setting id="library_movies_path" type="path" label="31126" help="31127">
+          <level>0</level>
+          <default>special://profile/addon_data/plugin.video.videoland.nl/library/Movies</default>
+          <constraints>
+            <writable>true</writable>
+          </constraints>
+          <control type="button" format="path">
+            <heading>31126</heading>
+          </control>
+        </setting>
+      </group>
+      <group id="2">
+        <setting id="library_auto_update" type="boolean" label="31128" help="31129">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_update_hours" type="integer" label="31130" parent="library_auto_update">
+          <level>0</level>
+          <default>12</default>
+          <constraints>
+            <minimum>1</minimum>
+            <step>1</step>
+            <maximum>168</maximum>
+          </constraints>
+          <dependencies>
+            <dependency type="enable" setting="library_auto_update">true</dependency>
+          </dependencies>
+          <control type="slider" format="integer">
+            <popup>false</popup>
+          </control>
+        </setting>
+        <setting id="library_scan_after" type="boolean" label="31131">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_clean_after" type="boolean" label="31132">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_update_now" type="action" label="31121">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_update)</data>
+          <control type="button" format="action">
+            <close>false</close>
+          </control>
+        </setting>
+      </group>
+    </category>
     <category id="cache" label="31020">
       <group id="1">
         <setting id="use_cache" type="boolean" label="31021" help="31022">

@@ -407,3 +407,95 @@ msgctxt "#31101"
 msgid "Videoland has no related titles for this selection at the moment."
 msgstr ""
 "Videoland heeft op dit moment geen vergelijkbare titels voor deze selectie."
+
+msgctxt "#31110"
+msgid "Add to library"
+msgstr "Toevoegen aan bibliotheek"
+
+msgctxt "#31111"
+msgid "Remove from library"
+msgstr "Verwijderen uit bibliotheek"
+
+msgctxt "#31112"
+msgid "Adding to library: {0}"
+msgstr "Toevoegen aan bibliotheek: {0}"
+
+msgctxt "#31113"
+msgid "This title could not be added to the library right now."
+msgstr "Deze titel kon nu niet aan de bibliotheek worden toegevoegd."
+
+msgctxt "#31114"
+msgid "{0} added to library ({1} episodes)"
+msgstr "{0} toegevoegd aan bibliotheek ({1} afleveringen)"
+
+msgctxt "#31115"
+msgid "{0} added to library"
+msgstr "{0} toegevoegd aan bibliotheek"
+
+msgctxt "#31116"
+msgid "{0} removed from library"
+msgstr "{0} verwijderd uit bibliotheek"
+
+msgctxt "#31117"
+msgid "The library is empty. Add series or films through their context menu."
+msgstr "De bibliotheek is nog leeg. Voeg series of films toe via hun contextmenu."
+
+msgctxt "#31118"
+msgid "Updating library..."
+msgstr "Bibliotheek bijwerken..."
+
+msgctxt "#31119"
+msgid "Library updated: {0} new, {1} removed"
+msgstr "Bibliotheek bijgewerkt: {0} nieuw, {1} verwijderd"
+
+msgctxt "#31120"
+msgid "Library"
+msgstr "Bibliotheek"
+
+msgctxt "#31121"
+msgid "Update library now"
+msgstr "Bibliotheek nu bijwerken"
+
+msgctxt "#31122"
+msgid "Series"
+msgstr "Serie"
+
+msgctxt "#31123"
+msgid "Film"
+msgstr "Film"
+
+msgctxt "#31124"
+msgid "Folder for series"
+msgstr "Map voor series"
+
+msgctxt "#31125"
+msgid "Add this folder once in Kodi as a video source with content type TV shows and the scraper \"Local information only\"."
+msgstr "Voeg deze map één keer toe in Kodi als videobron, met inhoud Series en de scraper \"Lokale informatie\"."
+
+msgctxt "#31126"
+msgid "Folder for films"
+msgstr "Map voor films"
+
+msgctxt "#31127"
+msgid "Add this folder once in Kodi as a video source with content type Movies and the scraper \"Local information only\"."
+msgstr "Voeg deze map één keer toe in Kodi als videobron, met inhoud Films en de scraper \"Lokale informatie\"."
+
+msgctxt "#31128"
+msgid "Update library automatically"
+msgstr "Bibliotheek automatisch bijwerken"
+
+msgctxt "#31129"
+msgid "Adds new episodes and removes titles that left Videoland. Never runs during playback. A title is only removed after it is missing three updates in a row."
+msgstr "Voegt nieuwe afleveringen toe en verwijdert titels die van Videoland zijn verdwenen. Draait nooit tijdens het afspelen. Een titel wordt pas verwijderd als hij drie keer achter elkaar ontbreekt."
+
+msgctxt "#31130"
+msgid "Update every (hours)"
+msgstr "Bijwerken elke (uren)"
+
+msgctxt "#31131"
+msgid "Scan the Kodi library after a change"
+msgstr "Kodi-bibliotheek scannen na een wijziging"
+
+msgctxt "#31132"
+msgid "Clean removed titles from the Kodi library"
+msgstr "Verwijderde titels uit de Kodi-bibliotheek opruimen"

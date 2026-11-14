@@ -1,8 +1,22 @@
 # Changelog
 
-> **Latest Version:** v1.2.1 (September 18, 2026)
+> **Latest Version:** v1.3.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.3.0] - 2026-11-14
+
+### Added
+- **Kodi library**: series and films get **Add to library** / **Remove from library** in their context menu. The add-on writes `.strm` + `.nfo` files (title, plot, season/episode, poster, fanart and a Videoland id), so titles appear in Kodi's own library and in skin widgets.
+- **Automatic updates**: added titles are refreshed in the background (default every 12 hours, never during playback). New episodes are added; titles that left Videoland are removed after three missed updates in a row. Network or login problems never count as missing.
+- **Library menu**: a new main menu entry lists everything in the library, with **Update library now** and a remove option per title.
+- **Library settings**: folders for series and films (folder browser, smb:// and nfs:// supported), automatic update and interval, and options to scan and clean the Kodi library after a change.
+
+### Changed
+- Episode numbers in the library are assigned once and stored, so file names stay the same when episodes come and go. Kodi keeps watched status and resume points.
+
+### Tests
+- 9 tests for library export, stable numbering, removal rules, context menus and the silent background update.
 
 ## [1.2.1] - 2026-09-18
 

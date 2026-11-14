@@ -43,6 +43,8 @@ GLYPHS = {
     'afmelden': '<path d="M117 77H81v102h36m-5-51h69m-23-24 24 24-24 24"/>',
     'profiel': '<circle cx="128" cy="100" r="25"/><path d="M81 181v-9a47 38 0 0 1 94 0v9"/>',
     'kijklijst': '<path d="M92 77h72v107l-36-23-36 23z"/>',
+    'bibliotheek': ('<rect x="78" y="78" width="24" height="94" rx="4"/><rect x="110" y="68" width="24" height="104" rx="4"/>'
+                    '<path d="M86 96h8m24-12h8"/><path d="m145 88 22-7 26 85-22 7z"/><path d="M70 180h116"/>'),
 }
 GLYPHS['collection'] = GLYPHS['series']
 
