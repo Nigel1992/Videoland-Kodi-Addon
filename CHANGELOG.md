@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.6.2 (November 14, 2026)
+> **Latest Version:** v1.6.3 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.6.3] - 2026-11-14
+
+### Removed
+- **Settings → Playback → Video quality and device compatibility**: the add-on now always plays the software-protected stream, which works on every device. The "Highest available" option could never play HD on Linux/LibreELEC, Windows or macOS (Videoland grants its HD key only to Widevine L1), so the setting only caused failed playback.
 
 ## [1.6.2] - 2026-11-14
 

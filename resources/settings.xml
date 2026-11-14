@@ -45,11 +45,6 @@
           <default>false</default>
           <control type="edit" format="string"><hidden>true</hidden></control>
         </setting>
-        <setting id="hd_fallback_notice_shown" type="string" label="31009">
-          <level>4</level>
-          <default>false</default>
-          <control type="edit" format="string"><hidden>true</hidden></control>
-        </setting>
       </group>
     </category>
 
@@ -258,24 +253,6 @@
           <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
           <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=sync_status)</data>
           <control type="button" format="action"><close>false</close></control>
-        </setting>
-      </group>
-    </category>
-    <category id="playback" label="31010">
-      <group id="1">
-        <setting id="preferred_quality" type="integer" label="31011" help="31012">
-          <level>0</level>
-          <default>1</default>
-          <constraints>
-            <minimum>0</minimum>
-            <maximum>1</maximum>
-            <step>1</step>
-            <options>
-              <option label="31013">0</option>
-              <option label="31014">1</option>
-            </options>
-          </constraints>
-          <control type="spinner" format="string"/>
         </setting>
       </group>
     </category>

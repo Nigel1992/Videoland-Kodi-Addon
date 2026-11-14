@@ -58,10 +58,7 @@ Playback quality depends on the available streams, the licence granted for the d
 
 **What we have verified:** For *The Mirror Crack’d*, Videoland's software DRM manifest tops out at **960×540**. Its hardware DRM manifest additionally offers **1280×720** and **1920×1080**, using a separate key ID. That HD key ID matches the `kNoKey` errors observed on the tested LibreELEC device. Two captured Linux Chrome sessions also received manifests capped at 540p, with successful DRMtoday responses listing only an SD track. These observations do not establish a universal limit for every title or device.
 
-**About the quality setting:** The add-on offers a *Preferred quality* setting:
-
-- **Software L3 (default)** — prefers the asset marked `software` by Videoland, falling back to the first DASH asset if absent.
-- **Best available (DASH)** — uses the first DASH asset returned by Videoland. It does not sort assets by resolution or guarantee that the selected tracks can be decrypted.
+**Stream choice:** the add-on always plays the software-protected stream (the asset marked `software`, falling back to the first DASH asset), because that is the one that can be decrypted on every Kodi device. The former "Best available" quality setting was removed in v1.6.3: on Linux/LibreELEC, Windows and macOS its HD stream could never be decrypted.
 
 See [the playback investigation](docs/playback-quality-investigation.md) for the evidence and its limits.
 
