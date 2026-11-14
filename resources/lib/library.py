@@ -87,6 +87,27 @@ def _int_or_none(value):
         return None
 
 
+
+def inject_dateadded(nfo_text, existing_text="", now=None):
+    """Make sure an episode .nfo carries a <dateadded> so Kodi's "recently
+    added" views pick up new episodes. A freshly created .nfo (no existing
+    text) gets the current time; an existing one keeps its original value so
+    the file does not churn and old episodes stay where they are."""
+    import re as _re
+    import time as _time
+    if "<dateadded>" in nfo_text:
+        return nfo_text
+    match = _re.search(r"<dateadded>([^<]+)</dateadded>", existing_text or "")
+    if match:
+        value = match.group(1)
+    else:
+        value = _time.strftime("%Y-%m-%d %H:%M:%S", _time.localtime(now if now is not None else _time.time()))
+    line = "  <dateadded>{}</dateadded>\n".format(value)
+    if "</episodedetails>" in nfo_text:
+        return nfo_text.replace("</episodedetails>", line + "</episodedetails>", 1)
+    return nfo_text
+
+
 class LocalFS:
     """Plain ``os`` for local folders, ``xbmcvfs`` for smb:// and nfs://."""
 
@@ -375,8 +396,9 @@ class Library:
                     "parent_seo": episode.get("parent_seo") or seo}
             if self.fs.write(strm, self.play_url(play) + "\n"):
                 result["added"] += 1
-            self.fs.write(nfo, self._episode_nfo(self._enrich_episode(entry, episode, season, number),
-                                                 series_title, season, number))
+            self.fs.write(nfo, inject_dateadded(self._episode_nfo(
+                self._enrich_episode(entry, episode, season, number), series_title, season, number),
+                self.fs.read(nfo)))
 
         for path in list(self.fs.walk_files(show_dir)):
             name = os.path.basename(path).lower()

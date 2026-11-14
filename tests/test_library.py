@@ -359,3 +359,14 @@ class QualityTests(unittest.TestCase):
         self.values["preferred_quality"] = 1
         self.plugin.xbmc.getCondVisibility = lambda cond: True
         self.assertEqual(self.plugin.choose_asset(self.dash)["path"], "sd.mpd")
+
+
+def test_inject_dateadded_new_and_existing():
+    from resources.lib.library import inject_dateadded
+    nfo = "<episodedetails>\n  <title>T</title>\n</episodedetails>\n"
+    out = inject_dateadded(nfo, "", now=0)
+    assert "<dateadded>1970-01-01" in out
+    existing = "<episodedetails>\n  <dateadded>2020-05-01 10:00:00</dateadded>\n</episodedetails>\n"
+    assert "<dateadded>2020-05-01 10:00:00</dateadded>" in inject_dateadded(nfo, existing, now=0)
+    withdate = "<episodedetails>\n  <dateadded>x</dateadded>\n</episodedetails>\n"
+    assert inject_dateadded(withdate, "") == withdate

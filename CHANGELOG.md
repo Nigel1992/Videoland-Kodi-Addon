@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.5 (November 14, 2026)
+> **Latest Version:** v1.9.6 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.6] - 2026-11-14
+
+### Fixed
+- **Nieuwe afleveringen verschijnen in "recent toegevoegd".** Nieuw toegevoegde afleveringen krijgen nu een `dateadded` op het moment van toevoegen, zodat ze bovenaan komen in "recent toegevoegde afleveringen"-widgets. Bestaande afleveringen houden hun datum.
 ## [1.9.5] - 2026-11-14
 
 ### Fixed
