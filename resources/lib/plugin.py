@@ -1554,14 +1554,31 @@ def progress_tracker(client, auth, layout, video_id, location, stream):
                                       xbmc.LOGWARNING if error else xbmc.LOGINFO))
 
 
-def choose_asset(dash):
-    """Play the software-protected stream, which works on every device.
+def hd_capable():
+    """Videoland only grants its HD key (720p/1080p) to Widevine L1, which in
+    Kodi exists only on Android. Linux/LibreELEC, Windows and macOS use the
+    software Widevine (L3): there the HD stream can never be decrypted."""
+    try:
+        return xbmc.getCondVisibility("System.Platform.Android") is True
+    except Exception:
+        return False
 
-    Videoland's HD stream (720p/1080p) needs a key it only grants to
-    Widevine L1; Kodi on Linux/LibreELEC, Windows and macOS cannot use it
-    (see docs/playback-quality-investigation.md), so it is never selected.
+
+def choose_asset(dash):
+    """Pick the DASH asset to play.
+
+    "Highest available" uses the hardware-protected (HD) asset only where it
+    can work; elsewhere it falls back to the best software stream instead of
+    starting a stream that cannot be decrypted.
     """
     software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
+    hardware = [a for a in dash if (a.get("drm") or {}).get("type") != "software"]
+    want_best = setting_int("preferred_quality", 1) == 0
+    if want_best and hd_capable():
+        return (hardware or dash)[0]
+    if want_best and hardware and setting("hd_fallback_notice_shown") != "true":
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31172), time=8000)
+        save("hd_fallback_notice_shown", "true")
     return software[0] if software else dash[0]
 
 
