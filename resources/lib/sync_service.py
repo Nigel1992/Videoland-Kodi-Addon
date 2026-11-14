@@ -236,6 +236,40 @@ def repair_art_after_scan(addon):
     return library_art.repair_kodi_art(lib, marker='plugin.video.videoland.nl/library')
 
 
+def repair_dateadded_once(addon):
+    """One-off: give existing library episodes a dateadded based on their air
+    date, so "recently added" widgets order by when an episode aired. Updates
+    Kodi's database directly, so already-scanned episodes are fixed too."""
+    if addon.getSettingBool('dateadded_repaired'):
+        return
+    marker = 'plugin.video.videoland.nl/library'
+    try:
+        result = _rpc('VideoLibrary.GetEpisodes',
+                      {'properties': ['file', 'firstaired', 'dateadded']}) or {}
+    except Exception:
+        return
+    changed = 0
+    for ep in result.get('episodes') or []:
+        path = str(ep.get('file') or '')
+        aired = str(ep.get('firstaired') or '')[:10]
+        if marker not in path or len(aired) != 10:
+            continue
+        desired = aired + ' 12:00:00'
+        if str(ep.get('dateadded') or '') == desired:
+            continue
+        try:
+            _rpc('VideoLibrary.SetEpisodeDetails',
+                 {'episodeid': ep.get('episodeid'), 'dateadded': desired})
+            changed += 1
+        except Exception:
+            pass
+    try:
+        addon.setSetting('dateadded_repaired', 'true')
+    except Exception:
+        pass
+    xbmc.log('[Videoland] dateadded repaired for {} episodes'.format(changed), xbmc.LOGINFO)
+
+
 def run():
     addon = xbmcaddon.Addon('plugin.video.videoland.nl')
     directory = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.videoland.nl')
@@ -294,6 +328,11 @@ def run():
                     xbmc.log('[Videoland] Library artwork set for {} titles'.format(fixed), xbmc.LOGINFO)
             except Exception as exc:
                 xbmc.log('[Videoland] Library artwork repair failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+        if now - started >= LIBRARY_STARTUP_DELAY and not addon.getSettingBool('dateadded_repaired'):
+            try:
+                repair_dateadded_once(addon)
+            except Exception as exc:
+                xbmc.log('[Videoland] dateadded repair failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         if now - started >= LIBRARY_STARTUP_DELAY and now >= next_library_check:
             next_library_check = now + LIBRARY_CHECK_INTERVAL
             try:

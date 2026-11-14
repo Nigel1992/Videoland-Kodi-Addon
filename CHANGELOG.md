@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.6 (November 14, 2026)
+> **Latest Version:** v1.9.7 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.7] - 2026-11-14
+
+### Changed
+- **"Recent toegevoegd" volgt nu de uitzenddatum, met terugwerkende kracht.** De datum van een aflevering volgt nu de uitzenddatum, zodat de nieuwste aflevering bovenaan "recent toegevoegde afleveringen" komt. Een eenmalige achtergrondreparatie zet dit ook recht voor afleveringen die al in je bibliotheek stonden (direct in de Kodi-database).
 ## [1.9.6] - 2026-11-14
 
 ### Fixed
