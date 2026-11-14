@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.1 (November 14, 2026)
+> **Latest Version:** v1.9.2 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.2] - 2026-11-14
+
+### Fixed
+- **Twee keer gevraagd om verder te kijken vanuit de bibliotheek.** Bij afspelen vanuit de Kodi-bibliotheek vroeg eerst Kodi "Hervatten?" en daarna Videoland nog een keer. Videoland herkent nu betrouwbaar dat het afspelen uit de bibliotheek komt en laat die vraag aan Kodi over, dus je krijgt nog maar één keuze. Binnen de Videoland-addon zelf blijft Videolands eigen "Verder kijken" gewoon werken.
 ## [1.9.1] - 2026-11-14
 
 ### Added

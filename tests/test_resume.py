@@ -133,13 +133,14 @@ class ResumeTests(unittest.TestCase):
 
 
 class LibraryResumeTests(unittest.TestCase):
-    def test_kodi_library_resume_needs_a_library_item_with_resume_point(self):
+    def test_kodi_library_resume_detects_library_playback(self):
         plugin = load_plugin()
-        plugin.xbmc.getInfoLabel = lambda label: "42"
-        plugin.xbmc.getCondVisibility = lambda cond: True
+        # A database id means Kodi owns the resume prompt.
+        plugin.xbmc.getInfoLabel = lambda label: "42" if label == "ListItem.DBID" else ""
         self.assertTrue(plugin.kodi_library_resume())
-        plugin.xbmc.getCondVisibility = lambda cond: False
-        self.assertFalse(plugin.kodi_library_resume())
+        # Played from the video-library view, even without a dbid in reach.
+        plugin.xbmc.getInfoLabel = lambda label: "videodb://tvshows/" if label == "Container.FolderPath" else ""
+        self.assertTrue(plugin.kodi_library_resume())
+        # Neither: an in-add-on play, so the add-on may offer its own resume.
         plugin.xbmc.getInfoLabel = lambda label: ""
-        plugin.xbmc.getCondVisibility = lambda cond: True
         self.assertFalse(plugin.kodi_library_resume())
