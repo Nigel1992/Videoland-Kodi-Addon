@@ -1,8 +1,17 @@
 # Changelog
 
-> **Latest Version:** v1.6.4 (November 14, 2026)
+> **Latest Version:** v1.6.5 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.6.5] - 2026-11-14
+
+### Fixed
+- **No TMDb match for some series** (e.g. Chateau Meiland): when Videoland's page has no plain title the add-on used the page's browser title ("Show - Kijk online bij Videoland"), which never matches TMDb. Site suffixes are now stripped, the title of the card you added is used as a second try, and the Kodi log shows per series which TMDb/TVmaze match was found ("metadata for ...").
+
+### Added
+- **Next episode (Up Next)**: with the Up Next add-on installed, the next episode is offered near the end of an episode, also from the Kodi library (Settings → Playback; includes an install button).
+- **Skip intro/recap**: when Videoland sends intro or recap times with a video, "Skip the intro?" appears at that moment. Whether it sends them is logged per video ("markers found").
 
 ## [1.6.4] - 2026-11-14
 

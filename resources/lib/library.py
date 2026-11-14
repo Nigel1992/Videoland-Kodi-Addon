@@ -340,7 +340,10 @@ class Library:
                 self._count_missing("series", series_id, entry, result)
             return result
 
-        series_title = data.get("title") or entry.get("title") or title or series_id
+        if title:
+            entry["card_title"] = metadata.clean_title(title)
+        series_title = (metadata.clean_title(data.get("title")) or entry.get("card_title")
+                        or entry.get("title") or series_id)
         entry.update({"title": series_title, "seo": seo, "missing": 0})
         entry.setdefault("added", int(self.now()))
         data = self._apply_hints("series", series_id, entry, data)
@@ -395,9 +398,17 @@ class Library:
             return local
         try:
             extra = self.enricher.show(title, known=entry.get("ids"))
+            card_title = entry.get("card_title")
+            if not (extra.get("ids") or {}).get("tmdb") and card_title and card_title != title:
+                # The page title can differ from the card the user picked.
+                second = self.enricher.show(card_title, known=entry.get("ids"))
+                if (second.get("ids") or {}).get("tmdb"):
+                    extra = second
         except Exception as exc:
             log("metadata lookup failed for {}: {}".format(title, exc))
             return local
+        found = extra.get("ids") or {}
+        log("metadata for '{}': tmdb={} tvmaze={}".format(title, found.get("tmdb") or "-", found.get("tvmaze") or "-"))
         ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
         if ids:
             entry["ids"] = ids

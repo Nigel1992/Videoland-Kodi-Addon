@@ -86,6 +86,7 @@ from . import errors as errors_mod
 from . import diagnostics as diagnostics_mod
 from . import search_filters
 from . import logo_cache as logo_cache_mod
+from . import playback_extras
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -1608,6 +1609,83 @@ def _dash_item(helper, asset, drm_token):
     return item
 
 
+def _video_item(layout, video_id):
+    for card, _block in walk_item_content(layout):
+        video = card.get("video")
+        if isinstance(video, dict) and str(video.get("id")) == str(video_id):
+            return card
+    return {}
+
+
+def _next_episode(client, video_id, parent_id, parent_seo):
+    """(current_row, next_row) in the series' episode order, or (None, None)."""
+    if not parent_id:
+        return None, None
+
+    def load_block(block):
+        tealium = (block.get("analytics") or {}).get("tealium") or {}
+        return not is_related_block({"feature": tealium.get("from"), "block_title": tealium.get("block_title")})
+
+    data = client.layout("program", parent_id, program_location(parent_seo, parent_id),
+                         complete=True, block_filter=load_block)
+    rows = [row for row in _build_rows(data) if row[2] == "video" and not is_hero_block(row[3])]
+    ids = [str(row[1].get("id") or "") for row in rows]
+    if str(video_id) not in ids:
+        return None, None
+    index = ids.index(str(video_id))
+    following = rows[index + 1] if index + 1 < len(rows) else None
+    return rows[index], following
+
+
+def _episode_info(row, showtitle):
+    item, target, _kind, block = row
+    label = _clean_episode_label(_item_label(item, str(target.get("id") or "")))
+    return playback_extras.episode_info(
+        label, showtitle, block_season(block) or 1, _episode_number(item) or 0,
+        plot=str(item.get("description") or ""), art=content_art(item.get("image")),
+        episode_id=str(target.get("id") or ""))
+
+
+def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, parent_seo):
+    """Skip-intro question and Up Next, without delaying playback."""
+    card = _video_item(layout, video_id)
+    raw_duration = (card.get("video") or {}).get("duration") if isinstance(card, dict) else None
+    duration = float(raw_duration) if isinstance(raw_duration, (int, float)) and not isinstance(raw_duration, bool) else 0.0
+    markers = playback_extras.find_markers([card, asset], duration)
+    xbmc.log("[Videoland] {}: markers found: {}".format(video_id, playback_extras.marker_summary(markers)),
+             xbmc.LOGINFO)
+    if setting_bool("skip_markers", True) and markers:
+        def ask(kind):
+            text = ADDON.getLocalizedString(31174 if kind == "recap" else 31173)
+            return xbmcgui.Dialog().yesno("Videoland", text, autoclose=8000)
+        playback_extras.start_skip_watcher(markers, ask)
+    if not setting_bool("upnext", True) or not playback_extras.upnext_available():
+        return
+
+    def announce():
+        try:
+            current, following = _next_episode(client, video_id, parent_id, parent_seo)
+            if not following:
+                return
+            showtitle = _layout_title(client.layout("program", parent_id, program_location(parent_seo, parent_id)))
+            target = following[1]
+            parent = target.get("parent") or {}
+            play_url = url(action="play", video_id=target.get("id", ""), seo=target.get("seo", ""),
+                           parent_id=parent.get("id") or parent_id, parent_seo=parent.get("seo") or parent_seo)
+            credits = markers.get("credits")
+            notify_at = duration - credits[0] if credits and credits[0] and duration else None
+            if playback_extras.wait_for_playback(xbmc.Player()):
+                playback_extras.send_upnext(ADDON.getAddonInfo("id"), _episode_info(current, showtitle),
+                                            _episode_info(following, showtitle), play_url, notify_at)
+        except Exception as exc:
+            xbmc.log("[Videoland] Up Next skipped: {}".format(exc), xbmc.LOGINFO)
+
+    import threading
+    thread = threading.Thread(target=announce, name="VideolandUpNext")
+    thread.daemon = True
+    thread.start()
+
+
 def kodi_library_resume():
     """True when playback starts from a Kodi library item with a resume point."""
     try:
@@ -1685,6 +1763,7 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
             video_id, resume_position), xbmc.LOGINFO)
         tracker = progress_tracker(client, auth, layout, video_id, location, asset["path"])
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
+    _start_playback_extras(client, layout, asset, video_id, seo, parent_id, parent_seo)
     if tracker:
         tracker.run()
         # Kodi updates the visible item with its local bookmark on stop/end.

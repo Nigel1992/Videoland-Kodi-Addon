@@ -648,3 +648,31 @@ msgstr "Onderhoud"
 msgctxt "#31172"
 msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
 msgstr "HD is op dit apparaat niet beschikbaar (Videoland staat dat alleen toe met Widevine L1, op Android). De beste kwaliteit die hier werkt wordt afgespeeld."
+
+msgctxt "#31173"
+msgid "Skip the intro?"
+msgstr "Intro overslaan?"
+
+msgctxt "#31174"
+msgid "Skip the recap?"
+msgstr "Samenvatting overslaan?"
+
+msgctxt "#31175"
+msgid "Next episode (Up Next)"
+msgstr "Volgende aflevering (Up Next)"
+
+msgctxt "#31176"
+msgid "Near the end of an episode the Up Next add-on offers the next episode, also when playing from the Kodi library. Needs the Up Next add-on (service.upnext)."
+msgstr "Aan het eind van een aflevering biedt de Up Next-add-on de volgende aflevering aan, ook bij afspelen vanuit de Kodi-bibliotheek. De Up Next-add-on (service.upnext) is nodig."
+
+msgctxt "#31177"
+msgid "Install the Up Next add-on"
+msgstr "Up Next-add-on installeren"
+
+msgctxt "#31178"
+msgid "Offer to skip intro and recap"
+msgstr "Intro en samenvatting overslaan aanbieden"
+
+msgctxt "#31179"
+msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
+msgstr "Als Videoland bij een video de tijden van intro of samenvatting meestuurt, verschijnt op dat moment de vraag om over te slaan. Of Videoland ze meestuurt staat in het Kodi-logboek (\"markers found\")."

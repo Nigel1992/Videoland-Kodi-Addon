@@ -584,3 +584,31 @@ msgstr ""
 msgctxt "#31172"
 msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
 msgstr ""
+
+msgctxt "#31173"
+msgid "Skip the intro?"
+msgstr ""
+
+msgctxt "#31174"
+msgid "Skip the recap?"
+msgstr ""
+
+msgctxt "#31175"
+msgid "Next episode (Up Next)"
+msgstr ""
+
+msgctxt "#31176"
+msgid "Near the end of an episode the Up Next add-on offers the next episode, also when playing from the Kodi library. Needs the Up Next add-on (service.upnext)."
+msgstr ""
+
+msgctxt "#31177"
+msgid "Install the Up Next add-on"
+msgstr ""
+
+msgctxt "#31178"
+msgid "Offer to skip intro and recap"
+msgstr ""
+
+msgctxt "#31179"
+msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
+msgstr ""
