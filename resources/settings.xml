@@ -259,6 +259,18 @@
           <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
           <control type="toggle"/>
         </setting>
+        <setting id="notify_new_episodes" type="boolean" label="31210" help="31211">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="watched_threshold" type="integer" label="31214" help="31215">
+          <level>0</level>
+          <default>90</default>
+          <constraints><minimum>70</minimum><step>5</step><maximum>98</maximum></constraints>
+          <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
+          <control type="slider" format="percentage"/>
+        </setting>
         <setting id="sync_status" type="action" label="31062" help="31063">
           <level>0</level>
           <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
@@ -302,6 +314,46 @@
           <level>0</level>
           <default>true</default>
           <control type="toggle"/>
+        </setting>
+        <setting id="autoplay_next" type="boolean" label="31187" help="31188">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="preferred_audio" type="string" label="31198" help="31199">
+          <level>0</level>
+          <default>off</default>
+          <constraints>
+            <options>
+              <option label="31202">off</option>
+              <option label="31203">nl</option>
+              <option label="31204">en</option>
+              <option label="31205">original</option>
+            </options>
+          </constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+        <setting id="preferred_subtitle" type="string" label="31200" help="31201">
+          <level>0</level>
+          <default>off</default>
+          <constraints>
+            <options>
+              <option label="31202">off</option>
+              <option label="31203">nl</option>
+              <option label="31204">en</option>
+            </options>
+          </constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+        <setting id="auto_subtitle_search" type="boolean" label="31218" help="31219">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="clear_watch_history" type="action" label="31196" help="">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=clear_history)</data>
+          <control type="button" format="action"><close>false</close></control>
         </setting>
       </group>
     </category>

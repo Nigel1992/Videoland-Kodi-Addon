@@ -1,9 +1,32 @@
 # Changelog
 
-> **Latest Version:** v1.7.0 (November 14, 2026)
+> **Latest Version:** v1.9.1 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.1] - 2026-11-14
+
+### Added
+- **Ondertitels zoeken als de stream er geen heeft**: optioneel opent de addon automatisch de ondertitelzoeker van Kodi, zodat je eigen ondertitel-addon (bijv. OpenSubtitles) er een kan vinden (Instellingen → Afspelen).
+## [1.9.0] - 2026-11-14
+
+### Added
+- **Hele serie als bekeken markeren**: contextmenu op een serie in je bibliotheek stuurt de afleveringen als bekeken naar Videoland (begrensd voor hele grote series).
+- **Melding bij nieuwe afleveringen**: een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt (Instellingen → Geschiedenis).
+- **Aanbevolen-widget**: een lijst met Videolands eigen aanbevelingen.
+- **Verder kijken (beide diensten)**: een widget die Videolands Verder kijken toont met een snelkoppeling naar die van NLZiet.
+- **Instelbaar bekeken-percentage**: kies bij hoeveel procent een video als bekeken naar Videoland gaat (Instellingen → Geschiedenis, standaard 90%). Bij vroegtijdig stoppen boven dat percentage wordt de titel alsnog als bekeken doorgegeven.
+## [1.8.0] - 2026-11-14
+
+### Added
+- **Binge-modus**: schakelaar "Volgende aflevering automatisch afspelen" (Instellingen → Afspelen). Met Up Next geïnstalleerd: laat dit uit en laat Up Next het doen.
+- **Stop na deze aflevering**: zet de automatische volgende aflevering voor die sessie uit.
+- **Willekeurige aflevering (shuffle)**: contextmenu op een serie in je bibliotheek.
+- **Vaste taal- en ondertitelvoorkeur**: automatische keuze van gesproken taal/ondertitels bij het starten (Instellingen → Afspelen).
+- **Kijkgeschiedenis**: lokale lijst van wat je gekeken hebt, in het hoofdmenu en als widget, met wisknop.
+
+### Development
+- Deelt de nieuwe `watch_history.py`-module en de taalkeuze in `playback_extras.py` met NLZiet. Extra tests.
 ## [1.7.0] - 2026-11-14
 
 ### Added

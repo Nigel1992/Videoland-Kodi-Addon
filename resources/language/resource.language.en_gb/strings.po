@@ -640,3 +640,135 @@ msgstr ""
 msgctxt "#31186"
 msgid "My watchlist"
 msgstr ""
+
+msgctxt "#31187"
+msgid "Automatically play the next episode (binge)"
+msgstr ""
+
+msgctxt "#31188"
+msgid "When an episode ends, the next one starts by itself. With the Up Next add-on installed, leave this off and let Up Next do it."
+msgstr ""
+
+msgctxt "#31189"
+msgid "Stop after this episode"
+msgstr ""
+
+msgctxt "#31190"
+msgid "The next episode will not start automatically"
+msgstr ""
+
+msgctxt "#31191"
+msgid "Automatic next episode is on again"
+msgstr ""
+
+msgctxt "#31192"
+msgid "Play a random episode"
+msgstr ""
+
+msgctxt "#31193"
+msgid "No episodes found to pick from"
+msgstr ""
+
+msgctxt "#31194"
+msgid "Watch history"
+msgstr ""
+
+msgctxt "#31195"
+msgid "Nothing watched yet"
+msgstr ""
+
+msgctxt "#31196"
+msgid "Clear watch history"
+msgstr ""
+
+msgctxt "#31197"
+msgid "Watch history cleared"
+msgstr ""
+
+msgctxt "#31198"
+msgid "Preferred audio language"
+msgstr ""
+
+msgctxt "#31199"
+msgid "Automatically choose this spoken language when a video starts, if available."
+msgstr ""
+
+msgctxt "#31200"
+msgid "Preferred subtitle language"
+msgstr ""
+
+msgctxt "#31201"
+msgid "Automatically turn on subtitles in this language when a video starts, if available."
+msgstr ""
+
+msgctxt "#31202"
+msgid "Off"
+msgstr ""
+
+msgctxt "#31203"
+msgid "Dutch"
+msgstr ""
+
+msgctxt "#31204"
+msgid "English"
+msgstr ""
+
+msgctxt "#31205"
+msgid "Original"
+msgstr ""
+
+msgctxt "#31206"
+msgid "Mark whole series as watched"
+msgstr ""
+
+msgctxt "#31207"
+msgid "{0} episodes marked as watched"
+msgstr ""
+
+msgctxt "#31208"
+msgid "Marking as watched..."
+msgstr ""
+
+msgctxt "#31209"
+msgid "New episode: {0}"
+msgstr ""
+
+msgctxt "#31210"
+msgid "Notify about new episodes"
+msgstr ""
+
+msgctxt "#31211"
+msgid "Show a Kodi notification when a series in your watchlist gets a new episode."
+msgstr ""
+
+msgctxt "#31212"
+msgid "Recommended for you"
+msgstr ""
+
+msgctxt "#31213"
+msgid "New on Videoland"
+msgstr ""
+
+msgctxt "#31214"
+msgid "Counts as watched at"
+msgstr ""
+
+msgctxt "#31215"
+msgid "How much of a video you must see before it is sent to Videoland as watched."
+msgstr ""
+
+msgctxt "#31216"
+msgid "Continue watching (both services)"
+msgstr ""
+
+msgctxt "#31217"
+msgid "Open NLZiet: Continue watching"
+msgstr ""
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr ""
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr ""

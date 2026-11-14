@@ -704,3 +704,135 @@ msgstr "Kijkstatus naar Videoland gestuurd"
 msgctxt "#31186"
 msgid "My watchlist"
 msgstr "Mijn kijklijst"
+
+msgctxt "#31187"
+msgid "Automatically play the next episode (binge)"
+msgstr "Volgende aflevering automatisch afspelen (binge)"
+
+msgctxt "#31188"
+msgid "When an episode ends, the next one starts by itself. With the Up Next add-on installed, leave this off and let Up Next do it."
+msgstr "Als een aflevering eindigt, start de volgende vanzelf. Heb je de Up Next-addon, laat dit dan uit en laat Up Next het doen."
+
+msgctxt "#31189"
+msgid "Stop after this episode"
+msgstr "Stop na deze aflevering"
+
+msgctxt "#31190"
+msgid "The next episode will not start automatically"
+msgstr "De volgende aflevering start niet automatisch"
+
+msgctxt "#31191"
+msgid "Automatic next episode is on again"
+msgstr "Automatisch volgende aflevering staat weer aan"
+
+msgctxt "#31192"
+msgid "Play a random episode"
+msgstr "Willekeurige aflevering afspelen"
+
+msgctxt "#31193"
+msgid "No episodes found to pick from"
+msgstr "Geen afleveringen gevonden om uit te kiezen"
+
+msgctxt "#31194"
+msgid "Watch history"
+msgstr "Kijkgeschiedenis"
+
+msgctxt "#31195"
+msgid "Nothing watched yet"
+msgstr "Nog niets gekeken"
+
+msgctxt "#31196"
+msgid "Clear watch history"
+msgstr "Kijkgeschiedenis wissen"
+
+msgctxt "#31197"
+msgid "Watch history cleared"
+msgstr "Kijkgeschiedenis gewist"
+
+msgctxt "#31198"
+msgid "Preferred audio language"
+msgstr "Voorkeur gesproken taal"
+
+msgctxt "#31199"
+msgid "Automatically choose this spoken language when a video starts, if available."
+msgstr "Kies deze gesproken taal automatisch als een video start, als die beschikbaar is."
+
+msgctxt "#31200"
+msgid "Preferred subtitle language"
+msgstr "Voorkeur ondertiteltaal"
+
+msgctxt "#31201"
+msgid "Automatically turn on subtitles in this language when a video starts, if available."
+msgstr "Zet automatisch ondertiteling in deze taal aan als een video start, als die beschikbaar is."
+
+msgctxt "#31202"
+msgid "Off"
+msgstr "Uit"
+
+msgctxt "#31203"
+msgid "Dutch"
+msgstr "Nederlands"
+
+msgctxt "#31204"
+msgid "English"
+msgstr "Engels"
+
+msgctxt "#31205"
+msgid "Original"
+msgstr "Origineel"
+
+msgctxt "#31206"
+msgid "Mark whole series as watched"
+msgstr "Hele serie als bekeken markeren"
+
+msgctxt "#31207"
+msgid "{0} episodes marked as watched"
+msgstr "{0} afleveringen als bekeken gemarkeerd"
+
+msgctxt "#31208"
+msgid "Marking as watched..."
+msgstr "Bezig met markeren..."
+
+msgctxt "#31209"
+msgid "New episode: {0}"
+msgstr "Nieuwe aflevering: {0}"
+
+msgctxt "#31210"
+msgid "Notify about new episodes"
+msgstr "Melding bij nieuwe afleveringen"
+
+msgctxt "#31211"
+msgid "Show a Kodi notification when a series in your watchlist gets a new episode."
+msgstr "Toon een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt."
+
+msgctxt "#31212"
+msgid "Recommended for you"
+msgstr "Aanbevolen voor jou"
+
+msgctxt "#31213"
+msgid "New on Videoland"
+msgstr "Nieuw op Videoland"
+
+msgctxt "#31214"
+msgid "Counts as watched at"
+msgstr "Telt als bekeken bij"
+
+msgctxt "#31215"
+msgid "How much of a video you must see before it is sent to Videoland as watched."
+msgstr "Hoeveel van een video je gezien moet hebben voordat die als bekeken naar Videoland gaat."
+
+msgctxt "#31216"
+msgid "Continue watching (both services)"
+msgstr "Verder kijken (beide diensten)"
+
+msgctxt "#31217"
+msgid "Open NLZiet: Continue watching"
+msgstr "Open NLZiet: Verder kijken"
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr "Ondertitels zoeken als de stream er geen heeft"
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr "Als een video geen eigen ondertiteling heeft, open de ondertitelzoeker van Kodi zodat je ondertitel-addon (bijv. OpenSubtitles) er een kan zoeken."
