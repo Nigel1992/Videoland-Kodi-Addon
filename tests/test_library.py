@@ -278,3 +278,38 @@ class WatchlistTests(unittest.TestCase):
         self.assertEqual(plugin.profile_cache_dir(), os.path.join("/data/cache", "abc-123"))
         plugin.setting = MagicMock(return_value="")
         self.assertEqual(plugin.profile_cache_dir(), os.path.join("/data/cache", "default"))
+
+
+class WatchlistSyncTests(unittest.TestCase):
+    def test_new_titles_added_and_left_titles_removed_only_if_from_watchlist(self):
+        plugin = load_plugin()
+        plugin.watchlist_titles = MagicMock(return_value=[
+            ("series", "s1", "s-1", "Serie", "p.jpg", "f.jpg"),
+            ("movie", "m1", "m-1", "Film", "", ""),
+            ("series", "own", "o", "Eigen", "", ""),
+        ])
+        plugin.setting_bool = MagicMock(side_effect=lambda name, default=False: name == "library_watchlist_remove")
+        added_calls = []
+        with tempfile.TemporaryDirectory() as root:
+            store = library.LibraryStore(os.path.join(root, "l.json"))
+            store.section("series")["own"] = {"title": "Eigen"}            # added by hand
+            store.section("series")["gone"] = {"title": "Weg", "source": "watchlist"}
+            lib = library.Library(None, {}.get, store=store)
+
+            def add_series(item_id, seo, title, poster, fanart):
+                added_calls.append(("series", item_id, poster))
+                store.section("series")[item_id] = {"title": title}
+                return {"ok": True}
+
+            def add_movie(item_id, seo, title, poster, fanart):
+                added_calls.append(("movie", item_id, poster))
+                store.section("movie")[item_id] = {"title": title}
+                return {"ok": True}
+
+            lib.add_series, lib.add_movie = add_series, add_movie
+            added, removed, failed = plugin.sync_watchlist_to_library(MagicMock(), lib)
+            self.assertEqual((added, removed, failed), (2, 1, 0))
+            self.assertEqual(added_calls, [("series", "s1", "p.jpg"), ("movie", "m1", "")])
+            self.assertEqual(store.get("series", "s1")["source"], "watchlist")
+            self.assertTrue(store.has("series", "own"))
+            self.assertFalse(store.has("series", "gone"))

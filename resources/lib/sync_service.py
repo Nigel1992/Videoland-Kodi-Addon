@@ -60,6 +60,10 @@ def library_update_due(addon, now=None):
     if not addon.getSettingString('auth_json'):
         return False
     store = library_mod.LibraryStore(library_mod.store_path())
+    if store.is_empty() and addon.getSettingBool('library_watchlist_sync'):
+        last = store.data.get('last_update') or 0
+        current = time.time() if now is None else now
+        return current - last >= hours * 3600
     return library_mod.update_due(store, hours, now)
 
 

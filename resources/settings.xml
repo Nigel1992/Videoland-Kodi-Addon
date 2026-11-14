@@ -127,6 +127,26 @@
         </setting>
       </group>
       <group id="2">
+        <setting id="library_watchlist_sync" type="boolean" label="31153" help="31154">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_watchlist_remove" type="boolean" label="31155" help="31156" parent="library_watchlist_sync">
+          <level>0</level>
+          <default>false</default>
+          <dependencies>
+            <dependency type="enable" setting="library_watchlist_sync">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+        <setting id="library_from_watchlist_now" type="action" label="31152">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=library_from_watchlist)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
         <setting id="library_auto_update" type="boolean" label="31128" help="31129">
           <level>0</level>
           <default>true</default>

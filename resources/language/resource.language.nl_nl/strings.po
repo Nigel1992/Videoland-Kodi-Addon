@@ -567,3 +567,31 @@ msgstr "Diagnose uitvoeren"
 msgctxt "#31149"
 msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
 msgstr "Controleert aanmelding, InputStream Adaptive, Widevine, de verbinding met Videoland, TMDb en TVmaze, en of alle bibliotheektitels in Kodi staan. Slaat een rapport zonder privégegevens op dat je bij een foutmelding kunt meesturen."
+
+msgctxt "#31150"
+msgid "Adding My watchlist to the library..."
+msgstr "Mijn Kijklijst naar de bibliotheek..."
+
+msgctxt "#31151"
+msgid "Watchlist: {0} added, {1} removed, {2} failed"
+msgstr "Kijklijst: {0} toegevoegd, {1} verwijderd, {2} mislukt"
+
+msgctxt "#31152"
+msgid "Add My watchlist to the library now"
+msgstr "Mijn Kijklijst nu naar de bibliotheek"
+
+msgctxt "#31153"
+msgid "Keep My watchlist in the library automatically"
+msgstr "Mijn Kijklijst automatisch in de bibliotheek"
+
+msgctxt "#31154"
+msgid "Every series and film in My watchlist is added to the Kodi library, and new titles are added at every automatic update. A bookmarked episode adds its series."
+msgstr "Elke serie en film uit Mijn Kijklijst komt in de Kodi-bibliotheek, en nieuwe titels komen er bij elke automatische update bij. Een bewaarde aflevering voegt de hele serie toe."
+
+msgctxt "#31155"
+msgid "Remove titles that left My watchlist"
+msgstr "Titels die uit Mijn Kijklijst verdwijnen ook verwijderen"
+
+msgctxt "#31156"
+msgid "Only titles that were added from the watchlist are removed; titles you added yourself stay."
+msgstr "Alleen titels die via de kijklijst zijn toegevoegd worden verwijderd; titels die je zelf hebt toegevoegd blijven staan."

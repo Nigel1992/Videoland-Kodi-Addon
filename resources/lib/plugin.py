@@ -24,8 +24,12 @@ def run_diagnostics():
                 for title, loaded, total, shown, feature in watchlist_report(client):
                     complete = not total or loaded >= int(total)
                     detail = t["watchlist_line"].format(loaded, total or "?", shown, feature or "-")
-                    checks.append(("ok" if complete and shown >= loaded else "warn",
-                                   t["watchlist"].format(title), detail))
+                    if not shown:
+                        # Editorial rail on the watchlist page (no titles of yours).
+                        status = "info"
+                    else:
+                        status = "ok" if complete and shown >= loaded else "warn"
+                    checks.append((status, t["watchlist"].format(title), detail))
             except Exception as exc:
                 checks.append(("warn", t["watchlist"].format("-"), type(exc).__name__ + ": " + str(exc)[:120]))
         log_lines = diagnostics_mod.kodi_log_excerpt(["videoland"], diagnostics_mod.redact)
@@ -2045,7 +2049,7 @@ def library_update(background=False):
 
 
 def _library_update(background):
-    if _library_store().is_empty():
+    if _library_store().is_empty() and not setting_bool("library_watchlist_sync", False):
         if not background:
             xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31117), time=3000)
         return
@@ -2058,6 +2062,13 @@ def _library_update(background):
         auth = ensure_login()
     ensure_profile(client, auth)
     lib = _library(client)
+    if setting_bool("library_watchlist_sync", False):
+        try:
+            sync_watchlist_to_library(client, lib)
+        except AuthError:
+            raise
+        except Exception as exc:
+            xbmc.log("[Videoland] Watchlist sync skipped: {}".format(exc), xbmc.LOGWARNING)
     progress = None
     if not background:
         progress = xbmcgui.DialogProgressBG()
@@ -2084,10 +2095,120 @@ def _library_update(background):
             "Videoland", ADDON.getLocalizedString(31119).format(totals["added"], totals["removed"]), time=4000)
 
 
+def watchlist_titles(client):
+    """The titles in My watchlist as [(kind, id, seo, title, poster, fanart)].
+
+    ``kind`` is "series" or "movie"; a bookmarked episode counts as its series.
+    """
+    client.cache_dir = None
+    client.cache_ttl = 0
+    data = client.layout("frontspace", "bookmarks", "https://v2.videoland.com/", complete=True)
+    titles, seen = [], set()
+    for item, target, target_kind, _block in _build_rows(data):
+        image = item.get("image") or {}
+        poster = ratio_image(image, ("2:3", "3:4")) or content_art(image).get("thumb", "")
+        fanart = ratio_image(image, ("16:9",))
+        label = _item_label(item, str(target.get("id") or ""))
+        if target_kind == "video":
+            parent = target.get("parent") or {}
+            if parent.get("type") != "program" or not parent.get("id"):
+                continue
+            entry = ("series", str(parent["id"]), parent.get("seo", ""), label, poster, fanart)
+        elif target_kind in ("program", "details"):
+            try:
+                play_target = _play_target(client, item, target, target_kind)
+            except AuthError:
+                raise
+            except Exception:
+                play_target = None
+            kind = "movie" if play_target else "series"
+            entry = (kind, str(target.get("id") or ""), target.get("seo", ""), label, poster, fanart)
+        else:
+            continue
+        if entry[1] and (entry[0], entry[1]) not in seen:
+            seen.add((entry[0], entry[1]))
+            titles.append(entry)
+    return titles
+
+
+def sync_watchlist_to_library(client, lib, progress=None):
+    """Add every watchlist title that is not in the library yet; optionally
+    remove titles that were added from the watchlist and left it.
+    Returns (added, removed, failed)."""
+    titles = watchlist_titles(client)
+    added = failed = removed = 0
+    wanted = set()
+    for index, (kind, item_id, seo, title, poster, fanart) in enumerate(titles):
+        wanted.add((kind, item_id))
+        if lib.is_in_library(kind, item_id):
+            continue
+        if progress is not None:
+            progress(index, len(titles), title)
+        try:
+            if kind == "series":
+                result = lib.add_series(item_id, seo, title, poster, fanart)
+            else:
+                result = lib.add_movie(item_id, seo, title, poster, fanart)
+        except AuthError:
+            raise
+        except Exception as exc:
+            xbmc.log("[Videoland] Watchlist title {} not added: {}".format(item_id, exc), xbmc.LOGWARNING)
+            result = {}
+        if result.get("ok"):
+            entry = lib.store.get(kind, item_id)
+            if entry is not None:
+                entry["source"] = "watchlist"
+            added += 1
+        else:
+            failed += 1
+    if setting_bool("library_watchlist_remove", False) and titles:
+        for kind in ("series", "movie"):
+            for item_id, entry in list(lib.items(kind)):
+                if entry.get("source") == "watchlist" and (kind, item_id) not in wanted:
+                    if lib.remove(kind, item_id, save=False):
+                        removed += 1
+    lib.store.save()
+    return added, removed, failed
+
+
+def library_from_watchlist(background=False):
+    """Menu/settings action: put the whole watchlist in the Kodi library."""
+    client = api()
+    if background:
+        auth = auth_data()
+        if not all(auth.get(key) for key in ("uid", "signature", "timestamp")) or not setting("profile_id"):
+            return
+    else:
+        auth = ensure_login()
+    ensure_profile(client, auth)
+    lib = _library(client)
+    dialog = None
+    if not background:
+        dialog = xbmcgui.DialogProgressBG()
+        dialog.create("Videoland", ADDON.getLocalizedString(31150))
+
+    def report(index, total, title):
+        if dialog is not None and total:
+            dialog.update(int(index * 100 / total), "Videoland", title)
+
+    try:
+        added, removed, failed = sync_watchlist_to_library(client, lib, report)
+    finally:
+        if dialog is not None:
+            dialog.close()
+    if added or removed:
+        library_mod.run_library_jobs(scan=True, clean=bool(removed) and setting_bool("library_clean_after", True))
+    if not background or ((added or removed) and setting_bool("sync_notifications", False)):
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31151).format(added, removed, failed), time=5000)
+    if not background:
+        xbmc.executebuiltin("Container.Refresh")
+
+
 def browse_library():
     set_breadcrumb(["Videoland", ADDON.getLocalizedString(31120)])
     xbmcplugin.setContent(HANDLE, "videos")
     add(ADDON.getLocalizedString(31121), url(action="library_update"), False, icon_key="recent")
+    add(ADDON.getLocalizedString(31152), url(action="library_from_watchlist"), False, icon_key="kijklijst")
     lib = library_mod.Library(None, setting, store=_library_store())
     for kind, label_id in (("series", 31122), ("movie", 31123)):
         for item_id, entry in lib.items(kind):
@@ -2192,6 +2313,8 @@ def dispatch(params):
         run_diagnostics()
     elif action == "check_tmdb_key":
         check_tmdb_key()
+    elif action == "library_from_watchlist":
+        library_from_watchlist(background=params.get("background") == "1")
     elif action == "library_play":
         library_play(params.get("id", ""), params.get("seo", ""))
 

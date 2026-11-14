@@ -1,8 +1,16 @@
 # Changelog
 
-> **Latest Version:** v1.4.1 (November 14, 2026)
+> **Latest Version:** v1.5.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.5.0] - 2026-11-14
+
+### Added
+- **My watchlist in the Kodi library**: "Add My watchlist to the library now" (Library menu and Settings → Library) puts every series and film from My watchlist in the Kodi library; a bookmarked episode adds its series. With "Keep My watchlist in the library automatically" new watchlist titles are added at every automatic update, and optionally titles that left the watchlist are removed (only those that came from the watchlist).
+
+### Fixed
+- **Diagnostics**: a library folder is no longer reported as "not a Kodi source" when Kodi already has titles from it (for example when the parent folder was added as the source); editorial rails on the watchlist page are shown as info instead of a warning.
 
 ## [1.4.1] - 2026-11-14
 
