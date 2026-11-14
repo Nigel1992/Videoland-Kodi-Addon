@@ -1,9 +1,16 @@
 # Changelog
 
-> **Latest Version:** v1.9.4 (November 14, 2026)
+> **Latest Version:** v1.9.5 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.5] - 2026-11-14
+
+### Fixed
+- **Dubbele "verder kijken" definitief weg.** Videoland toont nu helemaal geen eigen hervat-venster meer; het hervatten gaat volledig via Kodi (de "Hervatten?"-vraag van Kodi, of automatisch volgens je Kodi-instelling). Dus nog maar één venster, en je hoeft niets bij te werken. Je plek (ook van Videoland zelf) wordt gewoon toegepast.
+
+### Added
+- **Nieuwe afleveringen automatisch in de bibliotheek.** Als een serie die je volgt een nieuwe aflevering krijgt, werkt de addon de bibliotheek bij zodat die aflevering meteen bij de rest komt te staan (Instellingen → Geschiedenis; standaard aan).
 ## [1.9.4] - 2026-11-14
 
 ### Fixed

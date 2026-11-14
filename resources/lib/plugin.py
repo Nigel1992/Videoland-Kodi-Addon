@@ -1739,25 +1739,12 @@ def play(video_id, seo="", parent_id="", parent_seo="", from_library=False):
     # so the add-on must not ask again. The infolabel check is a fallback for
     # items Kodi already has a resume point for.
     kodi_resumes = from_library or kodi_library_resume()
+    # The add-on no longer shows its own "Verder kijken?" dialog: Kodi already
+    # offers its own resume prompt (from the library bookmark, or from the
+    # resume point we set below), and a second dialog on top of it was
+    # confusing. We just carry the server resume position onto the item so
+    # Kodi's own prompt/auto-resume lands in the right place.
     resume_position = 0 if (use_local or kodi_resumes) else get_resume_position(layout, video_id)
-    if resume_position > 0:
-        # Ask user if they want to resume
-        dialog = xbmcgui.Dialog()
-        ret = dialog.yesnocustom(
-            "Verder kijken",
-            f"Er is een hervatingspunt gevonden op {resume_position // 60}:{resume_position % 60:02d}. " +
-            "Wilt u vanaf hier verder kijken?",
-            customlabel="Annuleren",
-            yeslabel="Hervatten",
-            nolabel="Vanaf het begin"
-        )
-        # yesno() conflates Back/Escape with the explicit restart button.
-        # Only the two playback choices may resolve a stream or start syncing.
-        if ret not in (0, 1):
-            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
-            return
-        if ret == 0:
-            resume_position = 0  # Explicitly selected "Vanaf het begin".
 
     assets = list(video_assets(layout, video_id))
     dash = [a for a in assets if a.get("format") == "dash" or ".mpd" in a.get("path", "")]
@@ -2715,6 +2702,9 @@ def notify_new(background=True):
     for title in new_titles[:3]:
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31209).format(title),
                                       xbmcgui.NOTIFICATION_INFO, 7000)
+    # Place the new episodes in the Kodi library right away (for library series).
+    if new_titles and setting_bool("auto_add_episodes", True) and not _library_store().is_empty():
+        xbmc.executebuiltin("RunPlugin({})".format(url(action="library_update", background="1")))
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as handle:

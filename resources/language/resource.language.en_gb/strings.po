@@ -772,3 +772,11 @@ msgstr ""
 msgctxt "#31219"
 msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
 msgstr ""
+
+msgctxt "#31220"
+msgid "Add new episodes to the library automatically"
+msgstr ""
+
+msgctxt "#31221"
+msgid "When a series you follow gets a new episode, update the library so the episode is placed with the others right away."
+msgstr ""
