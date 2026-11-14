@@ -130,3 +130,16 @@ class ResumeTests(unittest.TestCase):
                     plugin.xbmc.executebuiltin.assert_called_once_with('Container.Refresh')
                 else:
                     plugin.xbmc.executebuiltin.assert_not_called()
+
+
+class LibraryResumeTests(unittest.TestCase):
+    def test_kodi_library_resume_needs_a_library_item_with_resume_point(self):
+        plugin = load_plugin()
+        plugin.xbmc.getInfoLabel = lambda label: "42"
+        plugin.xbmc.getCondVisibility = lambda cond: True
+        self.assertTrue(plugin.kodi_library_resume())
+        plugin.xbmc.getCondVisibility = lambda cond: False
+        self.assertFalse(plugin.kodi_library_resume())
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        plugin.xbmc.getCondVisibility = lambda cond: True
+        self.assertFalse(plugin.kodi_library_resume())

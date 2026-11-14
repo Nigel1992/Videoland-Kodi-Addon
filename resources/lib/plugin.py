@@ -1577,6 +1577,16 @@ def _dash_item(helper, asset, drm_token):
     return item
 
 
+def kodi_library_resume():
+    """True when playback starts from a Kodi library item with a resume point."""
+    try:
+        dbid = xbmc.getInfoLabel("ListItem.DBID")
+        from_library = isinstance(dbid, str) and dbid.isdigit() and int(dbid) > 0
+        return bool(from_library and xbmc.getCondVisibility("ListItem.IsResumable") is True)
+    except Exception:
+        return False
+
+
 def play(video_id, seo="", parent_id="", parent_seo=""):
     import inputstreamhelper
 
@@ -1596,7 +1606,10 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
 
     # Check for resume position
     use_local = local_history()
-    resume_position = 0 if use_local else get_resume_position(layout, video_id)
+    # Started from Kodi's own library with a Kodi resume point: Kodi has just
+    # asked "Resume from ...?" itself, so do not ask a second time.
+    kodi_resumes = kodi_library_resume()
+    resume_position = 0 if (use_local or kodi_resumes) else get_resume_position(layout, video_id)
     if resume_position > 0:
         # Ask user if they want to resume
         dialog = xbmcgui.Dialog()
@@ -1634,10 +1647,11 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     # CBookmark::IsSet requires a positive total duration, even for restart.
     tracker = None
     if not use_local:
-        duration = get_video_duration(layout, video_id)
-        item.getVideoInfoTag().setResumePoint(
-            float(resume_position), max(duration, float(resume_position) + 1.0))
-        item.setProperty("StartOffset", str(resume_position))
+        if not kodi_resumes:
+            duration = get_video_duration(layout, video_id)
+            item.getVideoInfoTag().setResumePoint(
+                float(resume_position), max(duration, float(resume_position) + 1.0))
+            item.setProperty("StartOffset", str(resume_position))
         xbmc.log("[Videoland] {}: selected playback position {} seconds".format(
             video_id, resume_position), xbmc.LOGINFO)
         tracker = progress_tracker(client, auth, layout, video_id, location, asset["path"])
