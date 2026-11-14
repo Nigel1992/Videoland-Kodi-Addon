@@ -559,3 +559,11 @@ msgstr "Er is nog geen TMDb-sleutel opgeslagen. Vul de sleutel in, druk op OK om
 msgctxt "#31147"
 msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
 msgstr "TMDb is niet bereikbaar. Controleer je internetverbinding; de sleutel zelf is niet getest."
+
+msgctxt "#31148"
+msgid "Run diagnostics"
+msgstr "Diagnose uitvoeren"
+
+msgctxt "#31149"
+msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
+msgstr "Controleert aanmelding, InputStream Adaptive, Widevine, de verbinding met Videoland, TMDb en TVmaze, en of alle bibliotheektitels in Kodi staan. Slaat een rapport zonder privégegevens op dat je bij een foutmelding kunt meesturen."

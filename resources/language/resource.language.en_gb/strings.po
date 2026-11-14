@@ -489,3 +489,11 @@ msgstr ""
 msgctxt "#31147"
 msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
 msgstr ""
+
+msgctxt "#31148"
+msgid "Run diagnostics"
+msgstr ""
+
+msgctxt "#31149"
+msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
+msgstr ""

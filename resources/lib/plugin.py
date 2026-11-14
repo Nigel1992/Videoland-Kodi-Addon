@@ -1,3 +1,32 @@
+def run_diagnostics():
+    """Settings button: check everything playback and the library need."""
+    t = diagnostics_mod.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    progress = xbmcgui.DialogProgress()
+    progress.create("Videoland", t["title"] + "...")
+    try:
+        auth = auth_data()
+        signed_in = all(auth.get(key) for key in ("uid", "signature", "timestamp")) and bool(setting("profile_id"))
+        endpoints = [("Videoland", VideolandApi.LAYOUT + "/"), ("TMDb", "https://api.themoviedb.org/3/"),
+                     ("TVmaze", "https://api.tvmaze.com/")]
+        tmdb_status = None
+        if setting_bool("library_enrich", True):
+            tmdb_status = metadata_mod.test_tmdb_key(setting("tmdb_api_key"))[0]
+        lib = library_mod.Library(None, setting, store=_library_store())
+        checks = diagnostics_mod.run_checks(
+            t, ADDON.getAddonInfo("version"), signed_in, endpoints, library=lib,
+            library_special=(library_mod.DEFAULT_TV_PATH, library_mod.DEFAULT_MOVIES_PATH),
+            tmdb_status=tmdb_status,
+            kodi_counts=library_art.kodi_counts(lib, "plugin.video.videoland.nl/library"))
+        log_lines = diagnostics_mod.kodi_log_excerpt(["videoland"], diagnostics_mod.redact)
+        text = diagnostics_mod.render(t, checks)
+        path = diagnostics_mod.save_report(os.path.join(data_dir(), "diagnostics"), "videoland",
+                                           diagnostics_mod.redact(text), log_lines)
+        text = diagnostics_mod.render(t, checks, path)
+    finally:
+        progress.close()
+    xbmcgui.Dialog().textviewer("Videoland - " + t["title"], text)
+
+
 def check_tmdb_key():
     """Settings button: test the saved TMDb key and say exactly what is wrong."""
     status, detail = metadata_mod.test_tmdb_key(setting("tmdb_api_key"))
@@ -39,6 +68,7 @@ from . import library as library_mod
 from . import metadata as metadata_mod
 from . import library_art
 from . import errors as errors_mod
+from . import diagnostics as diagnostics_mod
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -1918,8 +1948,9 @@ def _library_update(background):
         if progress is not None:
             progress.close()
     changed = bool(totals["added"] or totals["removed"])
-    if changed:
-        _after_library_change(scan=True, clean=bool(totals["removed"]))
+    if changed or not background:
+        # A manual update always scans, so titles a busy Kodi skipped get in too.
+        library_mod.run_library_jobs(scan=True, clean=bool(totals["removed"]) and setting_bool("library_clean_after", True))
     repair_library_art()
     if not background or (changed and setting_bool("sync_notifications", False)):
         xbmcgui.Dialog().notification(
@@ -2028,6 +2059,8 @@ def dispatch(params):
         library_update(background=params.get("background") == "1")
     elif action == "repair_library_art":
         repair_library_art(background=params.get("background") == "1")
+    elif action == "diagnostics":
+        run_diagnostics()
     elif action == "check_tmdb_key":
         check_tmdb_key()
     elif action == "library_play":

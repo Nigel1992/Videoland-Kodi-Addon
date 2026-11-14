@@ -77,6 +77,13 @@
           </dependencies>
           <control type="toggle"/>
         </setting>
+        <setting id="run_diagnostics" type="action" label="31148" help="31149">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=diagnostics)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
         <setting id="sync_status" type="action" label="31062" help="31063">
           <level>0</level>
           <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>

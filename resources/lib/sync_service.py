@@ -95,6 +95,7 @@ def run():
     started = time.monotonic()
     next_library_check = 0
     next_library_run = 0
+    next_scan_check = 0
     while not monitor.abortRequested():
         current = addon.getSettingString('history_source')
         if current != source:
@@ -112,6 +113,13 @@ def run():
         except Exception as exc:
             xbmc.log('[Videoland] Progress retry unavailable ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         now = time.monotonic()
+        if now >= next_scan_check:
+            # A scan asked for while Kodi was busy runs as soon as it is free.
+            next_scan_check = now + 10
+            try:
+                library_art.run_pending_scan(library_mod.scan_flag_path())
+            except Exception:
+                pass
         if monitor.scan_finished:
             monitor.scan_finished = False
             try:
