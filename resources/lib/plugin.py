@@ -89,6 +89,7 @@ from . import logo_cache as logo_cache_mod
 from . import playback_extras
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from . import watch_sync
+from . import watch_history
 from .sync_store import DurableWriter, SyncStore
 
 
@@ -694,6 +695,7 @@ def root():
             add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
         add(ADDON.getLocalizedString(31120), url(action="library"), True, icon_key="bibliotheek")
         add(ADDON.getLocalizedString(31182), url(action="widgets"), True, icon_key="widgets")
+        add(ADDON.getLocalizedString(31194), url(action="history"), True, icon_key="continue")
         name = active_profile_name(client, auth)
         add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
         add(ADDON.getLocalizedString(31142), url(action="logout"), False, icon_key="afmelden")
@@ -1766,6 +1768,21 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
         xbmc.log("[Videoland] {}: selected playback position {} seconds".format(
             video_id, resume_position), xbmc.LOGINFO)
         tracker = progress_tracker(client, auth, layout, video_id, location, asset["path"])
+    card = _video_item(layout, video_id)
+    title = _layout_title(layout) or (card.get("title") if isinstance(card, dict) else "") or ""
+    now_playing = {"video_id": video_id, "seo": seo, "parent_id": parent_id, "parent_seo": parent_seo,
+                   "title": title, "thumb": content_art((card or {}).get("image")).get("thumb", "")}
+    try:
+        xbmcgui.Window(10000).setProperty("videoland.now_playing", json.dumps(now_playing))
+        xbmcgui.Window(10000).clearProperty("videoland.stop_after")
+    except Exception:
+        pass
+    try:
+        watch_history.record(_history_path(), {"id": video_id, "video_id": video_id, "seo": seo,
+                                               "parent_id": parent_id, "parent_seo": parent_seo,
+                                               "title": title, "thumb": now_playing.get("thumb", "")})
+    except Exception:
+        pass
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
     _start_playback_extras(client, layout, asset, video_id, seo, parent_id, parent_seo)
     if tracker:
@@ -2453,6 +2470,8 @@ def browse_library():
             label = "{} [COLOR grey]({})[/COLOR]".format(title, ADDON.getLocalizedString(label_id))
             seo = entry.get("seo", "")
             if kind == "series":
+                remove = [(ADDON.getLocalizedString(31192), "RunPlugin({})".format(url(
+                    action="shuffle", series_id=item_id, seo=seo)))] + remove
                 add(label, url(action="layout", kind="program", entity_id=item_id, seo=seo), True,
                     art, {"title": title}, context_menu=remove)
             else:
@@ -2500,6 +2519,7 @@ def widgets_menu():
         entries.append((ADDON.getLocalizedString(31079), url(action="continue_watching"), "continue"))
     entries.append((ADDON.getLocalizedString(31186), url(action="layout", kind="frontspace", entity_id="bookmarks"), "kijklijst"))
     entries.append((ADDON.getLocalizedString(31120), url(action="library"), "bibliotheek"))
+    entries.append((ADDON.getLocalizedString(31194), url(action="history"), "continue"))
     for label, route, icon in entries:
         add(label, route, True, icon_key=icon, info={"plot": help_text})
     xbmcplugin.endOfDirectory(HANDLE)
@@ -2533,6 +2553,69 @@ def mark_watched_on_service(video_id, seo="", parent_id="", parent_seo="", watch
         writer.save(0, "seek")
     xbmc.log("[Videoland] Watched status {} for {} sent".format(
         "on" if want_watched else "off", video_id), xbmc.LOGINFO)
+
+
+
+def _history_path():
+    return os.path.join(data_dir(), "watch_history.json")
+
+
+def play_next(video_id, parent_id="", parent_seo="", background=False):
+    """Start the next episode in a series (used by binge mode)."""
+    if not video_id or not parent_id:
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    current, following = _next_episode(client, video_id, parent_id, parent_seo)
+    if not following:
+        return
+    target = following[1]
+    parent = target.get("parent") or {}
+    query = {"action": "play", "video_id": target.get("id", ""), "seo": target.get("seo", ""),
+             "parent_id": parent.get("id") or parent_id, "parent_seo": parent.get("seo") or parent_seo}
+    xbmc.executebuiltin("PlayMedia({})".format(url(**query)))
+
+
+def shuffle_series(series_id, seo=""):
+    """Play a random episode of a library/browse series."""
+    if not series_id:
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    data = LibrarySource(client).series(series_id, seo)
+    episodes = (data or {}).get("episodes") or []
+    choice = watch_history.pick_random(episodes)
+    if not choice:
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31193), xbmcgui.NOTIFICATION_INFO)
+        return
+    query = {"action": "play", "video_id": choice["id"], "seo": choice.get("seo", ""),
+             "parent_id": choice.get("parent_id") or series_id, "parent_seo": choice.get("parent_seo") or seo}
+    xbmc.executebuiltin("PlayMedia({})".format(url(**query)))
+
+
+def browse_history():
+    xbmcplugin.setContent(HANDLE, "videos")
+    items = watch_history.entries(_history_path())
+    if not items:
+        add(ADDON.getLocalizedString(31195), url(action="history"), False, icon_key="continue")
+    else:
+        add(ADDON.getLocalizedString(31196), url(action="clear_history"), False, icon_key="cache")
+    for row in items:
+        label = row.get("title") or row.get("video_id") or row.get("id") or ""
+        art = {"thumb": row.get("thumb")} if row.get("thumb") else None
+        query = {"action": "play", "video_id": row.get("video_id") or row.get("id") or "",
+                 "seo": row.get("seo", ""), "parent_id": row.get("parent_id", ""),
+                 "parent_seo": row.get("parent_seo", "")}
+        add(label, url(**query), False, art, {"title": label}, playable=True)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def clear_history():
+    watch_history.clear(_history_path())
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31197), xbmcgui.NOTIFICATION_INFO, 3000)
+    xbmc.executebuiltin("Container.Refresh")
 
 
 
@@ -2623,6 +2706,15 @@ def dispatch(params):
         mark_watched_on_service(params.get("video_id", ""), params.get("seo", ""),
                                 params.get("parent_id", ""), params.get("parent_seo", ""),
                                 params.get("watched", "1"))
+    elif action == "play_next":
+        play_next(params.get("video_id", ""), params.get("parent_id", ""),
+                  params.get("parent_seo", ""), params.get("background") == "1")
+    elif action == "shuffle":
+        shuffle_series(params.get("series_id", ""), params.get("seo", ""))
+    elif action == "history":
+        browse_history()
+    elif action == "clear_history":
+        clear_history()
 
 
 def run():

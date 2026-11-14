@@ -303,6 +303,41 @@
           <default>true</default>
           <control type="toggle"/>
         </setting>
+        <setting id="autoplay_next" type="boolean" label="31187" help="31188">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="preferred_audio" type="string" label="31198" help="31199">
+          <level>0</level>
+          <default>off</default>
+          <constraints>
+            <options>
+              <option label="31202">off</option>
+              <option label="31203">nl</option>
+              <option label="31204">en</option>
+              <option label="31205">original</option>
+            </options>
+          </constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+        <setting id="preferred_subtitle" type="string" label="31200" help="31201">
+          <level>0</level>
+          <default>off</default>
+          <constraints>
+            <options>
+              <option label="31202">off</option>
+              <option label="31203">nl</option>
+              <option label="31204">en</option>
+            </options>
+          </constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+        <setting id="clear_watch_history" type="action" label="31196" help="">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=clear_history)</data>
+          <control type="button" format="action"><close>false</close></control>
+        </setting>
       </group>
     </category>
     <category id="cache" label="31020">

@@ -704,3 +704,79 @@ msgstr "Kijkstatus naar Videoland gestuurd"
 msgctxt "#31186"
 msgid "My watchlist"
 msgstr "Mijn kijklijst"
+
+msgctxt "#31187"
+msgid "Automatically play the next episode (binge)"
+msgstr "Volgende aflevering automatisch afspelen (binge)"
+
+msgctxt "#31188"
+msgid "When an episode ends, the next one starts by itself. With the Up Next add-on installed, leave this off and let Up Next do it."
+msgstr "Als een aflevering eindigt, start de volgende vanzelf. Heb je de Up Next-addon, laat dit dan uit en laat Up Next het doen."
+
+msgctxt "#31189"
+msgid "Stop after this episode"
+msgstr "Stop na deze aflevering"
+
+msgctxt "#31190"
+msgid "The next episode will not start automatically"
+msgstr "De volgende aflevering start niet automatisch"
+
+msgctxt "#31191"
+msgid "Automatic next episode is on again"
+msgstr "Automatisch volgende aflevering staat weer aan"
+
+msgctxt "#31192"
+msgid "Play a random episode"
+msgstr "Willekeurige aflevering afspelen"
+
+msgctxt "#31193"
+msgid "No episodes found to pick from"
+msgstr "Geen afleveringen gevonden om uit te kiezen"
+
+msgctxt "#31194"
+msgid "Watch history"
+msgstr "Kijkgeschiedenis"
+
+msgctxt "#31195"
+msgid "Nothing watched yet"
+msgstr "Nog niets gekeken"
+
+msgctxt "#31196"
+msgid "Clear watch history"
+msgstr "Kijkgeschiedenis wissen"
+
+msgctxt "#31197"
+msgid "Watch history cleared"
+msgstr "Kijkgeschiedenis gewist"
+
+msgctxt "#31198"
+msgid "Preferred audio language"
+msgstr "Voorkeur gesproken taal"
+
+msgctxt "#31199"
+msgid "Automatically choose this spoken language when a video starts, if available."
+msgstr "Kies deze gesproken taal automatisch als een video start, als die beschikbaar is."
+
+msgctxt "#31200"
+msgid "Preferred subtitle language"
+msgstr "Voorkeur ondertiteltaal"
+
+msgctxt "#31201"
+msgid "Automatically turn on subtitles in this language when a video starts, if available."
+msgstr "Zet automatisch ondertiteling in deze taal aan als een video start, als die beschikbaar is."
+
+msgctxt "#31202"
+msgid "Off"
+msgstr "Uit"
+
+msgctxt "#31203"
+msgid "Dutch"
+msgstr "Nederlands"
+
+msgctxt "#31204"
+msgid "English"
+msgstr "Engels"
+
+msgctxt "#31205"
+msgid "Original"
+msgstr "Origineel"

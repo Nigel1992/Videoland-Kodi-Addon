@@ -16,6 +16,7 @@ from resources.lib.crypto import decrypt_json
 from resources.lib.progress import ProgressWriter
 from resources.lib.sync_store import SyncStore
 from resources.lib import watch_sync
+from resources.lib import playback_extras
 
 
 def retry_pending(addon, directory, store):
@@ -129,6 +130,51 @@ class LibraryMonitor(xbmc.Monitor):
             xbmc.log('[Videoland] Library watched check failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
 
 
+class PlaybackFollower(xbmc.Player):
+    """Applies the audio/subtitle preference and the binge auto-play."""
+
+    def __init__(self, addon):
+        super().__init__()
+        self.addon = addon
+        self.current = {}
+
+    def onAVStarted(self):
+        import json
+        window = xbmcgui.Window(10000)
+        raw = window.getProperty('videoland.now_playing')
+        try:
+            self.current = json.loads(raw) if raw else {}
+        except ValueError:
+            self.current = {}
+        window.clearProperty('videoland.stop_after')
+        audio = self.addon.getSettingString('preferred_audio') or 'off'
+        sub = self.addon.getSettingString('preferred_subtitle') or 'off'
+        if audio not in ('', 'off') or sub not in ('', 'off'):
+            try:
+                result = playback_extras.apply_language(_rpc, audio, sub)
+                xbmc.log('[Videoland] language {}'.format(result), xbmc.LOGINFO)
+            except Exception as exc:
+                xbmc.log('[Videoland] language select failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+
+    def onPlayBackEnded(self):
+        self._binge()
+
+    def _binge(self):
+        current = self.current
+        self.current = {}
+        if not self.addon.getSettingBool('autoplay_next') or not current.get('video_id'):
+            return
+        if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
+            return
+        if xbmc.getCondVisibility('System.HasAddon(service.upnext)'):
+            return
+        query = {'action': 'play_next', 'video_id': current['video_id'],
+                 'parent_id': current.get('parent_id', ''), 'parent_seo': current.get('parent_seo', ''),
+                 'background': '1'}
+        from urllib.parse import urlencode
+        xbmc.executebuiltin('RunPlugin(plugin://{}/?{})'.format(ADDON_ID, urlencode(query)))
+
+
 def repair_art_after_scan(addon):
     store = library_mod.LibraryStore(library_mod.store_path())
     if store.is_empty():
@@ -142,6 +188,7 @@ def run():
     directory = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.videoland.nl')
     store = SyncStore(directory)
     monitor = LibraryMonitor()
+    follower = PlaybackFollower(addon)
     xbmc.log('[Videoland] Cloud progress retry service started', xbmc.LOGINFO)
     source = addon.getSettingString('history_source')
     refresh_pending = False

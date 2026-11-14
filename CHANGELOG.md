@@ -1,9 +1,20 @@
 # Changelog
 
-> **Latest Version:** v1.7.0 (November 14, 2026)
+> **Latest Version:** v1.8.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.8.0] - 2026-11-14
+
+### Added
+- **Binge-modus**: schakelaar "Volgende aflevering automatisch afspelen" (Instellingen → Afspelen). Met Up Next geïnstalleerd: laat dit uit en laat Up Next het doen.
+- **Stop na deze aflevering**: zet de automatische volgende aflevering voor die sessie uit.
+- **Willekeurige aflevering (shuffle)**: contextmenu op een serie in je bibliotheek.
+- **Vaste taal- en ondertitelvoorkeur**: automatische keuze van gesproken taal/ondertitels bij het starten (Instellingen → Afspelen).
+- **Kijkgeschiedenis**: lokale lijst van wat je gekeken hebt, in het hoofdmenu en als widget, met wisknop.
+
+### Development
+- Deelt de nieuwe `watch_history.py`-module en de taalkeuze in `playback_extras.py` met NLZiet. Extra tests.
 ## [1.7.0] - 2026-11-14
 
 ### Added
