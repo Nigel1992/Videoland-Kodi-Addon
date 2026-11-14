@@ -1,0 +1,175 @@
+import os
+import tempfile
+import unittest
+from unittest.mock import MagicMock
+from urllib.error import HTTPError
+
+from resources.lib import library
+from resources.lib.api import ApiError
+from test_auth import load_plugin
+
+
+def _files(root):
+    found = []
+    for base, _dirs, files in os.walk(root):
+        for name in files:
+            found.append(os.path.relpath(os.path.join(base, name), root).replace(os.sep, "/"))
+    return sorted(found)
+
+
+class FakeSource:
+    def __init__(self):
+        self.shows = {}
+        self.films = {}
+        self.gone = set()
+
+    def series(self, series_id, seo):
+        if series_id in self.gone:
+            raise library.TitleGone(series_id)
+        return self.shows.get(series_id)
+
+    def movie(self, movie_id, seo):
+        if movie_id in self.gone:
+            raise library.TitleGone(movie_id)
+        return self.films.get(movie_id)
+
+
+def episode(ep_id, season, number, title=None):
+    return {"id": ep_id, "seo": "ep-" + ep_id, "parent_id": "p1", "parent_seo": "show",
+            "title": title or ep_id, "plot": "Plot", "season": season, "episode": number, "thumb": ""}
+
+
+class LibraryTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = self.tmp.name
+        self.settings = {"library_tv_path": os.path.join(self.root, "TV Shows"),
+                         "library_movies_path": os.path.join(self.root, "Movies")}
+        self.source = FakeSource()
+        self.clock = [1_700_000_000]
+        store = library.LibraryStore(os.path.join(self.root, "library.json"))
+        self.lib = library.Library(self.source, self.settings.get, store=store, now=lambda: self.clock[0])
+
+    def test_series_export_with_stable_numbers(self):
+        self.source.shows["p1"] = {"title": "Mijn Show", "plot": "Over", "poster": "https://img/p.jpg",
+                                   "fanart": "", "episodes": [episode("a", 1, 1), episode("b", 1, 2), episode("c", None, None)]}
+        result = self.lib.add_series("p1", "show")
+        self.assertTrue(result["ok"])
+        self.assertEqual(_files(os.path.join(self.root, "TV Shows")), [
+            "Mijn Show/Season 1/Mijn Show S01E01.nfo", "Mijn Show/Season 1/Mijn Show S01E01.strm",
+            "Mijn Show/Season 1/Mijn Show S01E02.nfo", "Mijn Show/Season 1/Mijn Show S01E02.strm",
+            "Mijn Show/Season 1/Mijn Show S01E03.nfo", "Mijn Show/Season 1/Mijn Show S01E03.strm",
+            "Mijn Show/tvshow.nfo"])
+        with open(os.path.join(self.root, "TV Shows/Mijn Show/Season 1/Mijn Show S01E02.strm")) as handle:
+            self.assertEqual(handle.read().strip(),
+                             "plugin://plugin.video.videoland.nl/?action=play&video_id=b&seo=ep-b&parent_id=p1&parent_seo=show")
+
+        # 'a' leaves Videoland, 'd' arrives: the others keep their numbers.
+        self.source.shows["p1"]["episodes"] = [episode("b", 1, 2), episode("c", None, None), episode("d", 2, 1)]
+        totals = self.lib.update_all()
+        self.assertEqual((totals["added"], totals["removed"], totals["failed"]), (1, 1, 0))
+        names = _files(os.path.join(self.root, "TV Shows/Mijn Show"))
+        self.assertIn("Season 1/Mijn Show S01E03.strm", names)
+        self.assertIn("Season 2/Mijn Show S02E01.strm", names)
+        self.assertNotIn("Season 1/Mijn Show S01E01.strm", names)
+
+    def test_title_removed_only_after_three_misses(self):
+        self.source.films["m1"] = {"title": "Film", "plot": "", "year": 2020,
+                                   "play": {"video_id": "clip_9", "seo": "film", "parent_id": "m1", "parent_seo": "film"}}
+        self.lib.add_movie("m1", "film")
+        self.assertEqual(_files(os.path.join(self.root, "Movies")),
+                         ["Film (2020)/Film (2020).nfo", "Film (2020)/Film (2020).strm"])
+        self.source.gone.add("m1")
+        self.lib.update_all()
+        self.lib.update_all()
+        self.assertTrue(self.lib.is_in_library("movie", "m1"))
+        totals = self.lib.update_all()
+        self.assertEqual(totals["removed"], 1)
+        self.assertFalse(self.lib.is_in_library("movie", "m1"))
+        self.assertEqual(_files(os.path.join(self.root, "Movies")), [])
+
+    def test_errors_do_not_count_as_missing(self):
+        self.source.shows["p1"] = {"title": "Show", "episodes": [episode("a", 1, 1)]}
+        self.lib.add_series("p1")
+        self.source.series = MagicMock(side_effect=ApiError("offline"))
+        for _ in range(5):
+            totals = self.lib.update_all()
+        self.assertEqual(totals["failed"], 1)
+        self.assertTrue(self.lib.is_in_library("series", "p1"))
+        self.assertEqual(self.lib.store.get("series", "p1").get("missing", 0), 0)
+
+    def test_remove_and_update_due(self):
+        self.source.shows["p1"] = {"title": "Show", "episodes": [episode("a", 1, 1)]}
+        self.lib.add_series("p1")
+        self.assertTrue(library.update_due(self.lib.store, 12, now=self.clock[0]))
+        self.lib.update_all()
+        self.assertFalse(library.update_due(self.lib.store, 12, now=self.clock[0]))
+        self.assertTrue(library.update_due(self.lib.store, 12, now=self.clock[0] + 12 * 3600))
+        self.assertTrue(self.lib.remove("series", "p1"))
+        self.assertFalse(os.path.exists(os.path.join(self.root, "TV Shows", "Show")))
+        self.assertFalse(library.update_due(self.lib.store, 12, now=self.clock[0] + 99 * 3600))
+
+
+class PluginLibraryTests(unittest.TestCase):
+    def setUp(self):
+        self.plugin = load_plugin()
+        self.plugin.menu_icon = MagicMock(return_value=None)
+        self.plugin.ADDON.getLocalizedString.side_effect = lambda sid: "s{}".format(sid)
+        self.plugin._library_has = MagicMock(return_value=False)
+        self.plugin.add = MagicMock()
+
+    def _menu(self, rows):
+        self.plugin._render_rows(rows)
+        return self.plugin.add.call_args.kwargs["context_menu"]
+
+    def test_series_folder_gets_add_to_library(self):
+        self.plugin._play_target = MagicMock(return_value=None)
+        menu = self._menu([({"title": "Show"}, {"id": "p1", "type": "program", "seo": "show"}, "program", {})])
+        entry = [m for m in menu if "library_toggle" in m[1]]
+        self.assertEqual(entry[0][0], "s31110")
+        self.assertIn("kind=series", entry[0][1])
+
+    def test_film_gets_movie_kind_and_remove_label_when_present(self):
+        self.plugin._play_target = MagicMock(return_value={"id": "clip_1", "seo": "film"})
+        self.plugin._library_has.return_value = True
+        menu = self._menu([({"title": "Film"}, {"id": "m1", "type": "program", "seo": "film"}, "program", {})])
+        entry = [m for m in menu if "library_toggle" in m[1]]
+        self.assertEqual(entry[0][0], "s31111")
+        self.assertIn("kind=movie", entry[0][1])
+
+    def test_episode_has_no_library_entry(self):
+        menu = self._menu([({"title": "Ep"}, {"id": "clip_1", "type": "video"}, "video", {})])
+        self.assertFalse(any("library_toggle" in m[1] for m in menu))
+
+    def test_source_reads_episodes_and_marks_404_as_gone(self):
+        client = MagicMock()
+        block = {"block_title": "Seizoen 2"}
+        data = {"entity": {"title": "Show"}, "blocks": []}
+        client.layout.return_value = data
+        self.plugin._build_rows = MagicMock(return_value=[
+            ({"extraTitle": "3. De val", "description": "Spannend"},
+             {"id": "clip_5", "seo": "de-val", "parent": {"id": "p1", "seo": "show"}}, "video", block)])
+        result = self.plugin.LibrarySource(client).series("p1", "show")
+        self.assertEqual(result["title"], "Show")
+        self.assertEqual(result["episodes"][0]["season"], 2)
+        self.assertEqual(result["episodes"][0]["episode"], 3)
+        self.assertEqual(result["episodes"][0]["title"], "De val")
+
+        error = ApiError("not found")
+        error.__cause__ = HTTPError("https://x.invalid", 404, "nf", {}, None)
+        self.addCleanup(error.__cause__.close)
+        client.layout.side_effect = error
+        with self.assertRaises(library.TitleGone):
+            self.plugin.LibrarySource(client).series("p1", "show")
+
+    def test_background_update_never_raises(self):
+        self.plugin.xbmc.Player.return_value.isPlaying.return_value = False
+        self.plugin.setting = MagicMock(return_value="profile")
+        self.plugin._library_update = MagicMock(side_effect=ApiError("boom"))
+        self.plugin.library_update(background=True)
+        self.plugin.xbmcgui.Dialog.return_value.ok.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

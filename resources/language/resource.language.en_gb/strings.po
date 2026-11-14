@@ -337,3 +337,95 @@ msgstr ""
 msgctxt "#31101"
 msgid "Videoland has no related titles for this selection at the moment."
 msgstr ""
+
+msgctxt "#31110"
+msgid "Add to library"
+msgstr ""
+
+msgctxt "#31111"
+msgid "Remove from library"
+msgstr ""
+
+msgctxt "#31112"
+msgid "Adding to library: {0}"
+msgstr ""
+
+msgctxt "#31113"
+msgid "This title could not be added to the library right now."
+msgstr ""
+
+msgctxt "#31114"
+msgid "{0} added to library ({1} episodes)"
+msgstr ""
+
+msgctxt "#31115"
+msgid "{0} added to library"
+msgstr ""
+
+msgctxt "#31116"
+msgid "{0} removed from library"
+msgstr ""
+
+msgctxt "#31117"
+msgid "The library is empty. Add series or films through their context menu."
+msgstr ""
+
+msgctxt "#31118"
+msgid "Updating library..."
+msgstr ""
+
+msgctxt "#31119"
+msgid "Library updated: {0} new, {1} removed"
+msgstr ""
+
+msgctxt "#31120"
+msgid "Library"
+msgstr ""
+
+msgctxt "#31121"
+msgid "Update library now"
+msgstr ""
+
+msgctxt "#31122"
+msgid "Series"
+msgstr ""
+
+msgctxt "#31123"
+msgid "Film"
+msgstr ""
+
+msgctxt "#31124"
+msgid "Folder for series"
+msgstr ""
+
+msgctxt "#31125"
+msgid "Add this folder once in Kodi as a video source with content type TV shows and the scraper \"Local information only\"."
+msgstr ""
+
+msgctxt "#31126"
+msgid "Folder for films"
+msgstr ""
+
+msgctxt "#31127"
+msgid "Add this folder once in Kodi as a video source with content type Movies and the scraper \"Local information only\"."
+msgstr ""
+
+msgctxt "#31128"
+msgid "Update library automatically"
+msgstr ""
+
+msgctxt "#31129"
+msgid "Adds new episodes and removes titles that left Videoland. Never runs during playback. A title is only removed after it is missing three updates in a row."
+msgstr ""
+
+msgctxt "#31130"
+msgid "Update every (hours)"
+msgstr ""
+
+msgctxt "#31131"
+msgid "Scan the Kodi library after a change"
+msgstr ""
+
+msgctxt "#31132"
+msgid "Clean removed titles from the Kodi library"
+msgstr ""

@@ -26,6 +26,7 @@ from .api import (
     walk_item_content,
 )
 from .crypto import CipherError, decrypt_json, encrypt_json
+from . import library as library_mod
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -244,6 +245,8 @@ _ICON_MAP = {
     "mijn kijklijst": "kijklijst",
     "kijklijst": "kijklijst",
     "live tv": "collection",
+    "bibliotheek": "bibliotheek",
+    "library": "bibliotheek",
 }
 
 
@@ -589,6 +592,7 @@ def root():
         add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
         if not local_history():
             add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
+        add(ADDON.getLocalizedString(31120), url(action="library"), True, icon_key="bibliotheek")
         add("Afmelden", url(action="logout"), False, icon_key="afmelden")
     add("Cache wissen", url(action="clear_cache"), False, icon_key="cache")
     xbmcplugin.endOfDirectory(HANDLE)
@@ -985,6 +989,21 @@ def _needs_program_peek(item, target, target_kind):
     return True
 
 
+def _item_label(item, fallback=""):
+    """Display name of a catalogue card (title, caption or cleaned extraTitle)."""
+    image = item.get("image") or {}
+    caption = image.get("caption") if isinstance(image.get("caption"), str) else ""
+    label = (
+        item.get("title")
+        or item.get("name")
+        or caption
+        or _clean_episode_label(item.get("extraTitle"))
+        or item.get("extraTitle")
+        or fallback
+    )
+    return label if isinstance(label, str) else str(label)
+
+
 def _render_rows(rows, client=None, page_art=None):
     """Add every collected row as a directory/playable entry."""
     # Resolve film-vs-series for whole program-list pages in parallel so a big
@@ -1054,16 +1073,7 @@ def _render_rows(rows, client=None, page_art=None):
         # extraTitle with "N. " (e.g. "1. Het feest") while the caption holds the
         # clean episode/category name.
         caption = image.get("caption") if isinstance(image.get("caption"), str) else ""
-        label = (
-            item.get("title")
-            or item.get("name")
-            or caption
-            or _clean_episode_label(item.get("extraTitle"))
-            or item.get("extraTitle")
-            or target_id
-        )
-        if not isinstance(label, str):
-            label = str(label)
+        label = _item_label(item, target_id)
         episode_details = episodes.get(target_id)
         episode_title = episode_details[0] if isinstance(episode_details, tuple) else None
         episode_plot = episode_details[1] if isinstance(episode_details, tuple) else None
@@ -1100,6 +1110,19 @@ def _render_rows(rows, client=None, page_art=None):
             play_target = resolve[target_id]
         else:
             play_target = _play_target(client, item, target, target_kind)
+        library_kind = None
+        if target_kind in ("program", "details") and play_target:
+            library_kind = "movie"
+        elif target_kind == "program" and not play_target:
+            library_kind = "series"
+        if library_kind:
+            in_library = _library_has(library_kind, target_id)
+            context_menu.append((
+                ADDON.getLocalizedString(31111 if in_library else 31110),
+                "RunPlugin({})".format(url(
+                    action="library_toggle", kind=library_kind, id=target_id,
+                    seo=target.get("seo", ""), title=label, thumb=art.get("thumb", ""))),
+            ))
         if target_kind == "live":
             add(label, url(
                 action="play_live", channel_id=target.get("id", target_id),
@@ -1596,6 +1619,265 @@ def play_live(channel_id, seo=""):
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
+# --------------------------------------------------------------------------
+# Kodi library
+# --------------------------------------------------------------------------
+
+def _http_status(exc):
+    cause = getattr(exc, "__cause__", None)
+    return getattr(cause, "code", None) or getattr(cause, "status", None)
+
+
+def _layout_title(data):
+    entity = data.get("entity") or {}
+    title = entity.get("title") if isinstance(entity, dict) else None
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+    metadata = entity.get("metadata") if isinstance(entity, dict) and isinstance(entity.get("metadata"), dict) else {}
+    if isinstance(metadata.get("title"), str) and metadata["title"].strip():
+        return metadata["title"].strip()
+    seo = data.get("seo") if isinstance(data.get("seo"), dict) else {}
+    if isinstance(seo.get("title"), str) and seo["title"].strip():
+        return seo["title"].strip()
+    return ""
+
+
+def _hero_details(data):
+    """Plot and poster of a title page, read from its Jumbotron."""
+    plot, poster = "", ""
+    base = "https://images-fio.videoland.bedrock.tech/v2/images/{}/raw"
+    for block in data.get("blocks", []):
+        content = block.get("content") or {}
+        if content.get("contentTemplateId") != "Jumbotron":
+            continue
+        for item, _section in walk_item_content(content):
+            if not plot and isinstance(item.get("description"), str):
+                plot = item["description"].strip()
+            ratios = (item.get("image") or {}).get("idsByRatio") or {}
+            image_id = ratios.get("2:3") or ratios.get("3:4")
+            if not poster and image_id:
+                poster = base.format(image_id)
+    return plot, poster
+
+
+class LibrarySource:
+    """Reads series and films from Videoland for the library module."""
+
+    def __init__(self, client):
+        self.client = client
+
+    def _program(self, program_id, seo):
+        def load_block(block):
+            tealium = (block.get("analytics") or {}).get("tealium") or {}
+            return not is_related_block({"feature": tealium.get("from"), "block_title": tealium.get("block_title")})
+        try:
+            return self.client.layout("program", program_id, program_location(seo, program_id),
+                                      complete=True, block_filter=load_block)
+        except AuthError:
+            raise
+        except ApiError as exc:
+            if _http_status(exc) in (404, 410):
+                raise library_mod.TitleGone(str(exc))
+            raise
+
+    def series(self, series_id, seo):
+        data = self._program(series_id, seo)
+        episodes = []
+        for item, target, kind, block in _build_rows(data):
+            if kind != "video" or is_hero_block(block):
+                continue
+            parent = target.get("parent") or {}
+            episode_id = str(target.get("id") or "")
+            episodes.append({
+                "id": episode_id,
+                "seo": target.get("seo", ""),
+                "parent_id": str(parent.get("id") or series_id),
+                "parent_seo": parent.get("seo") or seo,
+                "title": _clean_episode_label(_item_label(item, episode_id)),
+                "plot": str(item.get("description") or "").strip(),
+                "season": block_season(block),
+                "episode": _episode_number(item),
+                "thumb": content_art(item.get("image")).get("thumb", ""),
+            })
+        plot, poster = _hero_details(data)
+        return {"title": _layout_title(data), "plot": plot, "poster": poster,
+                "fanart": hero_art(data).get("fanart", ""), "episodes": episodes}
+
+    def movie(self, movie_id, seo):
+        data = self._program(movie_id, seo)
+        target = _play_target(self.client, {}, {"id": movie_id, "seo": seo}, "program", program_data=data)
+        if not target:
+            return None
+        parent = target.get("parent") or {}
+        plot, poster = _hero_details(data)
+        return {
+            "title": _layout_title(data), "plot": plot, "poster": poster,
+            "fanart": hero_art(data).get("fanart", ""),
+            "play": {"video_id": str(target.get("id") or ""), "seo": target.get("seo", ""),
+                     "parent_id": str(parent.get("id") or movie_id), "parent_seo": parent.get("seo") or seo},
+        }
+
+
+_LIBRARY_STORE = None
+
+
+def _library_store():
+    global _LIBRARY_STORE
+    if _LIBRARY_STORE is None:
+        _LIBRARY_STORE = library_mod.LibraryStore(library_mod.store_path())
+    return _LIBRARY_STORE
+
+
+def _library_has(kind, item_id):
+    try:
+        return _library_store().has(kind, item_id)
+    except Exception:
+        return False
+
+
+def _library(client=None):
+    return library_mod.Library(LibrarySource(client or api()), setting, store=_library_store())
+
+
+def _after_library_change(scan=True, clean=False):
+    scan = scan and setting_bool("library_scan_after", True)
+    clean = clean and setting_bool("library_clean_after", True)
+    if scan or clean:
+        library_mod.run_library_jobs(scan=scan, clean=clean)
+
+
+def library_add(kind, item_id, seo="", title="", thumb=""):
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    lib = _library(client)
+    progress = xbmcgui.DialogProgressBG()
+    progress.create("Videoland", ADDON.getLocalizedString(31112).format(title))
+    try:
+        if kind == "series":
+            result = lib.add_series(item_id, seo, title)
+        else:
+            result = lib.add_movie(item_id, seo, title)
+    finally:
+        progress.close()
+    if not result.get("ok"):
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31113), xbmcgui.NOTIFICATION_WARNING)
+        return
+    entry = lib.store.get(kind, item_id)
+    if thumb and entry is not None and not entry.get("thumb"):
+        entry["thumb"] = thumb
+    lib.store.save()
+    if kind == "series":
+        message = ADDON.getLocalizedString(31114).format(result.get("title") or title, result.get("total", 0))
+    else:
+        message = ADDON.getLocalizedString(31115).format(result.get("title") or title)
+    xbmcgui.Dialog().notification("Videoland", message, time=4000)
+    _after_library_change(scan=True)
+
+
+def library_remove(kind, item_id, title=""):
+    lib = library_mod.Library(None, setting, store=_library_store())
+    if lib.remove(kind, item_id):
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31116).format(title), time=3000)
+        _after_library_change(scan=False, clean=True)
+        xbmc.executebuiltin("Container.Refresh")
+
+
+def library_toggle(kind, item_id, seo="", title="", thumb=""):
+    kind = "series" if kind == "series" else "movie"
+    if _library_has(kind, item_id):
+        library_remove(kind, item_id, title)
+    else:
+        library_add(kind, item_id, seo, title, thumb)
+        xbmc.executebuiltin("Container.Refresh")
+
+
+def library_update(background=False):
+    if not background:
+        return _library_update(False)
+    # The background run must never show dialogs or ask for a login/profile.
+    if xbmc.Player().isPlaying() or not setting("profile_id"):
+        return
+    try:
+        _library_update(True)
+    except Exception as exc:
+        xbmc.log("[Videoland] Background library update skipped ({}: {})".format(
+            type(exc).__name__, exc), xbmc.LOGWARNING)
+
+
+def _library_update(background):
+    if _library_store().is_empty():
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31117), time=3000)
+        return
+    client = api()
+    if background:
+        auth = auth_data()
+        if not all(auth.get(key) for key in ("uid", "signature", "timestamp")):
+            return
+    else:
+        auth = ensure_login()
+    ensure_profile(client, auth)
+    lib = _library(client)
+    progress = None
+    if not background:
+        progress = xbmcgui.DialogProgressBG()
+        progress.create("Videoland", ADDON.getLocalizedString(31118))
+
+    def report(index, total, kind, item_id):
+        if progress is not None and total:
+            entry = lib.store.get(kind, item_id) or {}
+            progress.update(int(index * 100 / total), "Videoland", entry.get("title") or item_id)
+        return True
+
+    try:
+        totals = lib.update_all(progress=report, stop_on=(AuthError,))
+    finally:
+        if progress is not None:
+            progress.close()
+    changed = bool(totals["added"] or totals["removed"])
+    if changed:
+        _after_library_change(scan=True, clean=bool(totals["removed"]))
+    if not background or (changed and setting_bool("sync_notifications", False)):
+        xbmcgui.Dialog().notification(
+            "Videoland", ADDON.getLocalizedString(31119).format(totals["added"], totals["removed"]), time=4000)
+
+
+def browse_library():
+    set_breadcrumb(["Videoland", ADDON.getLocalizedString(31120)])
+    xbmcplugin.setContent(HANDLE, "videos")
+    add(ADDON.getLocalizedString(31121), url(action="library_update"), False, icon_key="recent")
+    lib = library_mod.Library(None, setting, store=_library_store())
+    for kind, label_id in (("series", 31122), ("movie", 31123)):
+        for item_id, entry in lib.items(kind):
+            title = entry.get("title") or item_id
+            remove = [(ADDON.getLocalizedString(31111), "RunPlugin({})".format(url(
+                action="library_remove", kind=kind, id=item_id, title=title)))]
+            art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else None
+            label = "{} [COLOR grey]({})[/COLOR]".format(title, ADDON.getLocalizedString(label_id))
+            seo = entry.get("seo", "")
+            if kind == "series":
+                add(label, url(action="layout", kind="program", entity_id=item_id, seo=seo), True,
+                    art, {"title": title}, context_menu=remove)
+            else:
+                add(label, url(action="library_play", id=item_id, seo=seo), False,
+                    art, {"title": title}, playable=True, context_menu=remove)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def library_play(movie_id, seo=""):
+    """Play a library film from the Library menu (the clip id may change)."""
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    data = LibrarySource(client).movie(movie_id, seo)
+    if not data:
+        raise ApiError(ADDON.getLocalizedString(31113))
+    play_target = data["play"]
+    play(play_target["video_id"], play_target.get("seo", ""), play_target.get("parent_id", ""),
+         play_target.get("parent_seo", ""))
+
+
 def dispatch(params):
     set_breadcrumb(read_breadcrumb(params.get("breadcrumb")) or ["Videoland"])
     action = params.get("action")
@@ -1650,6 +1932,17 @@ def dispatch(params):
         live_tv()
     elif action == "play_live":
         play_live(params["channel_id"], params.get("seo", ""))
+    elif action == "library":
+        browse_library()
+    elif action == "library_toggle":
+        library_toggle(params.get("kind", ""), params.get("id", ""), params.get("seo", ""),
+                       params.get("title", ""), params.get("thumb", ""))
+    elif action == "library_remove":
+        library_remove(params.get("kind", ""), params.get("id", ""), params.get("title", ""))
+    elif action == "library_update":
+        library_update(background=params.get("background") == "1")
+    elif action == "library_play":
+        library_play(params.get("id", ""), params.get("seo", ""))
 
 
 def run():

@@ -6,6 +6,7 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 
+from resources.lib import library as library_mod
 from resources.lib.api import VideolandApi
 from resources.lib.crypto import decrypt_json
 from resources.lib.progress import ProgressWriter
@@ -42,6 +43,25 @@ def retry_pending(addon, directory, store):
             xbmc.log('[Videoland] Cloud retry deferred ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
 
 
+LIBRARY_STARTUP_DELAY = 120
+LIBRARY_CHECK_INTERVAL = 60
+LIBRARY_RETRY_INTERVAL = 3600
+
+
+def library_update_due(addon, now=None):
+    """True when automatic updates are on and the last run is old enough."""
+    try:
+        if not addon.getSettingBool('library_auto_update'):
+            return False
+        hours = max(1, int(addon.getSettingInt('library_update_hours') or 12))
+    except Exception:
+        return False
+    if not addon.getSettingString('auth_json'):
+        return False
+    store = library_mod.LibraryStore(library_mod.store_path())
+    return library_mod.update_due(store, hours, now)
+
+
 def run():
     addon = xbmcaddon.Addon('plugin.video.videoland.nl')
     directory = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.videoland.nl')
@@ -51,6 +71,9 @@ def run():
     source = addon.getSettingString('history_source')
     refresh_pending = False
     next_retry = 0
+    started = time.monotonic()
+    next_library_check = 0
+    next_library_run = 0
     while not monitor.abortRequested():
         current = addon.getSettingString('history_source')
         if current != source:
@@ -67,5 +90,17 @@ def run():
                 retry_pending(addon, directory, store)
         except Exception as exc:
             xbmc.log('[Videoland] Progress retry unavailable ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+        now = time.monotonic()
+        if now - started >= LIBRARY_STARTUP_DELAY and now >= next_library_check:
+            next_library_check = now + LIBRARY_CHECK_INTERVAL
+            try:
+                if (now >= next_library_run and not xbmc.Player().isPlaying()
+                        and library_update_due(addon)):
+                    # Retry at most hourly if a run does not record itself.
+                    next_library_run = now + LIBRARY_RETRY_INTERVAL
+                    xbmc.log('[Videoland] Starting library update', xbmc.LOGINFO)
+                    xbmc.executebuiltin('RunPlugin(plugin://plugin.video.videoland.nl/?action=library_update&background=1)')
+            except Exception as exc:
+                xbmc.log('[Videoland] Library update check failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         if monitor.waitForAbort(1):
             break
