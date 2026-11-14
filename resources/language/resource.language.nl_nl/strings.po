@@ -828,3 +828,11 @@ msgstr "Verder kijken (beide diensten)"
 msgctxt "#31217"
 msgid "Open NLZiet: Continue watching"
 msgstr "Open NLZiet: Verder kijken"
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr "Ondertitels zoeken als de stream er geen heeft"
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr "Als een video geen eigen ondertiteling heeft, open de ondertitelzoeker van Kodi zodat je ondertitel-addon (bijv. OpenSubtitles) er een kan zoeken."

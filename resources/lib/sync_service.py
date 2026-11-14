@@ -160,6 +160,18 @@ class PlaybackFollower(xbmc.Player):
                 xbmc.log('[Videoland] language {}'.format(result), xbmc.LOGINFO)
             except Exception as exc:
                 xbmc.log('[Videoland] language select failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+        if self.addon.getSettingBool('auto_subtitle_search'):
+            self._maybe_find_subtitles()
+
+    def _maybe_find_subtitles(self):
+        try:
+            if xbmc.Monitor().waitForAbort(3):
+                return
+            if not self.isPlayingVideo() or playback_extras.subtitles_present(_rpc):
+                return
+            xbmc.executebuiltin('ActivateWindow(subtitlesearch)')
+        except Exception:
+            pass
 
     def sample(self):
         if not self.current.get('video_id'):

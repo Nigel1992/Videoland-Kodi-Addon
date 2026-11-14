@@ -764,3 +764,11 @@ msgstr ""
 msgctxt "#31217"
 msgid "Open NLZiet: Continue watching"
 msgstr ""
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr ""
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr ""

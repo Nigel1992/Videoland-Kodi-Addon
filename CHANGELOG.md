@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.0 (November 14, 2026)
+> **Latest Version:** v1.9.1 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.1] - 2026-11-14
+
+### Added
+- **Ondertitels zoeken als de stream er geen heeft**: optioneel opent de addon automatisch de ondertitelzoeker van Kodi, zodat je eigen ondertitel-addon (bijv. OpenSubtitles) er een kan vinden (Instellingen → Afspelen).
 ## [1.9.0] - 2026-11-14
 
 ### Added
