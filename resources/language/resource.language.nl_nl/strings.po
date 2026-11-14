@@ -780,3 +780,51 @@ msgstr "Engels"
 msgctxt "#31205"
 msgid "Original"
 msgstr "Origineel"
+
+msgctxt "#31206"
+msgid "Mark whole series as watched"
+msgstr "Hele serie als bekeken markeren"
+
+msgctxt "#31207"
+msgid "{0} episodes marked as watched"
+msgstr "{0} afleveringen als bekeken gemarkeerd"
+
+msgctxt "#31208"
+msgid "Marking as watched..."
+msgstr "Bezig met markeren..."
+
+msgctxt "#31209"
+msgid "New episode: {0}"
+msgstr "Nieuwe aflevering: {0}"
+
+msgctxt "#31210"
+msgid "Notify about new episodes"
+msgstr "Melding bij nieuwe afleveringen"
+
+msgctxt "#31211"
+msgid "Show a Kodi notification when a series in your watchlist gets a new episode."
+msgstr "Toon een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt."
+
+msgctxt "#31212"
+msgid "Recommended for you"
+msgstr "Aanbevolen voor jou"
+
+msgctxt "#31213"
+msgid "New on Videoland"
+msgstr "Nieuw op Videoland"
+
+msgctxt "#31214"
+msgid "Counts as watched at"
+msgstr "Telt als bekeken bij"
+
+msgctxt "#31215"
+msgid "How much of a video you must see before it is sent to Videoland as watched."
+msgstr "Hoeveel van een video je gezien moet hebben voordat die als bekeken naar Videoland gaat."
+
+msgctxt "#31216"
+msgid "Continue watching (both services)"
+msgstr "Verder kijken (beide diensten)"
+
+msgctxt "#31217"
+msgid "Open NLZiet: Continue watching"
+msgstr "Open NLZiet: Verder kijken"

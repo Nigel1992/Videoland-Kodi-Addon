@@ -1,9 +1,17 @@
 # Changelog
 
-> **Latest Version:** v1.8.0 (November 14, 2026)
+> **Latest Version:** v1.9.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.0] - 2026-11-14
+
+### Added
+- **Hele serie als bekeken markeren**: contextmenu op een serie in je bibliotheek stuurt de afleveringen als bekeken naar Videoland (begrensd voor hele grote series).
+- **Melding bij nieuwe afleveringen**: een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt (Instellingen → Geschiedenis).
+- **Aanbevolen-widget**: een lijst met Videolands eigen aanbevelingen.
+- **Verder kijken (beide diensten)**: een widget die Videolands Verder kijken toont met een snelkoppeling naar die van NLZiet.
+- **Instelbaar bekeken-percentage**: kies bij hoeveel procent een video als bekeken naar Videoland gaat (Instellingen → Geschiedenis, standaard 90%). Bij vroegtijdig stoppen boven dat percentage wordt de titel alsnog als bekeken doorgegeven.
 ## [1.8.0] - 2026-11-14
 
 ### Added

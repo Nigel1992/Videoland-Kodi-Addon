@@ -2471,7 +2471,9 @@ def browse_library():
             seo = entry.get("seo", "")
             if kind == "series":
                 remove = [(ADDON.getLocalizedString(31192), "RunPlugin({})".format(url(
-                    action="shuffle", series_id=item_id, seo=seo)))] + remove
+                    action="shuffle", series_id=item_id, seo=seo))),
+                          (ADDON.getLocalizedString(31206), "RunPlugin({})".format(url(
+                    action="mark_series_watched", series_id=item_id, seo=seo)))] + remove
                 add(label, url(action="layout", kind="program", entity_id=item_id, seo=seo), True,
                     art, {"title": title}, context_menu=remove)
             else:
@@ -2519,6 +2521,8 @@ def widgets_menu():
         entries.append((ADDON.getLocalizedString(31079), url(action="continue_watching"), "continue"))
     entries.append((ADDON.getLocalizedString(31186), url(action="layout", kind="frontspace", entity_id="bookmarks"), "kijklijst"))
     entries.append((ADDON.getLocalizedString(31120), url(action="library"), "bibliotheek"))
+    entries.append((ADDON.getLocalizedString(31216), url(action="both_continue"), "continue"))
+    entries.append((ADDON.getLocalizedString(31212), url(action="recommended"), "recommended"))
     entries.append((ADDON.getLocalizedString(31194), url(action="history"), "continue"))
     for label, route, icon in entries:
         add(label, route, True, icon_key=icon, info={"plot": help_text})
@@ -2619,6 +2623,139 @@ def clear_history():
 
 
 
+def mark_series_watched(series_id, seo="", background=False):
+    """Send a watched status to Videoland for each episode of a series.
+
+    Each episode needs its own playback metadata, so this is capped to keep it
+    from making hundreds of calls; the user is told when a series is larger.
+    """
+    if setting("history_source") == "local" or not setting_bool("watched_to_service", True):
+        return
+    if not cloud_sync_enabled() or not series_id:
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    data = LibrarySource(client).series(series_id, seo)
+    episodes = (data or {}).get("episodes") or []
+    cap = 60
+    capped = len(episodes) > cap
+    episodes = episodes[:cap]
+    if not episodes:
+        return
+    progress = None
+    if not background:
+        progress = xbmcgui.DialogProgressBG()
+        progress.create("Videoland", ADDON.getLocalizedString(31208))
+    done = 0
+    for index, episode in enumerate(episodes):
+        try:
+            mark_watched_on_service(episode.get("id", ""), episode.get("seo", ""),
+                                    episode.get("parent_id", "") or series_id,
+                                    episode.get("parent_seo", "") or seo, "1")
+            done += 1
+        except Exception:
+            pass
+        if progress:
+            progress.update(int((index + 1) * 100 / len(episodes)))
+    if progress:
+        progress.close()
+    if not background:
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31207).format(done),
+                                     xbmcgui.NOTIFICATION_INFO, 4000)
+
+
+def _notify_state_path():
+    return os.path.join(data_dir(), "new_episode_state.json")
+
+
+def notify_new(background=True):
+    """Kodi notification for watchlist series that gained an episode."""
+    if not setting_bool("notify_new_episodes", True) or not auth_data():
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    try:
+        series = [(sid, seo, title) for kind, sid, seo, title, _p, _f in watchlist_titles(client)
+                  if kind == "series"][:15]
+    except Exception:
+        return
+    path = _notify_state_path()
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            previous = json.load(handle) or {}
+    except (OSError, ValueError):
+        previous = {}
+    current, new_titles = {}, []
+    for sid, seo, title in series:
+        try:
+            episodes = (LibrarySource(client).series(sid, seo) or {}).get("episodes") or []
+        except Exception:
+            continue
+        count = len(episodes)
+        current[str(sid)] = count
+        if str(sid) in previous and count > previous[str(sid)]:
+            new_titles.append(title)
+    for title in new_titles[:3]:
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31209).format(title),
+                                      xbmcgui.NOTIFICATION_INFO, 7000)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(current, handle)
+    except OSError:
+        pass
+
+
+
+def recommended():
+    """A row of Videoland's own recommendations from the home page."""
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    def keep(block):
+        meta = (block.get("analytics") or {}).get("tealium") or {}
+        return is_recommendation_block({"feature": meta.get("from"), "block_title": meta.get("block_title")})
+    xbmcplugin.setContent(HANDLE, "videos")
+    try:
+        data = client.layout("alias", "home", complete=True, block_filter=keep)
+        data = dict(data, blocks=[b for b in data.get("blocks", []) if keep(b)])
+        _render_rows(_build_rows(data), client, hero_art(data))
+    except Exception as exc:
+        xbmc.log("[Videoland] recommended failed ({})".format(type(exc).__name__), xbmc.LOGWARNING)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+
+def both_continue():
+    """Videoland Continue watching, with a jump to NLZiet's at the top."""
+    xbmcplugin.setContent(HANDLE, "videos")
+    if xbmc.getCondVisibility("System.HasAddon(plugin.video.nlziet)"):
+        target = "plugin://plugin.video.nlziet/?mode=widget&list=continue"
+        li = xbmcgui.ListItem(label="[B]{}[/B]".format(ADDON.getLocalizedString(31217)))
+        icon = "special://home/addons/plugin.video.nlziet/icon.png"
+        li.setArt({"icon": icon, "thumb": icon})
+        xbmcplugin.addDirectoryItem(HANDLE, target, li, isFolder=True)
+    try:
+        client = api()
+        auth = ensure_login()
+        ensure_profile(client, auth)
+        client.cache_dir = None
+        client.cache_ttl = 0
+        def is_continue(block):
+            meta = (block.get("analytics") or {}).get("tealium") or {}
+            return (meta.get("from") == "feature.recommended_videos_by_user"
+                    or str(meta.get("block_title", "")).casefold() == "verder kijken")
+        data = client.layout("alias", "home", complete=True, block_filter=is_continue)
+        data = dict(data, blocks=[b for b in data.get("blocks", []) if is_continue(b)])
+        _render_rows(_build_rows(data), client, hero_art(data))
+    except Exception as exc:
+        xbmc.log("[Videoland] both_continue failed ({})".format(type(exc).__name__), xbmc.LOGWARNING)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+
 def dispatch(params):
     set_breadcrumb(read_breadcrumb(params.get("breadcrumb")) or ["Videoland"])
     action = params.get("action")
@@ -2715,6 +2852,14 @@ def dispatch(params):
         browse_history()
     elif action == "clear_history":
         clear_history()
+    elif action == "mark_series_watched":
+        mark_series_watched(params.get("series_id", ""), params.get("seo", ""), params.get("background") == "1")
+    elif action == "notify_new":
+        notify_new(params.get("background") == "1")
+    elif action == "recommended":
+        recommended()
+    elif action == "both_continue":
+        both_continue()
 
 
 def run():
