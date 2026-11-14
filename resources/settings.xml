@@ -218,6 +218,22 @@
             <heading>31138</heading>
           </control>
         </setting>
+        <setting id="art_tmdb_first" type="boolean" label="31159" help="31160">
+          <level>0</level>
+          <default>true</default>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
+        <setting id="browse_logos" type="boolean" label="31157" help="31158" parent="library_enrich">
+          <level>0</level>
+          <default>true</default>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="toggle"/>
+        </setting>
         <setting id="check_tmdb_key" type="action" label="31140" parent="library_enrich">
           <level>0</level>
           <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=check_tmdb_key)</data>

@@ -1,4 +1,5 @@
 """Retry pending cloud progress while Kodi is running, including after restart."""
+import os
 import time
 
 import xbmc
@@ -8,6 +9,8 @@ import xbmcvfs
 
 from resources.lib import library as library_mod
 from resources.lib import library_art
+from resources.lib import logo_cache as logo_cache_mod
+from resources.lib import metadata as metadata_mod
 from resources.lib.api import VideolandApi
 from resources.lib.crypto import decrypt_json
 from resources.lib.progress import ProgressWriter
@@ -124,6 +127,17 @@ def run():
                 library_art.run_pending_scan(library_mod.scan_flag_path())
             except Exception:
                 pass
+            # Look up logos for titles seen in browse lists, a few at a time.
+            if not xbmc.Player().isPlaying() and os.path.isfile(os.path.join(directory, 'logo_queue.json')):
+                try:
+                    enricher = metadata_mod.Enricher(os.path.join(directory, 'metadata_cache.json'),
+                                                     tmdb_key=addon.getSettingString('tmdb_api_key'),
+                                                     user_agent='plugin.video.videoland.nl')
+                    logo_cache_mod.LogoCache(directory).process(enricher, limit=15,
+                                                               should_stop=monitor.abortRequested)
+                    enricher.save()
+                except Exception as exc:
+                    xbmc.log('[Videoland] Logo lookup failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         if monitor.scan_finished:
             monitor.scan_finished = False
             try:

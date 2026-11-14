@@ -85,6 +85,7 @@ from . import library_art
 from . import errors as errors_mod
 from . import diagnostics as diagnostics_mod
 from . import search_filters
+from . import logo_cache as logo_cache_mod
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -1249,6 +1250,8 @@ def _render_rows(rows, client=None, page_art=None, only_kind=None):
             library_kind = "series"
         if library_kind:
             logo = _library_logos().get((library_kind, target_id))
+            if not logo and _browse_logo_cache() is not None:
+                logo = _browse_logo_cache().get(library_kind, label)
             if logo:
                 art["clearlogo"] = logo
             in_library = _library_has(library_kind, target_id)
@@ -1955,6 +1958,18 @@ def _library_store():
 
 
 _LOGOS = None
+_LOGO_CACHE = None
+
+
+def _browse_logo_cache():
+    """Logo cache for titles outside the library (needs a TMDb key)."""
+    global _LOGO_CACHE
+    if _LOGO_CACHE is None:
+        if setting_bool("browse_logos", True) and setting_bool("library_enrich", True) and setting("tmdb_api_key").strip():
+            _LOGO_CACHE = logo_cache_mod.LogoCache(data_dir())
+        else:
+            _LOGO_CACHE = False
+    return _LOGO_CACHE or None
 
 
 def _library_logos():
@@ -2235,6 +2250,47 @@ def library_from_watchlist(background=False):
         xbmc.executebuiltin("Container.Refresh")
 
 
+def choose_tmdb(kind, item_id):
+    """Library menu: pick the right TMDb series/film for a title by hand."""
+    kind = "series" if kind == "series" else "movie"
+    store = _library_store()
+    entry = store.get(kind, item_id)
+    enricher = _library_enricher()
+    if entry is None:
+        return
+    if enricher is None or not enricher.tmdb_key:
+        xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(31146))
+        return
+    query = entry.get("title") or ""
+    while True:
+        found = enricher.search_candidates(kind, query)
+        labels = [ADDON.getLocalizedString(31162)] + [
+            "{} ({})".format(name, year) if year else name for _id, name, year in found]
+        picked = xbmcgui.Dialog().select(ADDON.getLocalizedString(31161), labels)
+        if picked < 0:
+            return
+        if picked == 0:
+            query = xbmcgui.Dialog().input(ADDON.getLocalizedString(31162), query)
+            if not query:
+                return
+            continue
+        tmdb_id = found[picked - 1][0]
+        break
+    entry["ids"] = {"tmdb": str(tmdb_id)}  # other ids are looked up again from TMDb
+    store.section(kind)[str(item_id)] = entry
+    client = api()
+    ensure_profile(client, ensure_login())
+    lib = _library(client)
+    if kind == "series":
+        lib.add_series(item_id, entry.get("seo", ""), entry.get("title", ""))
+    else:
+        lib.add_movie(item_id, entry.get("seo", ""), entry.get("title", ""))
+    lib.store.save()
+    repair_library_art()
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31163), time=4000)
+    xbmc.executebuiltin("Container.Refresh")
+
+
 def browse_library():
     set_breadcrumb(["Videoland", ADDON.getLocalizedString(31120)])
     xbmcplugin.setContent(HANDLE, "videos")
@@ -2245,7 +2301,9 @@ def browse_library():
         for item_id, entry in lib.items(kind):
             title = entry.get("title") or item_id
             remove = [(ADDON.getLocalizedString(31111), "RunPlugin({})".format(url(
-                action="library_remove", kind=kind, id=item_id, title=title)))]
+                action="library_remove", kind=kind, id=item_id, title=title))),
+                      (ADDON.getLocalizedString(31161), "RunPlugin({})".format(url(
+                action="choose_tmdb", kind=kind, id=item_id)))]
             art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else {}
             if entry.get("clearlogo"):
                 art["clearlogo"] = entry["clearlogo"]
@@ -2347,6 +2405,8 @@ def dispatch(params):
         run_diagnostics()
     elif action == "check_tmdb_key":
         check_tmdb_key()
+    elif action == "choose_tmdb":
+        choose_tmdb(params.get("kind", ""), params.get("id", ""))
     elif action == "library_from_watchlist":
         library_from_watchlist(background=params.get("background") == "1")
     elif action == "library_play":
@@ -2354,6 +2414,14 @@ def dispatch(params):
 
 
 def run():
+    try:
+        _run()
+    finally:
+        if _LOGO_CACHE:
+            _LOGO_CACHE.flush()
+
+
+def _run():
     params = dict(parse_qsl(sys.argv[2][1:])) if len(sys.argv) > 2 else {}
     xbmcplugin.setPluginFanart(HANDLE, FANART)
     try:

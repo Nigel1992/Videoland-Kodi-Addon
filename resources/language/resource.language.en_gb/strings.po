@@ -525,3 +525,31 @@ msgstr ""
 msgctxt "#31156"
 msgid "Only titles that were added from the watchlist are removed; titles you added yourself stay."
 msgstr ""
+
+msgctxt "#31157"
+msgid "Show logos in the menus too"
+msgstr ""
+
+msgctxt "#31158"
+msgid "Logos of titles outside the library are looked up on TMDb in the background (needs the TMDb key). Lists never wait: a logo appears the next time you open the list."
+msgstr ""
+
+msgctxt "#31159"
+msgid "Posters and backgrounds: TMDb first"
+msgstr ""
+
+msgctxt "#31160"
+msgid "On: posters and backgrounds come from TMDb when it has them, with Videoland's own images as fallback. Descriptions always come from Videoland first. Artwork you chose yourself in Kodi is never replaced."
+msgstr ""
+
+msgctxt "#31161"
+msgid "Choose the right TMDb title"
+msgstr ""
+
+msgctxt "#31162"
+msgid "Other search term..."
+msgstr ""
+
+msgctxt "#31163"
+msgid "TMDb title set; details and artwork are updated"
+msgstr ""

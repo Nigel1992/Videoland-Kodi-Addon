@@ -251,6 +251,10 @@ class Library:
     def tv_root(self):
         return translate_path(self._setting("library_tv_path") or DEFAULT_TV_PATH)
 
+    def tmdb_art_first(self):
+        """Posters/backgrounds from TMDb before Videoland's own (default on)."""
+        return self._setting("art_tmdb_first").lower() not in ("false", "0")
+
     def movies_root(self):
         return translate_path(self._setting("library_movies_path") or DEFAULT_MOVIES_PATH)
 
@@ -398,7 +402,7 @@ class Library:
         if ids:
             entry["ids"] = ids
         extra.pop("episodes", None)
-        return metadata.merge(local, extra)
+        return metadata.merge_art_first(local, extra, self.tmdb_art_first())
 
     def _enrich_episode(self, entry, episode, season, number):
         if self.enricher is None or not entry.get("ids"):
@@ -484,7 +488,7 @@ class Library:
                 ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
                 if ids:
                     entry["ids"] = ids
-                data = metadata.merge(data, extra)
+                data = metadata.merge_art_first(data, extra, self.tmdb_art_first())
             except Exception as exc:
                 log("metadata lookup failed for {}: {}".format(movie_title, exc))
             self._save_metadata()
