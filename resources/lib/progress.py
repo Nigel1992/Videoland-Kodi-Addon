@@ -78,8 +78,8 @@ def monitor_class(xbmc):
             self.position = None
             self.finished = False
             self.last_sync = 0
-            self.last_notice = 0
-            self.last_error_notice = 0
+            self.last_notice = float("-inf")  # not 0: monotonic time starts at boot
+            self.last_error_notice = float("-inf")
             self.worker = None
 
         def onAVStarted(self):

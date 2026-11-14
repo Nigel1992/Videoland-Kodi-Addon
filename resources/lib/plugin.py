@@ -17,6 +17,17 @@ def run_diagnostics():
             library_special=(library_mod.DEFAULT_TV_PATH, library_mod.DEFAULT_MOVIES_PATH),
             tmdb_status=tmdb_status,
             kodi_counts=library_art.kodi_counts(lib, "plugin.video.videoland.nl/library"))
+        if signed_in:
+            try:
+                client = api()
+                ensure_profile(client, auth)
+                for title, loaded, total, shown, feature in watchlist_report(client):
+                    complete = not total or loaded >= int(total)
+                    detail = t["watchlist_line"].format(loaded, total or "?", shown, feature or "-")
+                    checks.append(("ok" if complete and shown >= loaded else "warn",
+                                   t["watchlist"].format(title), detail))
+            except Exception as exc:
+                checks.append(("warn", t["watchlist"].format("-"), type(exc).__name__ + ": " + str(exc)[:120]))
         log_lines = diagnostics_mod.kodi_log_excerpt(["videoland"], diagnostics_mod.redact)
         text = diagnostics_mod.render(t, checks)
         path = diagnostics_mod.save_report(os.path.join(data_dir(), "diagnostics"), "videoland",
@@ -152,6 +163,12 @@ def cache_dir():
     return path
 
 
+def profile_cache_dir():
+    """Cache folder of the active profile: lists differ per profile."""
+    profile = "".join(ch for ch in setting("profile_id") if ch.isalnum() or ch in "-_")[:64]
+    return os.path.join(cache_dir(), profile or "default")
+
+
 def data_dir():
     """Add-on data directory (holds the device-bound encryption key)."""
     return xbmcvfs.translatePath("special://profile/addon_data/plugin.video.videoland.nl")
@@ -173,7 +190,7 @@ def api():
     enabled = setting_bool("use_cache", True)
     client = VideolandApi(
         device_id or None,
-        cache_dir=cache_dir() if enabled else None,
+        cache_dir=profile_cache_dir() if enabled else None,
         cache_ttl=cache_ttl() if enabled else 0,
     )
     if not device_id:
@@ -746,6 +763,27 @@ def add_default_navigation():
     add("Zoeken", url(action="search"), True, icon_key="zoeken")
 
 
+PERSONAL_PAGES = {("frontspace", "bookmarks")}
+
+
+def watchlist_report(client):
+    """Per watchlist block: (title, items loaded, total Videoland reports, rows shown)."""
+    client.cache_dir = None
+    client.cache_ttl = 0
+    data = client.layout("frontspace", "bookmarks", "https://v2.videoland.com/", complete=True)
+    report = []
+    for block in data.get("blocks", []):
+        content = block.get("content") or {}
+        items = content.get("items") if isinstance(content.get("items"), list) else []
+        pagination = content.get("pagination") or {}
+        total = pagination.get("totalItems") or content.get("totalItems") or block.get("totalItems")
+        title = str(block.get("block_title") or (block.get("analytics") or {}).get("tealium", {}).get("block_title")
+                    or block.get("feature") or "?")
+        shown = len(_build_rows({"blocks": [block]}))
+        report.append((title, len(items), total, shown, str(block.get("feature") or "")))
+    return report
+
+
 def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
     if kind == "frontspace" and entity_id == "epggrid":
         # Legacy favourites/URLs target the EPG grid directly; the Live TV
@@ -771,6 +809,10 @@ def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
             return title.casefold() in ("genres", "genre", "categorieën", "categorieen", "wat wil je kijken?")
         return title == ("" if group == "featured" else section)
 
+    if (kind, str(entity_id)) in PERSONAL_PAGES:
+        # The watchlist changes whenever you add a title: always load it fresh.
+        client.cache_dir = None
+        client.cache_ttl = 0
     data = client.layout(kind, entity_id, location, complete=True, block_filter=load_block)
     if BREADCRUMB == ["Videoland"]:
         # Compatibility with old favourites/URLs that lack a breadcrumb.

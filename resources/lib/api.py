@@ -133,16 +133,15 @@ class VideolandApi:
         if not cache_dir or not os.path.isdir(cache_dir):
             return 0
         removed = 0
-        try:
-            for name in os.listdir(cache_dir):
+        # Includes the per-profile subfolders.
+        for root, _dirs, names in os.walk(cache_dir):
+            for name in names:
                 if name.startswith("cache_") and name.endswith(".json"):
                     try:
-                        os.remove(os.path.join(cache_dir, name))
+                        os.remove(os.path.join(root, name))
                         removed += 1
                     except OSError:
                         pass
-        except OSError:
-            pass
         return removed
 
     def login(self, email, password):

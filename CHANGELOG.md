@@ -1,8 +1,18 @@
 # Changelog
 
-> **Latest Version:** v1.4.0 (November 14, 2026)
+> **Latest Version:** v1.4.1 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.4.1] - 2026-11-14
+
+### Fixed
+- **My watchlist (Mijn Kijklijst) incomplete or outdated**: the watchlist was served from the browsing cache (30 minutes up to a week, depending on the cache setting), so recently added titles were missing. It is now always loaded fresh from Videoland.
+- **Lists of the wrong profile**: the browsing cache was shared by all profiles; each profile now has its own cache folder ("Clear cache" still clears all of them).
+- **Progress notices after a restart**: "progress saved/failed" notices were suppressed during the first minute after the device started.
+
+### Added
+- **Diagnostics**: per watchlist block, how many titles Videoland reports, how many were loaded and how many are shown, to pin down any remaining gap.
 
 ## [1.4.0] - 2026-11-14
 

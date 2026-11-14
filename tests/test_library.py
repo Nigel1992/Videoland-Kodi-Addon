@@ -253,3 +253,28 @@ class SearchKindFilterTests(unittest.TestCase):
             plugin.add.reset_mock()
             plugin._render_rows(rows, only_kind=kind)
             self.assertEqual([c.args[0] for c in plugin.add.call_args_list], [expected])
+
+
+class WatchlistTests(unittest.TestCase):
+    def test_watchlist_is_loaded_fresh_and_reported_per_block(self):
+        plugin = load_plugin()
+        client = MagicMock()
+        client.cache_dir = "/cache"
+        client.cache_ttl = 1800
+        card = lambda n: {"title": "T{}".format(n), "action": {"target": {"type": "layout", "value_layout": {
+            "type": "program", "id": str(n), "seo": "t{}".format(n)}}}}
+        client.layout.return_value = {"blocks": [{
+            "block_title": "Series", "feature": "feature.bookmarks",
+            "content": {"items": [card(1), card(2)], "pagination": {"totalItems": 5}}}]}
+        report = plugin.watchlist_report(client)
+        self.assertIsNone(client.cache_dir)
+        self.assertEqual(client.cache_ttl, 0)
+        self.assertEqual(report, [("Series", 2, 5, 2, "feature.bookmarks")])
+
+    def test_cache_is_kept_per_profile(self):
+        plugin = load_plugin()
+        plugin.cache_dir = MagicMock(return_value="/data/cache")
+        plugin.setting = MagicMock(return_value="abc-123")
+        self.assertEqual(plugin.profile_cache_dir(), os.path.join("/data/cache", "abc-123"))
+        plugin.setting = MagicMock(return_value="")
+        self.assertEqual(plugin.profile_cache_dir(), os.path.join("/data/cache", "default"))
