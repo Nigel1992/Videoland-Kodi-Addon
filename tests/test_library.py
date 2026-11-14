@@ -63,7 +63,7 @@ class LibraryTests(unittest.TestCase):
             "Mijn Show/tvshow.nfo"])
         with open(os.path.join(self.root, "TV Shows/Mijn Show/Season 1/Mijn Show S01E02.strm")) as handle:
             self.assertEqual(handle.read().strip(),
-                             "plugin://plugin.video.videoland.nl/?action=play&video_id=b&seo=ep-b&parent_id=p1&parent_seo=show")
+                             "plugin://plugin.video.videoland.nl/?action=play&video_id=b&inlib=1&seo=ep-b&parent_id=p1&parent_seo=show")
 
         # 'a' leaves Videoland, 'd' arrives: the others keep their numbers.
         self.source.shows["p1"]["episodes"] = [episode("b", 1, 2), episode("c", None, None), episode("d", 2, 1)]

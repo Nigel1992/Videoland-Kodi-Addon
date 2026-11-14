@@ -260,7 +260,9 @@ class Library:
 
     @staticmethod
     def play_url(play):
-        query = {"action": "play", "video_id": play.get("video_id") or play.get("id") or ""}
+        # inlib=1 marks the .strm as coming from the Kodi library, so playback
+        # defers to Kodi's own resume prompt (no second "continue" dialog).
+        query = {"action": "play", "video_id": play.get("video_id") or play.get("id") or "", "inlib": "1"}
         for key in ("seo", "parent_id", "parent_seo"):
             if play.get(key):
                 query[key] = play[key]

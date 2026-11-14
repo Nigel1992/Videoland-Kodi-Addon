@@ -75,6 +75,21 @@ class ResumeTests(unittest.TestCase):
                 plugin.xbmcplugin.setResolvedUrl.assert_called_once_with(
                     plugin.HANDLE, True, plugin.xbmcgui.ListItem.return_value)
 
+    def test_library_strm_defers_resume_to_kodi(self):
+        plugin = load_plugin()
+        client = MagicMock()
+        client.layout.return_value = layout(347)
+        client.upfront_token.return_value = 'test'
+        plugin.api = lambda: client
+        plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
+        plugin.ensure_profile = MagicMock()
+        plugin.xbmc.getCondVisibility = lambda cond: False
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
+            plugin.play('clip_46228', from_library=True)
+        # Playback from a library .strm must not show the add-on's own dialog.
+        plugin.xbmcgui.Dialog.return_value.yesnocustom.assert_not_called()
+
     def test_dismissed_resume_dialog_never_plays_or_syncs(self):
         for answer in (-1, 2, None):
             with self.subTest(answer=answer):

@@ -1714,7 +1714,7 @@ def kodi_library_resume():
         return False
 
 
-def play(video_id, seo="", parent_id="", parent_seo=""):
+def play(video_id, seo="", parent_id="", parent_seo="", from_library=False):
     import inputstreamhelper
 
     # Run setup before requesting the short-lived playback/DRM credentials.
@@ -1735,7 +1735,10 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     use_local = local_history()
     # Started from Kodi's own library with a Kodi resume point: Kodi has just
     # asked "Resume from ...?" itself, so do not ask a second time.
-    kodi_resumes = kodi_library_resume()
+    # A .strm from the Kodi library (inlib=1) means Kodi owns the resume prompt,
+    # so the add-on must not ask again. The infolabel check is a fallback for
+    # items Kodi already has a resume point for.
+    kodi_resumes = from_library or kodi_library_resume()
     resume_position = 0 if (use_local or kodi_resumes) else get_resume_position(layout, video_id)
     if resume_position > 0:
         # Ask user if they want to resume
@@ -2820,7 +2823,8 @@ def dispatch(params):
     elif action == "search_filter":
         search_filter(params.get("query", ""), params.get("period"), params.get("genre"), params.get("kind"))
     elif action == "play":
-        play(params["video_id"], params.get("seo", ""), params.get("parent_id", ""), params.get("parent_seo", ""))
+        play(params["video_id"], params.get("seo", ""), params.get("parent_id", ""),
+             params.get("parent_seo", ""), from_library=params.get("inlib") == "1")
     elif action == "live":
         live_tv()
     elif action == "play_live":

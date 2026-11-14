@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.3 (November 14, 2026)
+> **Latest Version:** v1.9.4 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.4] - 2026-11-14
+
+### Fixed
+- **Dubbele "verder kijken" bij afspelen vanuit de Kodi-bibliotheek, nu echt opgelost.** De detectie via Kodi-infolabels werkt niet tijdens het afspelen van een .strm-bestand, dus Videoland stelde z'n eigen vraag toch nog. De .strm-bestanden krijgen nu een merkje (inlib=1) waaraan Videoland betrouwbaar ziet dat het afspelen uit de bibliotheek komt; dan laat Videoland de hervat-vraag volledig aan Kodi over. Let op: draai één keer Bibliotheek > Bibliotheek nu bijwerken, zodat de bestaande .strm-bestanden dit merkje krijgen.
 ## [1.9.3] - 2026-11-14
 
 ### Fixed
