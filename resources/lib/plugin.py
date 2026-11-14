@@ -90,6 +90,7 @@ from . import playback_extras
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from . import watch_sync
 from . import watch_history
+from . import library_resume
 from .sync_store import DurableWriter, SyncStore
 
 
@@ -2713,6 +2714,106 @@ def notify_new(background=True):
         pass
 
 
+def _library_rpc(method, params):
+    """Run one JSON-RPC call and return its ``result`` (or ``{}``)."""
+    answer = json.loads(xbmc.executeJSONRPC(json.dumps(
+        {"jsonrpc": "2.0", "id": 1, "method": method, "params": params})))
+    return answer.get("result") or {}
+
+
+def _service_resume_positions(client):
+    """``{str(video_id): (position_seconds, duration_seconds)}`` from Videoland's
+    "Verder kijken" rail, for cross-device resume."""
+    def is_continue(block):
+        meta = (block.get("analytics") or {}).get("tealium") or {}
+        return (meta.get("from") == "feature.recommended_videos_by_user"
+                or str(meta.get("block_title", "")).casefold() == "verder kijken")
+    client.cache_dir = None
+    client.cache_ttl = 0
+    layout = client.layout("alias", "home", complete=True, block_filter=is_continue)
+    positions = {}
+    for item, _block in walk_item_content(layout):
+        video = item.get("video")
+        if not isinstance(video, dict):
+            continue
+        video_id = video.get("id")
+        progress = video.get("progress") if isinstance(video.get("progress"), dict) else {}
+        position = progress.get("tcResume")
+        duration = video.get("duration")
+        if not video_id or not isinstance(position, (int, float)) or isinstance(position, bool):
+            continue
+        if position <= 0:
+            continue
+        total = int(duration) if isinstance(duration, (int, float)) and not isinstance(duration, bool) and duration > 0 else 0
+        positions[str(video_id)] = (int(position), total)
+    return positions
+
+
+def sync_resume(background=True):
+    """Copy Videoland's own watch positions into the Kodi library.
+
+    So an episode or film you started on your phone or in the Videoland app also
+    shows up in the skin's "Afleveringen die je kijkt" row here, which reads the
+    Kodi library.
+    """
+    if (not setting_bool("sync_resume_from_service", True) or local_history()
+            or not auth_data()):
+        return
+    addon_id = "plugin.video.videoland.nl"
+    try:
+        client = api()
+        auth = ensure_login()
+        ensure_profile(client, auth)
+        positions = _service_resume_positions(client)
+    except Exception as exc:
+        xbmc.log("[Videoland] Resume sync could not reach the service ({})".format(
+            type(exc).__name__), xbmc.LOGWARNING)
+        return
+    if not positions:
+        return
+
+    def _cid_for(item):
+        file_path = item.get("file") or ""
+        cid = library_resume.plugin_content_id(file_path, addon_id, "video_id")
+        if cid:
+            return cid
+        if library_resume.is_strm(file_path):
+            try:
+                handle = xbmcvfs.File(file_path)
+                try:
+                    text = handle.read()
+                finally:
+                    handle.close()
+            except Exception:
+                return None
+            return library_resume.plugin_content_id(text, addon_id, "video_id")
+        return None
+
+    calls = []
+    try:
+        episodes = _library_rpc("VideoLibrary.GetEpisodes",
+                                {"properties": ["file", "runtime", "resume"]}).get("episodes", [])
+        calls += library_resume.build_calls(
+            episodes, positions, "episodeid", "VideoLibrary.SetEpisodeDetails", _cid_for)
+        movies = _library_rpc("VideoLibrary.GetMovies",
+                              {"properties": ["file", "runtime", "resume"]}).get("movies", [])
+        calls += library_resume.build_calls(
+            movies, positions, "movieid", "VideoLibrary.SetMovieDetails", _cid_for)
+    except Exception as exc:
+        xbmc.log("[Videoland] Resume sync could not read the library ({})".format(
+            type(exc).__name__), xbmc.LOGWARNING)
+        return
+    done = 0
+    for method, params in calls:
+        try:
+            _library_rpc(method, params)
+            done += 1
+        except Exception:
+            pass
+    xbmc.log("[Videoland] Resume sync updated {} library item(s)".format(done), xbmc.LOGINFO)
+    if done:
+        xbmc.executebuiltin("Container.Refresh")
+
 
 def recommended():
     """A row of Videoland's own recommendations from the home page."""
@@ -2862,6 +2963,8 @@ def dispatch(params):
         mark_series_watched(params.get("series_id", ""), params.get("seo", ""), params.get("background") == "1")
     elif action == "notify_new":
         notify_new(params.get("background") == "1")
+    elif action == "sync_resume":
+        sync_resume(params.get("background") == "1")
     elif action == "recommended":
         recommended()
     elif action == "both_continue":

@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.9 (November 14, 2026)
+> **Latest Version:** v1.9.10 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.9.10] - 2026-11-14
+
+### Toegevoegd
+- **Ook tonen wat je op een ander apparaat keek.** Eén keer per uur (en kort na het opstarten) haalt Videoland je kijkpositie uit je "Verder kijken"-rij op en zet die als hervatpunt in de Kodi-bibliotheek. Zo verschijnt een aflevering of film die je op je telefoon, tablet of in de Videoland-app begon ook hier in de rij "Afleveringen die je kijkt" van de skin. Werkt met cloudgeschiedenis; uit te zetten met de nieuwe instelling *Ook tonen wat je op een ander apparaat keek* (standaard aan). Raakt alleen titels die Videoland zelf in je bibliotheek heeft gezet.
 
 ## [1.9.9] - 2026-11-14
 

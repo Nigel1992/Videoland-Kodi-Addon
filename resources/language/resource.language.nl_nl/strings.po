@@ -848,3 +848,11 @@ msgstr "Als een serie die je volgt een nieuwe aflevering krijgt, werk de bibliot
 msgctxt "#31222"
 msgid "Library dates updated ({0} episodes)"
 msgstr "Bibliotheekdatums bijgewerkt ({0} afleveringen)"
+
+msgctxt "#31223"
+msgid "Also show what you watched on another device"
+msgstr "Ook tonen wat je op een ander apparaat keek"
+
+msgctxt "#31224"
+msgid "Once an hour, copy your Videoland watch position into the Kodi library, so episodes you started on your phone or tablet also appear in the continue-watching rows here."
+msgstr "Eén keer per uur je Videoland-kijkpositie naar de Kodi-bibliotheek kopiëren, zodat afleveringen die je op je telefoon of tablet begon ook hier in de 'verder kijken'-rijen verschijnen."

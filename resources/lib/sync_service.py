@@ -291,6 +291,7 @@ def run():
     next_library_run = 0
     next_scan_check = 0
     next_notify = 0
+    next_resume_sync = 0
     while not monitor.abortRequested():
         current = addon.getSettingString('history_source')
         if current != source:
@@ -356,6 +357,15 @@ def run():
             next_notify = now + 3 * 3600
             try:
                 xbmc.executebuiltin('RunPlugin(plugin://{}/?action=notify_new&background=1)'.format(ADDON_ID))
+            except Exception:
+                pass
+        # Pull watch positions from Videoland into the library (what you watched
+        # on another device), shortly after startup and then once an hour.
+        if (now - started >= LIBRARY_STARTUP_DELAY and now >= next_resume_sync
+                and not xbmc.Player().isPlaying() and addon.getSettingBool('sync_resume_from_service')):
+            next_resume_sync = now + 3600
+            try:
+                xbmc.executebuiltin('RunPlugin(plugin://{}/?action=sync_resume&background=1)'.format(ADDON_ID))
             except Exception:
                 pass
         if monitor.waitForAbort(1):

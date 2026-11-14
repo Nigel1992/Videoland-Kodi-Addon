@@ -264,6 +264,12 @@
           <default>true</default>
           <control type="toggle"/>
         </setting>
+        <setting id="sync_resume_from_service" type="boolean" label="31223" help="31224">
+          <level>0</level>
+          <default>true</default>
+          <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
+          <control type="toggle"/>
+        </setting>
         <setting id="auto_add_episodes" type="boolean" label="31220" help="31221">
           <level>0</level>
           <default>true</default>
