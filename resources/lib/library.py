@@ -347,8 +347,10 @@ class Library:
             entry["folder"] = safe_filename(series_title)
         show_dir = self.fs.join(self.tv_root(), entry["folder"])
         self.fs.write(self.fs.join(show_dir, "tvshow.nfo"), self._tvshow_nfo(series_id, series_title, data))
-        library_art.save_art(self, entry, show_dir, {"poster": data.get("poster"), "fanart": data.get("fanart")},
-                             {"poster": "poster.jpg", "fanart": "fanart.jpg"}, self.downloader)
+        _saved = library_art.save_art(self, entry, show_dir,
+                                      {k: data.get(k) for k in ("poster", "fanart", "clearlogo")},
+                                      library_art.art_names("series", entry["folder"]), self.downloader)
+        entry["clearlogo"] = _saved.get("clearlogo") or data.get("clearlogo") or ""
 
         wanted = set()
         for episode, season, number in self._assign_numbers(entry, episodes):
@@ -492,9 +494,10 @@ class Library:
         if self.fs.write(base + ".strm", self.play_url(data["play"]) + "\n"):
             result["added"] = 1
         self.fs.write(base + ".nfo", self._movie_nfo(movie_id, movie_title, data, year))
-        library_art.save_art(self, entry, movie_dir, {"poster": data.get("poster"), "fanart": data.get("fanart")},
-                             {"poster": entry["folder"] + "-poster.jpg", "fanart": entry["folder"] + "-fanart.jpg"},
-                             self.downloader)
+        _saved = library_art.save_art(self, entry, movie_dir,
+                                      {k: data.get(k) for k in ("poster", "fanart", "clearlogo")},
+                                      library_art.art_names("movie", entry["folder"]), self.downloader)
+        entry["clearlogo"] = _saved.get("clearlogo") or data.get("clearlogo") or ""
 
         entry.update({"title": movie_title, "seo": seo, "missing": 0, "updated": int(self.now())})
         entry.setdefault("added", int(self.now()))

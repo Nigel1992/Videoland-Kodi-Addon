@@ -1248,6 +1248,9 @@ def _render_rows(rows, client=None, page_art=None, only_kind=None):
         elif target_kind == "program" and not play_target:
             library_kind = "series"
         if library_kind:
+            logo = _library_logos().get((library_kind, target_id))
+            if logo:
+                art["clearlogo"] = logo
             in_library = _library_has(library_kind, target_id)
             context_menu.append((
                 ADDON.getLocalizedString(31111 if in_library else 31110),
@@ -1937,6 +1940,20 @@ def _library_store():
     return _LIBRARY_STORE
 
 
+_LOGOS = None
+
+
+def _library_logos():
+    """Clearlogos of library titles, so browse lists show them too."""
+    global _LOGOS
+    if _LOGOS is None:
+        try:
+            _LOGOS = library_art.logo_index(_library_store())
+        except Exception:
+            _LOGOS = {}
+    return _LOGOS
+
+
 def _library_has(kind, item_id):
     try:
         return _library_store().has(kind, item_id)
@@ -2215,7 +2232,10 @@ def browse_library():
             title = entry.get("title") or item_id
             remove = [(ADDON.getLocalizedString(31111), "RunPlugin({})".format(url(
                 action="library_remove", kind=kind, id=item_id, title=title)))]
-            art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else None
+            art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else {}
+            if entry.get("clearlogo"):
+                art["clearlogo"] = entry["clearlogo"]
+            art = art or None
             label = "{} [COLOR grey]({})[/COLOR]".format(title, ADDON.getLocalizedString(label_id))
             seo = entry.get("seo", "")
             if kind == "series":
