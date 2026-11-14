@@ -844,3 +844,7 @@ msgstr "Nieuwe afleveringen automatisch aan de bibliotheek toevoegen"
 msgctxt "#31221"
 msgid "When a series you follow gets a new episode, update the library so the episode is placed with the others right away."
 msgstr "Als een serie die je volgt een nieuwe aflevering krijgt, werk de bibliotheek bij zodat de aflevering meteen bij de rest komt te staan."
+
+msgctxt "#31222"
+msgid "Library dates updated ({0} episodes)"
+msgstr "Bibliotheekdatums bijgewerkt ({0} afleveringen)"

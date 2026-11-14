@@ -268,6 +268,12 @@ def repair_dateadded_once(addon):
     except Exception:
         pass
     xbmc.log('[Videoland] dateadded repaired for {} episodes'.format(changed), xbmc.LOGINFO)
+    try:
+        xbmcgui.Dialog().notification('Videoland', addon.getLocalizedString(31222).format(changed),
+                                      xbmcgui.NOTIFICATION_INFO, 8000)
+        xbmc.executebuiltin('Container.Refresh')
+    except Exception:
+        pass
 
 
 def run():

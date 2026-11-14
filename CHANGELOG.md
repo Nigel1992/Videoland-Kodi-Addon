@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.7 (November 14, 2026)
+> **Latest Version:** v1.9.8 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.8] - 2026-11-14
+
+### Added
+- **Melding als de datum-reparatie klaar is.** De eenmalige achtergrondreparatie toont nu "Bibliotheekdatums bijgewerkt (N afleveringen)" zodra hij klaar is, en ververst de huidige lijst.
 ## [1.9.7] - 2026-11-14
 
 ### Changed

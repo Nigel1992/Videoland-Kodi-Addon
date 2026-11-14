@@ -780,3 +780,7 @@ msgstr ""
 msgctxt "#31221"
 msgid "When a series you follow gets a new episode, update the library so the episode is placed with the others right away."
 msgstr ""
+
+msgctxt "#31222"
+msgid "Library dates updated ({0} episodes)"
+msgstr ""
