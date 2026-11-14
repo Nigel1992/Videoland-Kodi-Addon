@@ -429,3 +429,35 @@ msgstr ""
 msgctxt "#31132"
 msgid "Clean removed titles from the Kodi library"
 msgstr ""
+
+msgctxt "#31133"
+msgid "TMDb key works"
+msgstr ""
+
+msgctxt "#31134"
+msgid "TMDb key does not work. Check the key."
+msgstr ""
+
+msgctxt "#31135"
+msgid "Extra metadata"
+msgstr ""
+
+msgctxt "#31136"
+msgid "Fill in missing data from TMDb / TVmaze"
+msgstr ""
+
+msgctxt "#31137"
+msgid "Videoland data is always used first. Only empty fields (description, poster, background, year, genre, rating, episode descriptions and images) are filled in. Also adds TMDb, TVDB and IMDb ids. Series work without a key through TVmaze; films need a TMDb key."
+msgstr ""
+
+msgctxt "#31138"
+msgid "TMDb API key (optional)"
+msgstr ""
+
+msgctxt "#31139"
+msgid "Free key from themoviedb.org: Settings > API. Paste the \"API Key\" or the \"API Read Access Token\"."
+msgstr ""
+
+msgctxt "#31140"
+msgid "Test TMDb key"
+msgstr ""

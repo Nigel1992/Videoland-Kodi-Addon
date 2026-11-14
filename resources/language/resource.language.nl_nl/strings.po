@@ -499,3 +499,35 @@ msgstr "Kodi-bibliotheek scannen na een wijziging"
 msgctxt "#31132"
 msgid "Clean removed titles from the Kodi library"
 msgstr "Verwijderde titels uit de Kodi-bibliotheek opruimen"
+
+msgctxt "#31133"
+msgid "TMDb key works"
+msgstr "TMDb-sleutel werkt"
+
+msgctxt "#31134"
+msgid "TMDb key does not work. Check the key."
+msgstr "TMDb-sleutel werkt niet. Controleer de sleutel."
+
+msgctxt "#31135"
+msgid "Extra metadata"
+msgstr "Extra gegevens"
+
+msgctxt "#31136"
+msgid "Fill in missing data from TMDb / TVmaze"
+msgstr "Ontbrekende gegevens aanvullen via TMDb / TVmaze"
+
+msgctxt "#31137"
+msgid "Videoland data is always used first. Only empty fields (description, poster, background, year, genre, rating, episode descriptions and images) are filled in. Also adds TMDb, TVDB and IMDb ids. Series work without a key through TVmaze; films need a TMDb key."
+msgstr "De gegevens van Videoland worden altijd eerst gebruikt. Alleen lege velden (beschrijving, poster, achtergrond, jaar, genre, waardering, beschrijvingen en plaatjes van afleveringen) worden aangevuld. Voegt ook TMDb-, TVDB- en IMDb-nummers toe. Series werken zonder sleutel via TVmaze; films hebben een TMDb-sleutel nodig."
+
+msgctxt "#31138"
+msgid "TMDb API key (optional)"
+msgstr "TMDb API-sleutel (optioneel)"
+
+msgctxt "#31139"
+msgid "Free key from themoviedb.org: Settings > API. Paste the \"API Key\" or the \"API Read Access Token\"."
+msgstr "Gratis sleutel via themoviedb.org: Instellingen > API. Plak de \"API Key\" of het \"API Read Access Token\"."
+
+msgctxt "#31140"
+msgid "Test TMDb key"
+msgstr "TMDb-sleutel testen"

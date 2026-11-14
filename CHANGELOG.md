@@ -1,8 +1,16 @@
 # Changelog
 
-> **Latest Version:** v1.3.0 (November 14, 2026)
+> **Latest Version:** v1.3.1 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.3.1] - 2026-11-14
+
+### Added
+- **Library metadata**: Videoland's own data is always used first; only empty fields are filled in from TMDb (series and films, needs a free TMDb API key) and TVmaze (series, no key needed): description, poster, background, year, genres, rating, network/studio, and per-episode titles, descriptions, images and air dates. Placeholder titles such as "Aflevering 3" are replaced by the real episode title.
+- **Library metadata**: `.nfo` files also carry TMDb, TVDB, IMDb and TVmaze ids, so Kodi, skins and Trakt match titles reliably. TVDB is not queried directly (its API needs a paid key); the id comes from TMDb/TVmaze.
+- **Settings → Library → Extra metadata**: on/off switch, TMDb API key field and a "Test TMDb key" button.
+- Only exact title matches are used (films also need a matching year), answers are cached for 7 days, and an unreachable service is skipped for a few minutes.
 
 ## [1.3.0] - 2026-11-14
 

@@ -27,6 +27,8 @@ import time
 from urllib.parse import urlencode
 from xml.sax.saxutils import escape
 
+from . import metadata
+
 try:
     import xbmc
 except ImportError:  # pragma: no cover - outside Kodi
@@ -227,8 +229,9 @@ def store_path():
 
 
 class Library:
-    def __init__(self, source, settings, store=None, fs=None, now=None):
+    def __init__(self, source, settings, store=None, fs=None, now=None, enricher=None):
         """``settings(name)`` returns a setting value as a string."""
+        self.enricher = enricher
         self.source = source
         self.settings = settings
         self.fs = fs or LocalFS()
@@ -319,6 +322,7 @@ class Library:
         series_title = data.get("title") or entry.get("title") or title or series_id
         entry.update({"title": series_title, "seo": seo, "missing": 0})
         entry.setdefault("added", int(self.now()))
+        data = self._enrich_show(entry, series_title, data)
         if data.get("poster"):
             entry["thumb"] = data["poster"]
         if not entry.get("folder"):
@@ -338,7 +342,8 @@ class Library:
                     "parent_seo": episode.get("parent_seo") or seo}
             if self.fs.write(strm, self.play_url(play) + "\n"):
                 result["added"] += 1
-            self.fs.write(nfo, self._episode_nfo(episode, series_title, season, number))
+            self.fs.write(nfo, self._episode_nfo(self._enrich_episode(entry, episode, season, number),
+                                                 series_title, season, number))
 
         for path in list(self.fs.walk_files(show_dir)):
             name = os.path.basename(path).lower()
@@ -348,10 +353,44 @@ class Library:
                 result["removed"] += 1
         self.fs.remove_empty_dirs(show_dir)
 
+        self._save_metadata()
         entry.update({"updated": int(self.now()), "episode_count": len(episodes)})
         section[series_id] = entry
         result.update({"ok": True, "total": len(episodes), "title": series_title})
         return result
+
+    # --------------------------------------------------------------- metadata
+    def _enrich_show(self, entry, title, local):
+        if self.enricher is None:
+            return local
+        try:
+            extra = self.enricher.show(title, known=entry.get("ids"))
+        except Exception as exc:
+            log("metadata lookup failed for {}: {}".format(title, exc))
+            return local
+        ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
+        if ids:
+            entry["ids"] = ids
+        extra.pop("episodes", None)
+        return metadata.merge(local, extra)
+
+    def _enrich_episode(self, entry, episode, season, number):
+        if self.enricher is None or not entry.get("ids"):
+            return episode
+        try:
+            extra = self.enricher.episode(entry["ids"], season, number, by_number=True)
+        except Exception:
+            return episode
+        merged = metadata.merge(episode, extra)
+        merged["id"] = episode["id"]
+        return merged
+
+    def _save_metadata(self):
+        if self.enricher is not None:
+            try:
+                self.enricher.save()
+            except Exception:
+                pass
 
     @staticmethod
     def _art_lines(data, poster_aspect=True):
@@ -368,7 +407,10 @@ class Library:
                  "  <title>{}</title>".format(escape(title)),
                  "  <plot>{}</plot>".format(escape(data.get("plot") or "")),
                  '  <uniqueid type="videoland" default="true">{}</uniqueid>'.format(escape(series_id))]
+        if data.get("year"):
+            lines.append("  <year>{}</year>".format(data["year"]))
         lines += self._art_lines(data)
+        lines += metadata.nfo_extra_lines(data, escape)
         lines.append("</tvshow>")
         return "\n".join(lines) + "\n"
 
@@ -381,6 +423,8 @@ class Library:
                  "  <episode>{}</episode>".format(number),
                  "  <plot>{}</plot>".format(escape(episode.get("plot") or "")),
                  '  <uniqueid type="videoland" default="true">{}</uniqueid>'.format(escape(str(episode["id"])))]
+        if episode.get("aired"):
+            lines.append("  <aired>{}</aired>".format(escape(episode["aired"])))
         if episode.get("thumb"):
             lines.append("  <thumb>{}</thumb>".format(escape(episode["thumb"])))
         lines.append("</episodedetails>")
@@ -406,6 +450,16 @@ class Library:
             return result
 
         movie_title = data.get("title") or entry.get("title") or title or movie_id
+        if self.enricher is not None:
+            try:
+                extra = self.enricher.movie(movie_title, _int_or_none(data.get("year")), known=entry.get("ids"))
+                ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
+                if ids:
+                    entry["ids"] = ids
+                data = metadata.merge(data, extra)
+            except Exception as exc:
+                log("metadata lookup failed for {}: {}".format(movie_title, exc))
+            self._save_metadata()
         year = _int_or_none(data.get("year") or entry.get("year"))
         if year and not 1900 <= year <= 2100:
             year = None
@@ -434,6 +488,7 @@ class Library:
         if year:
             lines.append("  <year>{}</year>".format(year))
         lines += self._art_lines(data)
+        lines += metadata.nfo_extra_lines(data, escape, kind="movie")
         lines.append("</movie>")
         return "\n".join(lines) + "\n"
 

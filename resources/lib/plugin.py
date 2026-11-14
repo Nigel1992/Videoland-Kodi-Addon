@@ -27,6 +27,7 @@ from .api import (
 )
 from .crypto import CipherError, decrypt_json, encrypt_json
 from . import library as library_mod
+from . import metadata as metadata_mod
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -1735,8 +1736,31 @@ def _library_has(kind, item_id):
         return False
 
 
+def _library_enricher():
+    """Fills empty library fields from TMDb/TVmaze, or None when turned off."""
+    if not setting_bool("library_enrich", True):
+        return None
+    language = "nl-NL"
+    try:
+        if not str(xbmc.getLanguage(xbmc.ISO_639_1) or "nl").lower().startswith("nl"):
+            language = "en-US"
+    except Exception:
+        pass
+    return metadata_mod.Enricher(os.path.join(data_dir(), "metadata_cache.json"),
+                                 tmdb_key=setting("tmdb_api_key"), language=language,
+                                 user_agent="plugin.video.videoland.nl")
+
+
 def _library(client=None):
-    return library_mod.Library(LibrarySource(client or api()), setting, store=_library_store())
+    return library_mod.Library(LibrarySource(client or api()), setting, store=_library_store(),
+                               enricher=_library_enricher())
+
+
+def check_tmdb_key():
+    key = setting("tmdb_api_key").strip()
+    enricher = metadata_mod.Enricher("", tmdb_key=key, user_agent="plugin.video.videoland.nl")
+    ok = bool(key) and enricher._tmdb("/configuration") is not None
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31133 if ok else 31134), time=4000)
 
 
 def _after_library_change(scan=True, clean=False):
@@ -1941,6 +1965,8 @@ def dispatch(params):
         library_remove(params.get("kind", ""), params.get("id", ""), params.get("title", ""))
     elif action == "library_update":
         library_update(background=params.get("background") == "1")
+    elif action == "check_tmdb_key":
+        check_tmdb_key()
     elif action == "library_play":
         library_play(params.get("id", ""), params.get("seo", ""))
 

@@ -173,3 +173,40 @@ class PluginLibraryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnrichmentTests(unittest.TestCase):
+    def test_local_data_first_and_gaps_filled(self):
+        from resources.lib import metadata
+
+        routes = {
+            "/search/shows": [{"show": {"id": 7, "name": "Mijn Show"}}],
+            "/shows/7": {"summary": "<p>Van TVmaze</p>", "image": {"original": "https://maze/p.jpg"},
+                         "premiered": "2020-05-01", "genres": ["Drama"], "externals": {"thetvdb": 42}},
+            "/shows/7/episodes": [{"season": 1, "number": 1, "name": "Begin", "summary": "<p>Plot 1</p>",
+                                   "airdate": "2020-05-01", "image": {"original": "https://maze/e.jpg"}}],
+        }
+
+        def http(url, headers):
+            from urllib.parse import urlsplit
+            return routes[urlsplit(url).path]
+
+        with tempfile.TemporaryDirectory() as root:
+            enricher = metadata.Enricher(os.path.join(root, "cache.json"), http=http)
+            source = FakeSource()
+            source.shows["p1"] = {"title": "Mijn Show", "plot": "Eigen tekst", "poster": "", "fanart": "",
+                                  "episodes": [dict(episode("a", 1, 1), title="Aflevering 1", plot="")]}
+            settings = {"library_tv_path": os.path.join(root, "TV")}
+            lib = library.Library(source, settings.get, store=library.LibraryStore(os.path.join(root, "l.json")),
+                                  enricher=enricher)
+            lib.add_series("p1")
+            with open(os.path.join(root, "TV/Mijn Show/tvshow.nfo")) as handle:
+                show = handle.read()
+            self.assertIn("<plot>Eigen tekst</plot>", show)
+            self.assertIn('<thumb aspect="poster">https://maze/p.jpg</thumb>', show)
+            self.assertIn('<uniqueid type="tvdb">42</uniqueid>', show)
+            with open(os.path.join(root, "TV/Mijn Show/Season 1/Mijn Show S01E01.nfo")) as handle:
+                ep = handle.read()
+            self.assertIn("<title>Begin</title>", ep)
+            self.assertIn("<plot>Plot 1</plot>", ep)
+            self.assertIn('<uniqueid type="videoland" default="true">a</uniqueid>', ep)

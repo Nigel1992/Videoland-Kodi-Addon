@@ -165,6 +165,36 @@
           </control>
         </setting>
       </group>
+      <group id="3" label="31135">
+        <setting id="library_enrich" type="boolean" label="31136" help="31137">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="tmdb_api_key" type="string" label="31138" help="31139" parent="library_enrich">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="edit" format="string">
+            <heading>31138</heading>
+          </control>
+        </setting>
+        <setting id="check_tmdb_key" type="action" label="31140" parent="library_enrich">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=check_tmdb_key)</data>
+          <dependencies>
+            <dependency type="enable" setting="library_enrich">true</dependency>
+          </dependencies>
+          <control type="button" format="action">
+            <close>false</close>
+          </control>
+        </setting>
+      </group>
     </category>
     <category id="cache" label="31020">
       <group id="1">
