@@ -1,8 +1,125 @@
 # Changelog
 
-> **Latest Version:** v1.3.0 (November 14, 2026)
+> **Latest Version:** v1.7.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.7.0] - 2026-11-14
+
+### Added
+- **Watched status back to Videoland**: when you mark something as watched or unwatched in Kodi's own library, Videoland gets the same status (Settings → History → Send watched status to Videoland; needs cloud history). Watching to the end already updated Videoland and still does.
+- **Widgets for the home screen**: a new "Widgets" menu that groups Continue watching, My watchlist and the Library as ready-made lists for your skin's home-screen widgets.
+- **Search both services**: when NLZiet is installed, a search offers the same search in NLZiet at the top of the results.
+
+### Development
+- Shares the new `watch_sync.py` module with NLZiet (watched-status logic), kept identical via `scripts/sync-shared.py`.
+- 21 new unit tests (watch_sync, chapter markers).
+
+## [1.6.5] - 2026-11-14
+
+### Fixed
+- **No TMDb match for some series** (e.g. Chateau Meiland): when Videoland's page has no plain title the add-on used the page's browser title ("Show - Kijk online bij Videoland"), which never matches TMDb. Site suffixes are now stripped, the title of the card you added is used as a second try, and the Kodi log shows per series which TMDb/TVmaze match was found ("metadata for ...").
+
+### Added
+- **Next episode (Up Next)**: with the Up Next add-on installed, the next episode is offered near the end of an episode, also from the Kodi library (Settings → Playback; includes an install button).
+- **Skip intro/recap**: when Videoland sends intro or recap times with a video, "Skip the intro?" appears at that moment. Whether it sends them is logged per video ("markers found").
+
+## [1.6.4] - 2026-11-14
+
+### Changed
+- Same as 1.6.2: the video quality setting is back (1.6.3 removed it by mistake). "Highest available" uses HD only on Android and otherwise plays the best stream that works.
+
+## [1.6.2] - 2026-11-14
+
+### Fixed
+- **"Highest available" quality did not play** on Linux/LibreELEC, Windows and macOS: Videoland only grants its HD key (720p/1080p) to Widevine L1, which Kodi has only on Android, so the HD stream could never be decrypted there (see docs/playback-quality-investigation.md). The setting now uses the HD stream only on Android and otherwise plays the best software stream (up to 540p) and says so once. The setting label and help explain this.
+
+## [1.6.1] - 2026-11-14
+
+### Changed
+- **Settings → Library** is now right below Account and split into groups with a heading: Folders, Lists to the library, Automatic updates, Extra metadata and Maintenance.
+
+### Added
+- **Profile for the library**: choose whose watchlist goes into the Kodi library (Settings → Library → My watchlist to the library); by default the active profile.
+
+### Development
+- Modules shared with the other add-on are listed in `scripts/sync-shared.py` and pinned in `SHARED.lock`; a test fails when one is changed without copying it to the other add-on.
+
+## [1.6.0] - 2026-11-14
+
+### Added
+- **Posters and backgrounds: TMDb first** (Settings → Library → Extra metadata, on by default): posters and backgrounds come from TMDb when it has them, with the service's own images as fallback; descriptions stay service-first. Artwork the add-on set earlier in Kodi is replaced when a better image is known (Kodi gets the image url, so the change shows at once); artwork you chose yourself in Kodi is never replaced.
+- **Choose the right TMDb title** (Library menu, context menu of a title): pick the matching TMDb series or film by hand, or search with another term, when the automatic match missed it. Titles with a trailing year or "- Seizoen N" now also match automatically.
+- **Season posters**: each season gets its own poster from TMDb (`season01-poster.jpg`), also for seasons Kodi already scanned.
+- **Logos in the menus**: logos of titles outside the library are looked up on TMDb in the background and appear the next time a list is opened (setting "Show logos in the menus too", needs the TMDb key).
+- **One resume question**: playing from Kodi's library no longer asks "Resume?" twice: when Kodi already asked with its own resume point, the add-on does not ask again (cloud progress is still saved).
+
+## [1.5.1] - 2026-11-14
+
+### Added
+- **Series and film logos (clearlogo)**: with a TMDb key, every series and film in the library gets its logo (Dutch first, then English, then one without text) as `clearlogo.png` (films: `<name>-clearlogo.png`) and in the `.nfo`. Titles Kodi already scanned get the logo through the artwork repair. Skins that show logos instead of titles (widgets, info screens) now use them; browse lists in the add-on show the logo for titles that are in the library.
+
+## [1.5.0] - 2026-11-14
+
+### Added
+- **My watchlist in the Kodi library**: "Add My watchlist to the library now" (Library menu and Settings → Library) puts every series and film from My watchlist in the Kodi library; a bookmarked episode adds its series. With "Keep My watchlist in the library automatically" new watchlist titles are added at every automatic update, and optionally titles that left the watchlist are removed (only those that came from the watchlist).
+
+### Fixed
+- **Diagnostics**: a library folder is no longer reported as "not a Kodi source" when Kodi already has titles from it (for example when the parent folder was added as the source); editorial rails on the watchlist page are shown as info instead of a warning.
+
+## [1.4.1] - 2026-11-14
+
+### Fixed
+- **My watchlist (Mijn Kijklijst) incomplete or outdated**: the watchlist was served from the browsing cache (30 minutes up to a week, depending on the cache setting), so recently added titles were missing. It is now always loaded fresh from Videoland.
+- **Lists of the wrong profile**: the browsing cache was shared by all profiles; each profile now has its own cache folder ("Clear cache" still clears all of them).
+- **Progress notices after a restart**: "progress saved/failed" notices were suppressed during the first minute after the device started.
+
+### Added
+- **Diagnostics**: per watchlist block, how many titles Videoland reports, how many were loaded and how many are shown, to pin down any remaining gap.
+
+## [1.4.0] - 2026-11-14
+
+### Added
+- **Search filters**: a Filter entry on top of search results narrows them by type (series, films, episodes), period and genre (period and genre when Videoland supplies them).
+- The diagnostics button moved to Settings → Library.
+
+## [1.3.4] - 2026-11-14
+
+### Fixed
+- **Library titles missing from Kodi**: Kodi ignores a scan request while it is still scanning, so titles added in quick succession were written to the library folder but never scanned. Such a request now waits and runs as soon as Kodi's scan is finished, and **Update library now** always lets Kodi scan, so titles that were skipped before get in too.
+
+### Added
+- **Diagnostics** (Settings): one screen that checks sign-in, InputStream Adaptive, Widevine, the connection to the service, TMDb and TVmaze, the TMDb key, whether the library folders are Kodi sources, and how many library titles Kodi really has. A privacy-safe report with a log excerpt is saved for bug reports.
+
+## [1.3.3] - 2026-11-14
+
+### Added
+- **Sorting**: list pages offer Kodi's sort options (default order, title, year; episode and date inside seasons).
+- **Clear error messages**: unexpected problems show one sentence that says what happened (no internet, slow response, session expired, not in your subscription, no longer available, too many requests, service outage); the details go to the Kodi log.
+- **GitHub Actions**: tests and an installable zip on every push and pull request; pushing a `v*` tag publishes a release with the zip.
+
+### Fixed
+- **TMDb key test**: the button now saves the settings first (Kodi only saves when the settings window closes, so the test used to see an empty key) and says exactly what is wrong: no key saved, key not accepted, or TMDb not reachable. Connections retry with a bundled certificate list on devices without system certificates.
+- **Menu icons not changing**: the new icons now live in `resources/icons/tiles/`. Kodi caches images by file name, so with the old names it kept showing the previous icons.
+
+## [1.3.2] - 2026-11-14
+
+### Changed
+- **Menu icons**: coloured tiles per menu group (red = browse, plum = your own lists, orange = live tv, grey = account) with white line glyphs, rebuilt by `scripts/build-menu-icons.py`. Live TV has its own broadcast icon.
+- **Main menu order**: Videoland's own navigation first, then Continue Watching and Library, then profile, sign out and clear cache at the bottom.
+- **Translations**: "Sign in", "Sign out" and "Clear cache" are now translatable instead of fixed Dutch text.
+
+### Fixed
+- **Library posters**: series and films now get their poster and background in Kodi's library. The portrait and widescreen images of the card you added are remembered and used when the title page has none, and the images are saved as `poster.jpg`/`fanart.jpg` (films: `<name>-poster.jpg`/`<name>-fanart.jpg`) next to the files, which Kodi always uses.
+- **Library posters**: titles Kodi had already scanned without artwork get their poster and background after every library update and every Kodi library scan; artwork you chose in Kodi is never replaced. Settings → Library has a "Repair artwork in the Kodi library" button.
+
+## [1.3.1] - 2026-11-14
+
+### Added
+- **Library metadata**: Videoland's own data is always used first; only empty fields are filled in from TMDb (series and films, needs a free TMDb API key) and TVmaze (series, no key needed): description, poster, background, year, genres, rating, network/studio, and per-episode titles, descriptions, images and air dates. Placeholder titles such as "Aflevering 3" are replaced by the real episode title.
+- **Library metadata**: `.nfo` files also carry TMDb, TVDB, IMDb and TVmaze ids, so Kodi, skins and Trakt match titles reliably. TVDB is not queried directly (its API needs a paid key); the id comes from TMDb/TVmaze.
+- **Settings → Library → Extra metadata**: on/off switch, TMDb API key field and a "Test TMDb key" button.
+- Only exact title matches are used (films also need a matching year), answers are cached for 7 days, and an unreachable service is skipped for a few minutes.
 
 ## [1.3.0] - 2026-11-14
 

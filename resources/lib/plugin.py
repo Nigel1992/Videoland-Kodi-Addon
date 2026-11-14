@@ -1,3 +1,56 @@
+def run_diagnostics():
+    """Settings button: check everything playback and the library need."""
+    t = diagnostics_mod.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    progress = xbmcgui.DialogProgress()
+    progress.create("Videoland", t["title"] + "...")
+    try:
+        auth = auth_data()
+        signed_in = all(auth.get(key) for key in ("uid", "signature", "timestamp")) and bool(setting("profile_id"))
+        endpoints = [("Videoland", VideolandApi.LAYOUT + "/"), ("TMDb", "https://api.themoviedb.org/3/"),
+                     ("TVmaze", "https://api.tvmaze.com/")]
+        tmdb_status = None
+        if setting_bool("library_enrich", True):
+            tmdb_status = metadata_mod.test_tmdb_key(setting("tmdb_api_key"))[0]
+        lib = library_mod.Library(None, setting, store=_library_store())
+        checks = diagnostics_mod.run_checks(
+            t, ADDON.getAddonInfo("version"), signed_in, endpoints, library=lib,
+            library_special=(library_mod.DEFAULT_TV_PATH, library_mod.DEFAULT_MOVIES_PATH),
+            tmdb_status=tmdb_status,
+            kodi_counts=library_art.kodi_counts(lib, "plugin.video.videoland.nl/library"))
+        if signed_in:
+            try:
+                client = api()
+                ensure_profile(client, auth)
+                for title, loaded, total, shown, feature in watchlist_report(client):
+                    complete = not total or loaded >= int(total)
+                    detail = t["watchlist_line"].format(loaded, total or "?", shown, feature or "-")
+                    if not shown:
+                        # Editorial rail on the watchlist page (no titles of yours).
+                        status = "info"
+                    else:
+                        status = "ok" if complete and shown >= loaded else "warn"
+                    checks.append((status, t["watchlist"].format(title), detail))
+            except Exception as exc:
+                checks.append(("warn", t["watchlist"].format("-"), type(exc).__name__ + ": " + str(exc)[:120]))
+        log_lines = diagnostics_mod.kodi_log_excerpt(["videoland"], diagnostics_mod.redact)
+        text = diagnostics_mod.render(t, checks)
+        path = diagnostics_mod.save_report(os.path.join(data_dir(), "diagnostics"), "videoland",
+                                           diagnostics_mod.redact(text), log_lines)
+        text = diagnostics_mod.render(t, checks, path)
+    finally:
+        progress.close()
+    xbmcgui.Dialog().textviewer("Videoland - " + t["title"], text)
+
+
+def check_tmdb_key():
+    """Settings button: test the saved TMDb key and say exactly what is wrong."""
+    status, detail = metadata_mod.test_tmdb_key(setting("tmdb_api_key"))
+    if detail:
+        xbmc.log("[Videoland] TMDb key test: {} ({})".format(status, detail), xbmc.LOGINFO)
+    message = {"ok": 31133, "missing": 31146, "invalid": 31134, "offline": 31147}[status]
+    xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(message))
+
+
 import json
 import math
 import os
@@ -27,7 +80,15 @@ from .api import (
 )
 from .crypto import CipherError, decrypt_json, encrypt_json
 from . import library as library_mod
+from . import metadata as metadata_mod
+from . import library_art
+from . import errors as errors_mod
+from . import diagnostics as diagnostics_mod
+from . import search_filters
+from . import logo_cache as logo_cache_mod
+from . import playback_extras
 from .progress import ProgressWriter, heartbeat_config, monitor_class
+from . import watch_sync
 from .sync_store import DurableWriter, SyncStore
 
 
@@ -109,6 +170,12 @@ def cache_dir():
     return path
 
 
+def profile_cache_dir():
+    """Cache folder of the active profile: lists differ per profile."""
+    profile = "".join(ch for ch in setting("profile_id") if ch.isalnum() or ch in "-_")[:64]
+    return os.path.join(cache_dir(), profile or "default")
+
+
 def data_dir():
     """Add-on data directory (holds the device-bound encryption key)."""
     return xbmcvfs.translatePath("special://profile/addon_data/plugin.video.videoland.nl")
@@ -130,12 +197,32 @@ def api():
     enabled = setting_bool("use_cache", True)
     client = VideolandApi(
         device_id or None,
-        cache_dir=cache_dir() if enabled else None,
+        cache_dir=profile_cache_dir() if enabled else None,
         cache_ttl=cache_ttl() if enabled else 0,
     )
     if not device_id:
         save("device_id", client.device_id)
     return client
+
+
+_SORTABLE_ACTIONS = {"layout", "search", "related", "continue_watching", "library"}
+
+
+def add_sort_methods(action=None, season=None):
+    """Kodi's sort menu for list pages; the first option keeps Videoland's order."""
+    if action not in _SORTABLE_ACTIONS:
+        return
+    names = ["SORT_METHOD_UNSORTED"]
+    if season not in (None, "", "None"):
+        names.append("SORT_METHOD_EPISODE")
+    names += ["SORT_METHOD_LABEL_IGNORE_THE", "SORT_METHOD_VIDEO_YEAR"]
+    for name in names:
+        method = getattr(xbmcplugin, name, None)
+        if method is not None:
+            try:
+                xbmcplugin.addSortMethod(HANDLE, method)
+            except Exception:
+                pass
 
 
 def url(**params):
@@ -213,7 +300,7 @@ def add(label, route, folder=True, art=None, info=None, playable=False, icon_key
 
 
 # Mapping of menu labels (and localised names) to the flat rounded-tile icon.
-_ICON_DIR = os.path.join(ADDON_PATH, "resources", "icons", "polished")
+_ICON_DIR = os.path.join(ADDON_PATH, "resources", "icons", "tiles")
 _ICON_MAP = {
     **{name: name for name in ("top10", "genres", "romance", "crime", "action",
                                "awards", "autumn", "recent", "night", "featured", "collection",
@@ -244,9 +331,11 @@ _ICON_MAP = {
     "profiel": "profiel",
     "mijn kijklijst": "kijklijst",
     "kijklijst": "kijklijst",
-    "live tv": "collection",
+    "live tv": "live",
+    "tv en gids": "live",
     "bibliotheek": "bibliotheek",
     "library": "bibliotheek",
+    "widgets": "widgets",
 }
 
 
@@ -298,6 +387,18 @@ def content_art(image):
     if image_id:
         art.update(thumb=base.format(image_id), icon=base.format(image_id))
     return art
+
+
+def ratio_image(image, ratios):
+    """URL of a card image in one of the given aspect ratios ("2:3", "16:9"...)."""
+    if not isinstance(image, dict):
+        return ""
+    by_ratio = image.get("idsByRatio") or {}
+    for ratio in ratios:
+        image_id = by_ratio.get(ratio) or (image.get("id") if image.get("ratio") == ratio else None)
+        if image_id:
+            return "https://images-fio.videoland.bedrock.tech/v2/images/{}/raw".format(image_id)
+    return ""
 
 
 def hero_art(layout):
@@ -574,7 +675,7 @@ def root():
     xbmcplugin.setContent(HANDLE, "files")
     auth = auth_data()
     if not auth:
-        add("Aanmelden", url(action="login"), False, icon_key="aanmelden")
+        add(ADDON.getLocalizedString(31141), url(action="login"), False, icon_key="aanmelden")
     else:
         client = api()
         ensure_profile(client, auth)
@@ -588,13 +689,15 @@ def root():
         added = add_navigation(navigation)
         if not added:
             add_default_navigation()
-        name = active_profile_name(client, auth)
-        add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
+        # Order: browse (from Videoland), own lists, then account entries last.
         if not local_history():
             add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
         add(ADDON.getLocalizedString(31120), url(action="library"), True, icon_key="bibliotheek")
-        add("Afmelden", url(action="logout"), False, icon_key="afmelden")
-    add("Cache wissen", url(action="clear_cache"), False, icon_key="cache")
+        add(ADDON.getLocalizedString(31182), url(action="widgets"), True, icon_key="widgets")
+        name = active_profile_name(client, auth)
+        add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
+        add(ADDON.getLocalizedString(31142), url(action="logout"), False, icon_key="afmelden")
+    add(ADDON.getLocalizedString(31143), url(action="clear_cache"), False, icon_key="cache")
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -669,6 +772,27 @@ def add_default_navigation():
     add("Zoeken", url(action="search"), True, icon_key="zoeken")
 
 
+PERSONAL_PAGES = {("frontspace", "bookmarks")}
+
+
+def watchlist_report(client):
+    """Per watchlist block: (title, items loaded, total Videoland reports, rows shown)."""
+    client.cache_dir = None
+    client.cache_ttl = 0
+    data = client.layout("frontspace", "bookmarks", "https://v2.videoland.com/", complete=True)
+    report = []
+    for block in data.get("blocks", []):
+        content = block.get("content") or {}
+        items = content.get("items") if isinstance(content.get("items"), list) else []
+        pagination = content.get("pagination") or {}
+        total = pagination.get("totalItems") or content.get("totalItems") or block.get("totalItems")
+        title = str(block.get("block_title") or (block.get("analytics") or {}).get("tealium", {}).get("block_title")
+                    or block.get("feature") or "?")
+        shown = len(_build_rows({"blocks": [block]}))
+        report.append((title, len(items), total, shown, str(block.get("feature") or "")))
+    return report
+
+
 def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
     if kind == "frontspace" and entity_id == "epggrid":
         # Legacy favourites/URLs target the EPG grid directly; the Live TV
@@ -694,6 +818,10 @@ def show_layout(kind, entity_id, seo="", season=None, section=None, group=None):
             return title.casefold() in ("genres", "genre", "categorieën", "categorieen", "wat wil je kijken?")
         return title == ("" if group == "featured" else section)
 
+    if (kind, str(entity_id)) in PERSONAL_PAGES:
+        # The watchlist changes whenever you add a title: always load it fresh.
+        client.cache_dir = None
+        client.cache_ttl = 0
     data = client.layout(kind, entity_id, location, complete=True, block_filter=load_block)
     if BREADCRUMB == ["Videoland"]:
         # Compatibility with old favourites/URLs that lack a breadcrumb.
@@ -1004,7 +1132,7 @@ def _item_label(item, fallback=""):
     return label if isinstance(label, str) else str(label)
 
 
-def _render_rows(rows, client=None, page_art=None):
+def _render_rows(rows, client=None, page_art=None, only_kind=None):
     """Add every collected row as a directory/playable entry."""
     # Resolve film-vs-series for whole program-list pages in parallel so a big
     # list (e.g. Films, ~90 movies) does not serialize one slow page fetch per
@@ -1110,18 +1238,34 @@ def _render_rows(rows, client=None, page_art=None):
             play_target = resolve[target_id]
         else:
             play_target = _play_target(client, item, target, target_kind)
+        if only_kind:
+            if target_kind == "live":
+                row_kind = "live"
+            elif play_target:
+                row_kind = "movie" if target_kind in ("program", "details") else "episode"
+            else:
+                row_kind = "series" if target_kind == "program" else "other"
+            if row_kind != only_kind:
+                continue
         library_kind = None
         if target_kind in ("program", "details") and play_target:
             library_kind = "movie"
         elif target_kind == "program" and not play_target:
             library_kind = "series"
         if library_kind:
+            logo = _library_logos().get((library_kind, target_id))
+            if not logo and _browse_logo_cache() is not None:
+                logo = _browse_logo_cache().get(library_kind, label)
+            if logo:
+                art["clearlogo"] = logo
             in_library = _library_has(library_kind, target_id)
             context_menu.append((
                 ADDON.getLocalizedString(31111 if in_library else 31110),
                 "RunPlugin({})".format(url(
                     action="library_toggle", kind=library_kind, id=target_id,
-                    seo=target.get("seo", ""), title=label, thumb=art.get("thumb", ""))),
+                    seo=target.get("seo", ""), title=label,
+                    poster=ratio_image(image, ("2:3", "3:4")) or art.get("thumb", ""),
+                    fanart=backgrounds.get(target_id, {}).get("fanart") or ratio_image(image, ("16:9",)))),
             ))
         if target_kind == "live":
             add(label, url(
@@ -1295,7 +1439,7 @@ def show_items(data, season=None, section=None, client=None, sectioned=False,
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def search(query=""):
+def search(query="", period=None, genre=None, kind=None):
     query = (query or xbmcgui.Dialog().input("Zoeken in Videoland")).strip()
     if not query:
         xbmcplugin.endOfDirectory(HANDLE)
@@ -1306,9 +1450,85 @@ def search(query=""):
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
+    data = _search_layout(client, query)
+    if not (period or genre or kind):
+        _add_other_service_search(query)
+        # Without a filter keep the familiar sectioned result page, with the
+        # Filter entry on top.
+        _add_search_filter_entry(query)
+        show_items(data, client=client)
+        return
+    xbmcplugin.setContent(HANDLE, "videos")
+    _add_search_filter_entry(query, period, genre, kind)
+    rows = _build_rows(data)
+    wanted = {id(item) for item in search_filters.apply([row[0] for row in rows], period, genre)}
+    rows = [row for row in rows if id(row[0]) in wanted]
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    if not rows:
+        xbmcgui.Dialog().notification("Videoland", t["empty"], time=3000)
+    _render_rows(rows, client, hero_art(data), only_kind=kind)
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def _search_layout(client, query):
     location = "https://v2.videoland.com/zoeken?" + urlencode({"query": query})
-    data = client.layout("frontspace", "search", location, {"query": query}, complete=True)
-    show_items(data, client=client)
+    return client.layout("frontspace", "search", location, {"query": query}, complete=True)
+
+
+def _add_search_filter_entry(query, period=None, genre=None, kind=None):
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    params = {"action": "search_filter", "query": query}
+    for key, value in (("period", period), ("genre", genre), ("kind", kind)):
+        if value:
+            params[key] = value
+    add("{}  [{}]".format(t["filter"], search_filters.describe(t, period, genre, kind)),
+        url(**params), False, icon_key="zoeken")
+
+
+def search_filter(query, period=None, genre=None, kind=None):
+    """Ask for a type, period or genre and reopen the search results with it."""
+    t = search_filters.texts(xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+    client = api()
+    ensure_profile(client, ensure_login())
+    items = [row[0] for row in _build_rows(_search_layout(client, query))]
+    periods, genres = search_filters.options(items)
+    choices, actions = [t["kind"]], ["kind"]
+    if periods:
+        choices.append(t["period"])
+        actions.append("period")
+    if genres:
+        choices.append(t["genre"])
+        actions.append("genre")
+    if period or genre or kind:
+        choices.append(t["clear"])
+        actions.append("clear")
+    picked = xbmcgui.Dialog().select(t["filter"], choices)
+    if picked < 0:
+        return
+    action = actions[picked]
+    if action == "kind":
+        kinds = ["series", "movie", "episode"]
+        index = xbmcgui.Dialog().select(t["kind"], [t["all"]] + [t[k] for k in kinds])
+        if index < 0:
+            return
+        kind = kinds[index - 1] if index > 0 else None
+    elif action == "period":
+        index = xbmcgui.Dialog().select(t["period"], [t["all"]] + [t[k] for k in periods])
+        if index < 0:
+            return
+        period = periods[index - 1] if index > 0 else None
+    elif action == "genre":
+        index = xbmcgui.Dialog().select(t["genre"], [t["all"]] + genres)
+        if index < 0:
+            return
+        genre = genres[index - 1] if index > 0 else None
+    else:
+        period = genre = kind = None
+    params = {"action": "search", "query": query}
+    for key, value in (("period", period), ("genre", genre), ("kind", kind)):
+        if value:
+            params[key] = value
+    xbmc.executebuiltin("Container.Update({},replace)".format(url(**params)))
 
 
 def progress_tracker(client, auth, layout, video_id, location, stream):
@@ -1339,6 +1559,34 @@ def progress_tracker(client, auth, layout, video_id, location, stream):
                                       xbmc.LOGWARNING if error else xbmc.LOGINFO))
 
 
+def hd_capable():
+    """Videoland only grants its HD key (720p/1080p) to Widevine L1, which in
+    Kodi exists only on Android. Linux/LibreELEC, Windows and macOS use the
+    software Widevine (L3): there the HD stream can never be decrypted."""
+    try:
+        return xbmc.getCondVisibility("System.Platform.Android") is True
+    except Exception:
+        return False
+
+
+def choose_asset(dash):
+    """Pick the DASH asset to play.
+
+    "Highest available" uses the hardware-protected (HD) asset only where it
+    can work; elsewhere it falls back to the best software stream instead of
+    starting a stream that cannot be decrypted.
+    """
+    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
+    hardware = [a for a in dash if (a.get("drm") or {}).get("type") != "software"]
+    want_best = setting_int("preferred_quality", 1) == 0
+    if want_best and hd_capable():
+        return (hardware or dash)[0]
+    if want_best and hardware and setting("hd_fallback_notice_shown") != "true":
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31172), time=8000)
+        save("hd_fallback_notice_shown", "true")
+    return software[0] if software else dash[0]
+
+
 def _dash_item(helper, asset, drm_token):
     """Build the inputstream.adaptive ListItem for a Widevine DASH asset."""
     item = xbmcgui.ListItem(path=asset["path"])
@@ -1365,6 +1613,93 @@ def _dash_item(helper, asset, drm_token):
     return item
 
 
+def _video_item(layout, video_id):
+    for card, _block in walk_item_content(layout):
+        video = card.get("video")
+        if isinstance(video, dict) and str(video.get("id")) == str(video_id):
+            return card
+    return {}
+
+
+def _next_episode(client, video_id, parent_id, parent_seo):
+    """(current_row, next_row) in the series' episode order, or (None, None)."""
+    if not parent_id:
+        return None, None
+
+    def load_block(block):
+        tealium = (block.get("analytics") or {}).get("tealium") or {}
+        return not is_related_block({"feature": tealium.get("from"), "block_title": tealium.get("block_title")})
+
+    data = client.layout("program", parent_id, program_location(parent_seo, parent_id),
+                         complete=True, block_filter=load_block)
+    rows = [row for row in _build_rows(data) if row[2] == "video" and not is_hero_block(row[3])]
+    ids = [str(row[1].get("id") or "") for row in rows]
+    if str(video_id) not in ids:
+        return None, None
+    index = ids.index(str(video_id))
+    following = rows[index + 1] if index + 1 < len(rows) else None
+    return rows[index], following
+
+
+def _episode_info(row, showtitle):
+    item, target, _kind, block = row
+    label = _clean_episode_label(_item_label(item, str(target.get("id") or "")))
+    return playback_extras.episode_info(
+        label, showtitle, block_season(block) or 1, _episode_number(item) or 0,
+        plot=str(item.get("description") or ""), art=content_art(item.get("image")),
+        episode_id=str(target.get("id") or ""))
+
+
+def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, parent_seo):
+    """Skip-intro question and Up Next, without delaying playback."""
+    card = _video_item(layout, video_id)
+    raw_duration = (card.get("video") or {}).get("duration") if isinstance(card, dict) else None
+    duration = float(raw_duration) if isinstance(raw_duration, (int, float)) and not isinstance(raw_duration, bool) else 0.0
+    markers = playback_extras.find_markers([card, asset], duration)
+    xbmc.log("[Videoland] {}: markers found: {}".format(video_id, playback_extras.marker_summary(markers)),
+             xbmc.LOGINFO)
+    if setting_bool("skip_markers", True) and markers:
+        def ask(kind):
+            text = ADDON.getLocalizedString(31174 if kind == "recap" else 31173)
+            return xbmcgui.Dialog().yesno("Videoland", text, autoclose=8000)
+        playback_extras.start_skip_watcher(markers, ask)
+    if not setting_bool("upnext", True) or not playback_extras.upnext_available():
+        return
+
+    def announce():
+        try:
+            current, following = _next_episode(client, video_id, parent_id, parent_seo)
+            if not following:
+                return
+            showtitle = _layout_title(client.layout("program", parent_id, program_location(parent_seo, parent_id)))
+            target = following[1]
+            parent = target.get("parent") or {}
+            play_url = url(action="play", video_id=target.get("id", ""), seo=target.get("seo", ""),
+                           parent_id=parent.get("id") or parent_id, parent_seo=parent.get("seo") or parent_seo)
+            credits = markers.get("credits")
+            notify_at = duration - credits[0] if credits and credits[0] and duration else None
+            if playback_extras.wait_for_playback(xbmc.Player()):
+                playback_extras.send_upnext(ADDON.getAddonInfo("id"), _episode_info(current, showtitle),
+                                            _episode_info(following, showtitle), play_url, notify_at)
+        except Exception as exc:
+            xbmc.log("[Videoland] Up Next skipped: {}".format(exc), xbmc.LOGINFO)
+
+    import threading
+    thread = threading.Thread(target=announce, name="VideolandUpNext")
+    thread.daemon = True
+    thread.start()
+
+
+def kodi_library_resume():
+    """True when playback starts from a Kodi library item with a resume point."""
+    try:
+        dbid = xbmc.getInfoLabel("ListItem.DBID")
+        from_library = isinstance(dbid, str) and dbid.isdigit() and int(dbid) > 0
+        return bool(from_library and xbmc.getCondVisibility("ListItem.IsResumable") is True)
+    except Exception:
+        return False
+
+
 def play(video_id, seo="", parent_id="", parent_seo=""):
     import inputstreamhelper
 
@@ -1384,7 +1719,10 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
 
     # Check for resume position
     use_local = local_history()
-    resume_position = 0 if use_local else get_resume_position(layout, video_id)
+    # Started from Kodi's own library with a Kodi resume point: Kodi has just
+    # asked "Resume from ...?" itself, so do not ask a second time.
+    kodi_resumes = kodi_library_resume()
+    resume_position = 0 if (use_local or kodi_resumes) else get_resume_position(layout, video_id)
     if resume_position > 0:
         # Ask user if they want to resume
         dialog = xbmcgui.Dialog()
@@ -1411,9 +1749,7 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     # Some devices (e.g. Pi 5 / Widevine on LibreELEC) require the software-L3
     # rendition and fail to decrypt the hardware (L1) rendition (CDM "kNoKey").
     # Software-L3 is the default; "best available" opts into the highest stream.
-    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
-    prefer_software = setting_int("preferred_quality", 1) == 1
-    asset = (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
+    asset = choose_asset(dash)
     drm_token = client.upfront_token(auth["uid"], video_id)
     item = _dash_item(helper, asset, drm_token)
 
@@ -1422,14 +1758,16 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     # CBookmark::IsSet requires a positive total duration, even for restart.
     tracker = None
     if not use_local:
-        duration = get_video_duration(layout, video_id)
-        item.getVideoInfoTag().setResumePoint(
-            float(resume_position), max(duration, float(resume_position) + 1.0))
-        item.setProperty("StartOffset", str(resume_position))
+        if not kodi_resumes:
+            duration = get_video_duration(layout, video_id)
+            item.getVideoInfoTag().setResumePoint(
+                float(resume_position), max(duration, float(resume_position) + 1.0))
+            item.setProperty("StartOffset", str(resume_position))
         xbmc.log("[Videoland] {}: selected playback position {} seconds".format(
             video_id, resume_position), xbmc.LOGINFO)
         tracker = progress_tracker(client, auth, layout, video_id, location, asset["path"])
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
+    _start_playback_extras(client, layout, asset, video_id, seo, parent_id, parent_seo)
     if tracker:
         tracker.run()
         # Kodi updates the visible item with its local bookmark on stop/end.
@@ -1595,9 +1933,7 @@ def _live_stream(client, channel_id, seo):
             and (a.get("format") == "dashcenc" or ".mpd" in a.get("path", ""))]
     if not dash:
         raise ApiError("Geen live DASH-stream gevonden")
-    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
-    prefer_software = setting_int("preferred_quality", 1) == 1
-    return (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
+    return choose_asset(dash)
 
 
 def play_live(channel_id, seo=""):
@@ -1728,6 +2064,32 @@ def _library_store():
     return _LIBRARY_STORE
 
 
+_LOGOS = None
+_LOGO_CACHE = None
+
+
+def _browse_logo_cache():
+    """Logo cache for titles outside the library (needs a TMDb key)."""
+    global _LOGO_CACHE
+    if _LOGO_CACHE is None:
+        if setting_bool("browse_logos", True) and setting_bool("library_enrich", True) and setting("tmdb_api_key").strip():
+            _LOGO_CACHE = logo_cache_mod.LogoCache(data_dir())
+        else:
+            _LOGO_CACHE = False
+    return _LOGO_CACHE or None
+
+
+def _library_logos():
+    """Clearlogos of library titles, so browse lists show them too."""
+    global _LOGOS
+    if _LOGOS is None:
+        try:
+            _LOGOS = library_art.logo_index(_library_store())
+        except Exception:
+            _LOGOS = {}
+    return _LOGOS
+
+
 def _library_has(kind, item_id):
     try:
         return _library_store().has(kind, item_id)
@@ -1735,8 +2097,45 @@ def _library_has(kind, item_id):
         return False
 
 
+def _library_enricher():
+    """Fills empty library fields from TMDb/TVmaze, or None when turned off."""
+    if not setting_bool("library_enrich", True):
+        return None
+    language = "nl-NL"
+    try:
+        if not str(xbmc.getLanguage(xbmc.ISO_639_1) or "nl").lower().startswith("nl"):
+            language = "en-US"
+    except Exception:
+        pass
+    return metadata_mod.Enricher(os.path.join(data_dir(), "metadata_cache.json"),
+                                 tmdb_key=setting("tmdb_api_key"), language=language,
+                                 user_agent="plugin.video.videoland.nl")
+
+
 def _library(client=None):
-    return library_mod.Library(LibrarySource(client or api()), setting, store=_library_store())
+    return library_mod.Library(
+        LibrarySource(client or api()), setting, store=_library_store(), enricher=_library_enricher(),
+        downloader=lambda image_url: library_art.http_download(image_url, "plugin.video.videoland.nl"))
+
+
+def repair_library_art(background=True):
+    """Give titles Kodi already scanned their missing poster and background."""
+    try:
+        lib = library_mod.Library(None, setting, store=_library_store())
+        fixed = library_art.repair_kodi_art(lib, marker="plugin.video.videoland.nl/library")
+    except Exception as exc:
+        xbmc.log("[Videoland] Library artwork repair failed: {}".format(exc), xbmc.LOGWARNING)
+        fixed = 0
+    if not background:
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31144).format(fixed), time=3000)
+    return fixed
+
+
+def check_tmdb_key():
+    key = setting("tmdb_api_key").strip()
+    enricher = metadata_mod.Enricher("", tmdb_key=key, user_agent="plugin.video.videoland.nl")
+    ok = bool(key) and enricher._tmdb("/configuration") is not None
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31133 if ok else 31134), time=4000)
 
 
 def _after_library_change(scan=True, clean=False):
@@ -1746,7 +2145,7 @@ def _after_library_change(scan=True, clean=False):
         library_mod.run_library_jobs(scan=scan, clean=clean)
 
 
-def library_add(kind, item_id, seo="", title="", thumb=""):
+def library_add(kind, item_id, seo="", title="", poster="", fanart=""):
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
@@ -1755,17 +2154,14 @@ def library_add(kind, item_id, seo="", title="", thumb=""):
     progress.create("Videoland", ADDON.getLocalizedString(31112).format(title))
     try:
         if kind == "series":
-            result = lib.add_series(item_id, seo, title)
+            result = lib.add_series(item_id, seo, title, poster, fanart)
         else:
-            result = lib.add_movie(item_id, seo, title)
+            result = lib.add_movie(item_id, seo, title, poster, fanart)
     finally:
         progress.close()
     if not result.get("ok"):
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31113), xbmcgui.NOTIFICATION_WARNING)
         return
-    entry = lib.store.get(kind, item_id)
-    if thumb and entry is not None and not entry.get("thumb"):
-        entry["thumb"] = thumb
     lib.store.save()
     if kind == "series":
         message = ADDON.getLocalizedString(31114).format(result.get("title") or title, result.get("total", 0))
@@ -1783,12 +2179,12 @@ def library_remove(kind, item_id, title=""):
         xbmc.executebuiltin("Container.Refresh")
 
 
-def library_toggle(kind, item_id, seo="", title="", thumb=""):
+def library_toggle(kind, item_id, seo="", title="", poster="", fanart=""):
     kind = "series" if kind == "series" else "movie"
     if _library_has(kind, item_id):
         library_remove(kind, item_id, title)
     else:
-        library_add(kind, item_id, seo, title, thumb)
+        library_add(kind, item_id, seo, title, poster, fanart)
         xbmc.executebuiltin("Container.Refresh")
 
 
@@ -1806,7 +2202,7 @@ def library_update(background=False):
 
 
 def _library_update(background):
-    if _library_store().is_empty():
+    if _library_store().is_empty() and not setting_bool("library_watchlist_sync", False):
         if not background:
             xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31117), time=3000)
         return
@@ -1819,6 +2215,13 @@ def _library_update(background):
         auth = ensure_login()
     ensure_profile(client, auth)
     lib = _library(client)
+    if setting_bool("library_watchlist_sync", False):
+        try:
+            sync_watchlist_to_library(client, lib)
+        except AuthError:
+            raise
+        except Exception as exc:
+            xbmc.log("[Videoland] Watchlist sync skipped: {}".format(exc), xbmc.LOGWARNING)
     progress = None
     if not background:
         progress = xbmcgui.DialogProgressBG()
@@ -1836,24 +2239,217 @@ def _library_update(background):
         if progress is not None:
             progress.close()
     changed = bool(totals["added"] or totals["removed"])
-    if changed:
-        _after_library_change(scan=True, clean=bool(totals["removed"]))
+    if changed or not background:
+        # A manual update always scans, so titles a busy Kodi skipped get in too.
+        library_mod.run_library_jobs(scan=True, clean=bool(totals["removed"]) and setting_bool("library_clean_after", True))
+    repair_library_art()
     if not background or (changed and setting_bool("sync_notifications", False)):
         xbmcgui.Dialog().notification(
             "Videoland", ADDON.getLocalizedString(31119).format(totals["added"], totals["removed"]), time=4000)
+
+
+def watchlist_titles(client):
+    """The titles in My watchlist as [(kind, id, seo, title, poster, fanart)].
+
+    ``kind`` is "series" or "movie"; a bookmarked episode counts as its series.
+    """
+    client.cache_dir = None
+    client.cache_ttl = 0
+    data = client.layout("frontspace", "bookmarks", "https://v2.videoland.com/", complete=True)
+    titles, seen = [], set()
+    for item, target, target_kind, _block in _build_rows(data):
+        image = item.get("image") or {}
+        poster = ratio_image(image, ("2:3", "3:4")) or content_art(image).get("thumb", "")
+        fanart = ratio_image(image, ("16:9",))
+        label = _item_label(item, str(target.get("id") or ""))
+        if target_kind == "video":
+            parent = target.get("parent") or {}
+            if parent.get("type") != "program" or not parent.get("id"):
+                continue
+            entry = ("series", str(parent["id"]), parent.get("seo", ""), label, poster, fanart)
+        elif target_kind in ("program", "details"):
+            try:
+                play_target = _play_target(client, item, target, target_kind)
+            except AuthError:
+                raise
+            except Exception:
+                play_target = None
+            kind = "movie" if play_target else "series"
+            entry = (kind, str(target.get("id") or ""), target.get("seo", ""), label, poster, fanart)
+        else:
+            continue
+        if entry[1] and (entry[0], entry[1]) not in seen:
+            seen.add((entry[0], entry[1]))
+            titles.append(entry)
+    return titles
+
+
+def _watchlist_of_library_profile(client):
+    """Watchlist of the profile chosen for the library (default: the active one)."""
+    profile_id = setting("library_profile_id")
+    active = setting("profile_id")
+    if not profile_id or profile_id == active:
+        return watchlist_titles(client)
+    auth = auth_data()
+    client.jwt(auth, profile_id)
+    try:
+        return watchlist_titles(client)
+    finally:
+        client.jwt(auth, active)
+
+
+def choose_library_profile():
+    """Settings: which profile's watchlist the library follows."""
+    client = api()
+    auth = ensure_login()
+    client.jwt(auth)
+    profiles = client.profiles(auth["uid"]) or []
+    labels = [ADDON.getLocalizedString(31165)] + [
+        p.get("username") or ADDON.getLocalizedString(31053).format(i + 1) for i, p in enumerate(profiles)]
+    index = xbmcgui.Dialog().select(ADDON.getLocalizedString(31164), labels)
+    if index < 0:
+        return
+    if index == 0:
+        save("library_profile_id", "")
+        save("library_profile_name", ADDON.getLocalizedString(31165))
+    else:
+        save("library_profile_id", profiles[index - 1].get("uid") or "")
+        save("library_profile_name", labels[index])
+    ensure_profile(client, auth)
+    xbmcgui.Dialog().notification("Videoland", setting("library_profile_name"), time=3000)
+
+
+def sync_watchlist_to_library(client, lib, progress=None):
+    """Add every watchlist title that is not in the library yet; optionally
+    remove titles that were added from the watchlist and left it.
+    Returns (added, removed, failed)."""
+    titles = _watchlist_of_library_profile(client)
+    added = failed = removed = 0
+    wanted = set()
+    for index, (kind, item_id, seo, title, poster, fanart) in enumerate(titles):
+        wanted.add((kind, item_id))
+        if lib.is_in_library(kind, item_id):
+            continue
+        if progress is not None:
+            progress(index, len(titles), title)
+        try:
+            if kind == "series":
+                result = lib.add_series(item_id, seo, title, poster, fanart)
+            else:
+                result = lib.add_movie(item_id, seo, title, poster, fanart)
+        except AuthError:
+            raise
+        except Exception as exc:
+            xbmc.log("[Videoland] Watchlist title {} not added: {}".format(item_id, exc), xbmc.LOGWARNING)
+            result = {}
+        if result.get("ok"):
+            entry = lib.store.get(kind, item_id)
+            if entry is not None:
+                entry["source"] = "watchlist"
+            added += 1
+        else:
+            failed += 1
+    if setting_bool("library_watchlist_remove", False) and titles:
+        for kind in ("series", "movie"):
+            for item_id, entry in list(lib.items(kind)):
+                if entry.get("source") == "watchlist" and (kind, item_id) not in wanted:
+                    if lib.remove(kind, item_id, save=False):
+                        removed += 1
+    lib.store.save()
+    return added, removed, failed
+
+
+def library_from_watchlist(background=False):
+    """Menu/settings action: put the whole watchlist in the Kodi library."""
+    client = api()
+    if background:
+        auth = auth_data()
+        if not all(auth.get(key) for key in ("uid", "signature", "timestamp")) or not setting("profile_id"):
+            return
+    else:
+        auth = ensure_login()
+    ensure_profile(client, auth)
+    lib = _library(client)
+    dialog = None
+    if not background:
+        dialog = xbmcgui.DialogProgressBG()
+        dialog.create("Videoland", ADDON.getLocalizedString(31150))
+
+    def report(index, total, title):
+        if dialog is not None and total:
+            dialog.update(int(index * 100 / total), "Videoland", title)
+
+    try:
+        added, removed, failed = sync_watchlist_to_library(client, lib, report)
+    finally:
+        if dialog is not None:
+            dialog.close()
+    if added or removed:
+        library_mod.run_library_jobs(scan=True, clean=bool(removed) and setting_bool("library_clean_after", True))
+    if not background or ((added or removed) and setting_bool("sync_notifications", False)):
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31151).format(added, removed, failed), time=5000)
+    if not background:
+        xbmc.executebuiltin("Container.Refresh")
+
+
+def choose_tmdb(kind, item_id):
+    """Library menu: pick the right TMDb series/film for a title by hand."""
+    kind = "series" if kind == "series" else "movie"
+    store = _library_store()
+    entry = store.get(kind, item_id)
+    enricher = _library_enricher()
+    if entry is None:
+        return
+    if enricher is None or not enricher.tmdb_key:
+        xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(31146))
+        return
+    query = entry.get("title") or ""
+    while True:
+        found = enricher.search_candidates(kind, query)
+        labels = [ADDON.getLocalizedString(31162)] + [
+            "{} ({})".format(name, year) if year else name for _id, name, year in found]
+        picked = xbmcgui.Dialog().select(ADDON.getLocalizedString(31161), labels)
+        if picked < 0:
+            return
+        if picked == 0:
+            query = xbmcgui.Dialog().input(ADDON.getLocalizedString(31162), query)
+            if not query:
+                return
+            continue
+        tmdb_id = found[picked - 1][0]
+        break
+    entry["ids"] = {"tmdb": str(tmdb_id)}  # other ids are looked up again from TMDb
+    store.section(kind)[str(item_id)] = entry
+    client = api()
+    ensure_profile(client, ensure_login())
+    lib = _library(client)
+    if kind == "series":
+        lib.add_series(item_id, entry.get("seo", ""), entry.get("title", ""))
+    else:
+        lib.add_movie(item_id, entry.get("seo", ""), entry.get("title", ""))
+    lib.store.save()
+    repair_library_art()
+    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31163), time=4000)
+    xbmc.executebuiltin("Container.Refresh")
 
 
 def browse_library():
     set_breadcrumb(["Videoland", ADDON.getLocalizedString(31120)])
     xbmcplugin.setContent(HANDLE, "videos")
     add(ADDON.getLocalizedString(31121), url(action="library_update"), False, icon_key="recent")
+    add(ADDON.getLocalizedString(31152), url(action="library_from_watchlist"), False, icon_key="kijklijst")
     lib = library_mod.Library(None, setting, store=_library_store())
     for kind, label_id in (("series", 31122), ("movie", 31123)):
         for item_id, entry in lib.items(kind):
             title = entry.get("title") or item_id
             remove = [(ADDON.getLocalizedString(31111), "RunPlugin({})".format(url(
-                action="library_remove", kind=kind, id=item_id, title=title)))]
-            art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else None
+                action="library_remove", kind=kind, id=item_id, title=title))),
+                      (ADDON.getLocalizedString(31161), "RunPlugin({})".format(url(
+                action="choose_tmdb", kind=kind, id=item_id)))]
+            art = {"thumb": entry["thumb"], "poster": entry["thumb"]} if entry.get("thumb") else {}
+            if entry.get("clearlogo"):
+                art["clearlogo"] = entry["clearlogo"]
+            art = art or None
             label = "{} [COLOR grey]({})[/COLOR]".format(title, ADDON.getLocalizedString(label_id))
             seo = entry.get("seo", "")
             if kind == "series":
@@ -1878,9 +2474,72 @@ def library_play(movie_id, seo=""):
          play_target.get("parent_seo", ""))
 
 
+OTHER_SERVICE_ID = "plugin.video.nlziet"
+
+
+def _add_other_service_search(query):
+    """Top line of the search results: the same search in NLZiet."""
+    try:
+        if not xbmc.getCondVisibility("System.HasAddon({})".format(OTHER_SERVICE_ID)):
+            return
+    except Exception:
+        return
+    target = "plugin://{}/?{}".format(OTHER_SERVICE_ID, urlencode({"mode": "search", "q": query}))
+    item = xbmcgui.ListItem(label="[B]{}[/B]: {}".format(ADDON.getLocalizedString(31184), query))
+    icon = "special://home/addons/{}/icon.png".format(OTHER_SERVICE_ID)
+    item.setArt({"icon": icon, "thumb": icon})
+    xbmcplugin.addDirectoryItem(HANDLE, target, item, isFolder=True)
+
+
+def widgets_menu():
+    """Ready-made lists for the skin's home screen widgets."""
+    xbmcplugin.setContent(HANDLE, "files")
+    help_text = ADDON.getLocalizedString(31183)
+    entries = []
+    if not local_history():
+        entries.append((ADDON.getLocalizedString(31079), url(action="continue_watching"), "continue"))
+    entries.append((ADDON.getLocalizedString(31186), url(action="layout", kind="frontspace", entity_id="bookmarks"), "kijklijst"))
+    entries.append((ADDON.getLocalizedString(31120), url(action="library"), "bibliotheek"))
+    for label, route, icon in entries:
+        add(label, route, True, icon_key=icon, info={"plot": help_text})
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def mark_watched_on_service(video_id, seo="", parent_id="", parent_seo="", watched="1"):
+    """Send a watched/unwatched change from the Kodi library back to Videoland."""
+    if setting("history_source") == "local" or not setting_bool("watched_to_service", True):
+        return
+    if not cloud_sync_enabled() or not video_id:
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    location = "https://v2.videoland.com/"
+    if parent_id and parent_seo and seo:
+        location += "{}-p_{}/{}-c_{}".format(parent_seo, parent_id, seo, video_id.replace("clip_", ""))
+    layout = client.layout("video", video_id, location)
+    config = heartbeat_config(layout, video_id)
+    if not config:
+        xbmc.log("[Videoland] No progress metadata to mark watched for {}".format(video_id), xbmc.LOGWARNING)
+        return
+    writer = ProgressWriter(client, auth, setting("profile_id"), config, location)
+    client.timeout = 8
+    want_watched = str(watched) not in ("0", "false", "")
+    if want_watched:
+        # tc at the clip duration, reported as the end of the session.
+        writer.save(writer.duration, "end")
+    else:
+        # Back to the start so Videoland no longer counts it as watched.
+        writer.save(0, "seek")
+    xbmc.log("[Videoland] Watched status {} for {} sent".format(
+        "on" if want_watched else "off", video_id), xbmc.LOGINFO)
+
+
+
 def dispatch(params):
     set_breadcrumb(read_breadcrumb(params.get("breadcrumb")) or ["Videoland"])
     action = params.get("action")
+    add_sort_methods(action, params.get("season"))
     if not action:
         return root()
     if action == "login":
@@ -1925,7 +2584,9 @@ def dispatch(params):
             params.get("group"),
         )
     elif action == "search":
-        search(params.get("query", ""))
+        search(params.get("query", ""), params.get("period"), params.get("genre"), params.get("kind"))
+    elif action == "search_filter":
+        search_filter(params.get("query", ""), params.get("period"), params.get("genre"), params.get("kind"))
     elif action == "play":
         play(params["video_id"], params.get("seo", ""), params.get("parent_id", ""), params.get("parent_seo", ""))
     elif action == "live":
@@ -1936,25 +2597,64 @@ def dispatch(params):
         browse_library()
     elif action == "library_toggle":
         library_toggle(params.get("kind", ""), params.get("id", ""), params.get("seo", ""),
-                       params.get("title", ""), params.get("thumb", ""))
+                       params.get("title", ""), params.get("poster") or params.get("thumb", ""),
+                       params.get("fanart", ""))
     elif action == "library_remove":
         library_remove(params.get("kind", ""), params.get("id", ""), params.get("title", ""))
     elif action == "library_update":
         library_update(background=params.get("background") == "1")
+    elif action == "repair_library_art":
+        repair_library_art(background=params.get("background") == "1")
+    elif action == "diagnostics":
+        run_diagnostics()
+    elif action == "check_tmdb_key":
+        check_tmdb_key()
+    elif action == "choose_library_profile":
+        choose_library_profile()
+    elif action == "choose_tmdb":
+        choose_tmdb(params.get("kind", ""), params.get("id", ""))
+    elif action == "library_from_watchlist":
+        library_from_watchlist(background=params.get("background") == "1")
     elif action == "library_play":
         library_play(params.get("id", ""), params.get("seo", ""))
+    elif action == "widgets":
+        widgets_menu()
+    elif action == "mark_watched":
+        mark_watched_on_service(params.get("video_id", ""), params.get("seo", ""),
+                                params.get("parent_id", ""), params.get("parent_seo", ""),
+                                params.get("watched", "1"))
 
 
 def run():
+    try:
+        _run()
+    finally:
+        if _LOGO_CACHE:
+            _LOGO_CACHE.flush()
+
+
+def _run():
     params = dict(parse_qsl(sys.argv[2][1:])) if len(sys.argv) > 2 else {}
     xbmcplugin.setPluginFanart(HANDLE, FANART)
     try:
         _dispatch_with_retry(params)
     except (ApiError, CipherError) as exc:
         xbmc.log("[Videoland] {}".format(exc), xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Videoland", str(exc))
+        if params.get("background") != "1":
+            message = str(exc)
+            if errors_mod.classify(exc) != "unknown":
+                message = errors_mod.user_message(exc, "Videoland", xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+            xbmcgui.Dialog().ok("Videoland", message)
         if params.get("action") == "play":
             xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+    except Exception as exc:
+        # Unexpected problem: one clear sentence for the user, details in the log.
+        xbmc.log("[Videoland] Unexpected error\n" + errors_mod.log_text(exc), xbmc.LOGERROR)
+        if params.get("action") in ("play", "play_live", "library_play"):
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        if params.get("background") != "1":
+            xbmcgui.Dialog().notification("Videoland", errors_mod.user_message(
+                exc, "Videoland", xbmc.getLanguage(xbmc.ISO_639_1) or "nl"), xbmcgui.NOTIFICATION_ERROR, 7000)
 
 
 def _dispatch_with_retry(params, retried=False):

@@ -35,7 +35,7 @@
 - **Trending**: See what's trending right now.
 - **Search**: Find series, movies, and programs by title.
 - **Watchlist (Mijn Kijklijst)**: Access your saved content.
-- **Kodi Library**: Add series and films to the Kodi library from their context menu (**Add to library**). The add-on writes `.strm` + `.nfo` files with artwork, keeps episode numbers stable so Kodi keeps watched status, adds new episodes automatically and removes titles that left Videoland (only after three missed updates in a row, so a temporary outage never empties your library). The **Library** main menu lists everything you added. Settings → Library holds the folders, update interval and scan/clean options. Add the series and films folders once in Kodi as video sources with the scraper **Local information only**.
+- **Kodi Library**: Add series and films to the Kodi library from their context menu (**Add to library**). The add-on writes `.strm` + `.nfo` files with artwork, keeps episode numbers stable so Kodi keeps watched status, adds new episodes automatically and removes titles that left Videoland (only after three missed updates in a row, so a temporary outage never empties your library). The **Library** main menu lists everything you added. Settings → Library holds the folders, update interval and scan/clean options. Add the series and films folders once in Kodi as video sources with the scraper **Local information only**. Missing details (description, artwork, genres, episode titles) are filled in from TMDb (free API key, optional) and TVmaze; Videoland's own data always comes first.
 - **Cloud Playback Progress**: Resume from Videoland and save Kodi progress to the same profile after seeking, pausing or stopping, and periodically during playback. Failed saves are retained on this device and retried while Kodi is running, including after a restart. Turning off progress saving pauses retries; signing out removes pending saves. **Settings → Playback history → Cloud progress status** shows the last successful save, pending updates and any save error for the active profile. Sync notifications are optional and off by default. In cloud mode, browse items hide Kodi-local progress and watched markers; the resume popup uses fresh cloud progress.
 - **Active Profile and Continue Watching**: The main menu shows the active profile name and offers **Refresh Continue Watching**, which fetches the current list directly from Videoland without using the browsing cache. On supported Continue Watching cards, use the context menu → **Remove from Continue Watching** to remove the title from the selected cloud profile. Older pending saves for that title are discarded; explicitly playing it again can add it back.
 - **Profile Management**: Switch between user profiles from the Kodi UI.
@@ -121,7 +121,7 @@ Coming soon...
 
 ## 🚀 Installation
 
-1. Download **`plugin.video.videoland.nl-1.2.1.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
+1. Download **`plugin.video.videoland.nl-<version>.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
 2. In Kodi, go to **Add-ons > Install from zip file** and select the downloaded zip.
 3. Open the add-on and use **Aanmelden** to authenticate with Videoland the first time.
 4. Start a video and follow InputStream Helper's prompts to install or enable InputStream Adaptive and set up Widevine on supported platforms. Kodi installs InputStream Helper as an add-on dependency. If you cancel setup, playback stops; start the video again when you are ready to finish setup.
@@ -146,10 +146,10 @@ scripts/run-addon-check-local.sh --branch omega
 
 ## 🛣️ Roadmap / Coming Soon
 
-- **Enhanced search**: filter by genre, year, release date, and more.
-- **Better artwork and fanart for all content**.
-- **Automated Testing**: expanded CI/CD pipeline for code quality and automated releases.
-- **UI Polish**: enhanced skins integration, custom info dialogs, and animations.
+- ✅ **Enhanced search**: a Filter entry narrows results by type (series, films, episodes), period and genre (v1.4.0).
+- ✅ **Better artwork and fanart**: library posters and backgrounds, TMDb/TVmaze fill-in (v1.3.1–1.3.2).
+- ✅ **Automated testing**: GitHub Actions run the tests and build the zip; `v*` tags publish a release (v1.3.3).
+- **UI polish**: new colour-tile icon set done (v1.3.2). Custom info dialogs and animations are left to the skin, so the add-on looks right in every skin.
 
 ---
 
@@ -161,9 +161,13 @@ scripts/run-addon-check-local.sh --branch omega
 - [X] **Professional icon set for the main menu**
 - [X] **Per-episode titles and descriptions in season folders**
 - [X] **Automated unit tests for routing, layout parsing and authentication**
-- [ ] **Improve error messages and user feedback**
-- [ ] **Add more debug and diagnostic tools**
-- [ ] **Accessibility improvements for screen readers**
+- [X] **Improve error messages and user feedback** (one clear sentence per problem, details in the log)
+- [X] **Add more debug and diagnostic tools** (Settings → Library → Run diagnostics)
+- [X] **Accessibility improvements for screen readers** (translatable labels, status words instead of colour-only markers)
+
+## 🧑‍💻 Development
+
+Some modules are shared with the NLZiet add-on (`metadata.py`, `library_art.py`, `errors.py`, `diagnostics.py`, `search_filters.py`, `logo_cache.py` in `resources/lib/`). After changing one, copy it to the other add-on with `python3 scripts/sync-shared.py <path to the other add-on>`; `tests/test_shared_modules.py` fails until you do. Menu icons are rebuilt with `python3 scripts/build-menu-icons.py`, the installable zip with `python3 scripts/build-release.py`.
 
 ## 💖 Support the Project
 

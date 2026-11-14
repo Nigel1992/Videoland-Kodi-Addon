@@ -27,6 +27,8 @@ import time
 from urllib.parse import urlencode
 from xml.sax.saxutils import escape
 
+from . import library_art, metadata
+
 try:
     import xbmc
 except ImportError:  # pragma: no cover - outside Kodi
@@ -227,8 +229,12 @@ def store_path():
 
 
 class Library:
-    def __init__(self, source, settings, store=None, fs=None, now=None):
-        """``settings(name)`` returns a setting value as a string."""
+    def __init__(self, source, settings, store=None, fs=None, now=None, enricher=None, downloader=None):
+        """``settings(name)`` returns a setting value as a string;
+        ``downloader(url)`` returns image bytes (None: artwork stays URLs)."""
+        self.enricher = enricher
+        self.downloader = downloader
+        self._pending_hints = {}
         self.source = source
         self.settings = settings
         self.fs = fs or LocalFS()
@@ -244,6 +250,10 @@ class Library:
 
     def tv_root(self):
         return translate_path(self._setting("library_tv_path") or DEFAULT_TV_PATH)
+
+    def tmdb_art_first(self):
+        """Posters/backgrounds from TMDb before Videoland's own (default on)."""
+        return self._setting("art_tmdb_first").lower() not in ("false", "0")
 
     def movies_root(self):
         return translate_path(self._setting("library_movies_path") or DEFAULT_MOVIES_PATH)
@@ -265,8 +275,22 @@ class Library:
         return sorted(section.items(), key=lambda pair: str(pair[1].get("title") or "").lower())
 
     # ----------------------------------------------------------------- series
-    def add_series(self, series_id, seo="", title=""):
+    def add_series(self, series_id, seo="", title="", poster="", fanart=""):
+        """``poster``/``fanart`` come from the card the user picked; they are
+        used when the title page has no artwork of its own."""
+        self._pending_hints[("series", str(series_id))] = {"poster_hint": poster, "fanart_hint": fanart}
         return self._sync_series(str(series_id), seo=seo, title=title, is_update=False)
+
+    def _apply_hints(self, kind, item_id, entry, data):
+        for key, value in self._pending_hints.pop((kind, str(item_id)), {}).items():
+            if value:
+                entry[key] = value
+        data = dict(data)
+        if not data.get("poster") and entry.get("poster_hint"):
+            data["poster"] = entry["poster_hint"]
+        if not data.get("fanart") and entry.get("fanart_hint"):
+            data["fanart"] = entry["fanart_hint"]
+        return data
 
     def _assign_numbers(self, entry, episodes):
         mapping = entry.setdefault("episodes", {})
@@ -316,18 +340,29 @@ class Library:
                 self._count_missing("series", series_id, entry, result)
             return result
 
-        series_title = data.get("title") or entry.get("title") or title or series_id
+        if title:
+            entry["card_title"] = metadata.clean_title(title)
+        series_title = (metadata.clean_title(data.get("title")) or entry.get("card_title")
+                        or entry.get("title") or series_id)
         entry.update({"title": series_title, "seo": seo, "missing": 0})
         entry.setdefault("added", int(self.now()))
+        data = self._apply_hints("series", series_id, entry, data)
+        data = self._enrich_show(entry, series_title, data)
         if data.get("poster"):
             entry["thumb"] = data["poster"]
         if not entry.get("folder"):
             entry["folder"] = safe_filename(series_title)
         show_dir = self.fs.join(self.tv_root(), entry["folder"])
         self.fs.write(self.fs.join(show_dir, "tvshow.nfo"), self._tvshow_nfo(series_id, series_title, data))
+        _saved = library_art.save_art(self, entry, show_dir,
+                                      {k: data.get(k) for k in ("poster", "fanart", "clearlogo")},
+                                      library_art.art_names("series", entry["folder"]), self.downloader)
+        entry["clearlogo"] = _saved.get("clearlogo") or data.get("clearlogo") or ""
 
         wanted = set()
+        seasons_used = set()
         for episode, season, number in self._assign_numbers(entry, episodes):
+            seasons_used.add(season)
             base = "{} S{:02d}E{:02d}".format(entry["folder"], season, number)
             season_dir = self.fs.join(show_dir, "Season {}".format(season))
             strm = self.fs.join(season_dir, base + ".strm")
@@ -338,7 +373,8 @@ class Library:
                     "parent_seo": episode.get("parent_seo") or seo}
             if self.fs.write(strm, self.play_url(play) + "\n"):
                 result["added"] += 1
-            self.fs.write(nfo, self._episode_nfo(episode, series_title, season, number))
+            self.fs.write(nfo, self._episode_nfo(self._enrich_episode(entry, episode, season, number),
+                                                 series_title, season, number))
 
         for path in list(self.fs.walk_files(show_dir)):
             name = os.path.basename(path).lower()
@@ -348,10 +384,54 @@ class Library:
                 result["removed"] += 1
         self.fs.remove_empty_dirs(show_dir)
 
+        library_art.save_season_posters(self, entry, show_dir, data.get("season_posters"),
+                                        seasons_used, self.downloader)
+        self._save_metadata()
         entry.update({"updated": int(self.now()), "episode_count": len(episodes)})
         section[series_id] = entry
         result.update({"ok": True, "total": len(episodes), "title": series_title})
         return result
+
+    # --------------------------------------------------------------- metadata
+    def _enrich_show(self, entry, title, local):
+        if self.enricher is None:
+            return local
+        try:
+            extra = self.enricher.show(title, known=entry.get("ids"))
+            card_title = entry.get("card_title")
+            if not (extra.get("ids") or {}).get("tmdb") and card_title and card_title != title:
+                # The page title can differ from the card the user picked.
+                second = self.enricher.show(card_title, known=entry.get("ids"))
+                if (second.get("ids") or {}).get("tmdb"):
+                    extra = second
+        except Exception as exc:
+            log("metadata lookup failed for {}: {}".format(title, exc))
+            return local
+        found = extra.get("ids") or {}
+        log("metadata for '{}': tmdb={} tvmaze={}".format(title, found.get("tmdb") or "-", found.get("tvmaze") or "-"))
+        ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
+        if ids:
+            entry["ids"] = ids
+        extra.pop("episodes", None)
+        return metadata.merge_art_first(local, extra, self.tmdb_art_first())
+
+    def _enrich_episode(self, entry, episode, season, number):
+        if self.enricher is None or not entry.get("ids"):
+            return episode
+        try:
+            extra = self.enricher.episode(entry["ids"], season, number, by_number=True)
+        except Exception:
+            return episode
+        merged = metadata.merge(episode, extra)
+        merged["id"] = episode["id"]
+        return merged
+
+    def _save_metadata(self):
+        if self.enricher is not None:
+            try:
+                self.enricher.save()
+            except Exception:
+                pass
 
     @staticmethod
     def _art_lines(data, poster_aspect=True):
@@ -368,7 +448,10 @@ class Library:
                  "  <title>{}</title>".format(escape(title)),
                  "  <plot>{}</plot>".format(escape(data.get("plot") or "")),
                  '  <uniqueid type="videoland" default="true">{}</uniqueid>'.format(escape(series_id))]
+        if data.get("year"):
+            lines.append("  <year>{}</year>".format(data["year"]))
         lines += self._art_lines(data)
+        lines += metadata.nfo_extra_lines(data, escape)
         lines.append("</tvshow>")
         return "\n".join(lines) + "\n"
 
@@ -381,13 +464,16 @@ class Library:
                  "  <episode>{}</episode>".format(number),
                  "  <plot>{}</plot>".format(escape(episode.get("plot") or "")),
                  '  <uniqueid type="videoland" default="true">{}</uniqueid>'.format(escape(str(episode["id"])))]
+        if episode.get("aired"):
+            lines.append("  <aired>{}</aired>".format(escape(episode["aired"])))
         if episode.get("thumb"):
             lines.append("  <thumb>{}</thumb>".format(escape(episode["thumb"])))
         lines.append("</episodedetails>")
         return "\n".join(lines) + "\n"
 
     # ----------------------------------------------------------------- movies
-    def add_movie(self, movie_id, seo="", title=""):
+    def add_movie(self, movie_id, seo="", title="", poster="", fanart=""):
+        self._pending_hints[("movie", str(movie_id))] = {"poster_hint": poster, "fanart_hint": fanart}
         return self._sync_movie(str(movie_id), seo=seo, title=title, is_update=False)
 
     def _sync_movie(self, movie_id, seo="", title="", is_update=False):
@@ -406,15 +492,31 @@ class Library:
             return result
 
         movie_title = data.get("title") or entry.get("title") or title or movie_id
+        data = self._apply_hints("movie", movie_id, entry, data)
+        if self.enricher is not None:
+            try:
+                extra = self.enricher.movie(movie_title, _int_or_none(data.get("year")), known=entry.get("ids"))
+                ids = {key: str(value) for key, value in (extra.get("ids") or {}).items() if value}
+                if ids:
+                    entry["ids"] = ids
+                data = metadata.merge_art_first(data, extra, self.tmdb_art_first())
+            except Exception as exc:
+                log("metadata lookup failed for {}: {}".format(movie_title, exc))
+            self._save_metadata()
         year = _int_or_none(data.get("year") or entry.get("year"))
         if year and not 1900 <= year <= 2100:
             year = None
         if not entry.get("folder"):
             entry["folder"] = safe_filename("{} ({})".format(movie_title, year) if year else movie_title)
-        base = self.fs.join(self.movies_root(), entry["folder"], entry["folder"])
+        movie_dir = self.fs.join(self.movies_root(), entry["folder"])
+        base = self.fs.join(movie_dir, entry["folder"])
         if self.fs.write(base + ".strm", self.play_url(data["play"]) + "\n"):
             result["added"] = 1
         self.fs.write(base + ".nfo", self._movie_nfo(movie_id, movie_title, data, year))
+        _saved = library_art.save_art(self, entry, movie_dir,
+                                      {k: data.get(k) for k in ("poster", "fanart", "clearlogo")},
+                                      library_art.art_names("movie", entry["folder"]), self.downloader)
+        entry["clearlogo"] = _saved.get("clearlogo") or data.get("clearlogo") or ""
 
         entry.update({"title": movie_title, "seo": seo, "missing": 0, "updated": int(self.now())})
         entry.setdefault("added", int(self.now()))
@@ -434,6 +536,7 @@ class Library:
         if year:
             lines.append("  <year>{}</year>".format(year))
         lines += self._art_lines(data)
+        lines += metadata.nfo_extra_lines(data, escape, kind="movie")
         lines.append("</movie>")
         return "\n".join(lines) + "\n"
 
@@ -501,17 +604,11 @@ def update_due(store, hours, now=None):
     return current - (store.data.get("last_update") or 0) >= hours * 3600
 
 
+def scan_flag_path():
+    return os.path.join(translate_path("special://profile/addon_data/plugin.video.videoland.nl") or "", "scan_pending.json")
+
+
 def run_library_jobs(scan=True, clean=False):
-    """Ask Kodi to clean and/or scan the video library without dialogs."""
-    if xbmc is None:
-        return
-    calls = []
-    if clean:
-        calls.append({"jsonrpc": "2.0", "method": "VideoLibrary.Clean", "params": {"showdialogs": False}, "id": 1})
-    if scan:
-        calls.append({"jsonrpc": "2.0", "method": "VideoLibrary.Scan", "params": {"showdialogs": False}, "id": 2})
-    for call in calls:
-        try:
-            xbmc.executeJSONRPC(json.dumps(call))
-        except Exception as exc:
-            log("library job failed: {}".format(exc))
+    """Ask Kodi to clean and/or scan the video library without dialogs. When
+    Kodi is already scanning, the request waits until that scan is done."""
+    library_art.request_scan(scan_flag_path(), scan=scan, clean=clean)

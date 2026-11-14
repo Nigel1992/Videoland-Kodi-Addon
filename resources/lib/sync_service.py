@@ -1,4 +1,5 @@
 """Retry pending cloud progress while Kodi is running, including after restart."""
+import os
 import time
 
 import xbmc
@@ -7,10 +8,14 @@ import xbmcgui
 import xbmcvfs
 
 from resources.lib import library as library_mod
+from resources.lib import library_art
+from resources.lib import logo_cache as logo_cache_mod
+from resources.lib import metadata as metadata_mod
 from resources.lib.api import VideolandApi
 from resources.lib.crypto import decrypt_json
 from resources.lib.progress import ProgressWriter
 from resources.lib.sync_store import SyncStore
+from resources.lib import watch_sync
 
 
 def retry_pending(addon, directory, store):
@@ -59,14 +64,84 @@ def library_update_due(addon, now=None):
     if not addon.getSettingString('auth_json'):
         return False
     store = library_mod.LibraryStore(library_mod.store_path())
+    if store.is_empty() and addon.getSettingBool('library_watchlist_sync'):
+        last = store.data.get('last_update') or 0
+        current = time.time() if now is None else now
+        return current - last >= hours * 3600
     return library_mod.update_due(store, hours, now)
+
+
+ADDON_ID = 'plugin.video.videoland.nl'
+
+
+def _rpc(method, params):
+    import json
+    answer = json.loads(xbmc.executeJSONRPC(json.dumps(
+        {'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params})))
+    return answer.get('result') or {}
+
+
+def _read_text(path):
+    handle = xbmcvfs.File(path)
+    try:
+        return handle.read()
+    finally:
+        handle.close()
+
+
+class LibraryMonitor(xbmc.Monitor):
+    """Notices library scans and watched/unwatched changes in Kodi's library."""
+
+    def __init__(self):
+        super().__init__()
+        self.scan_finished = False
+        self.repeats = watch_sync.Repeats()
+
+    def onScanFinished(self, library):
+        if library == 'video':
+            self.scan_finished = True
+
+    def onNotification(self, sender, method, data):
+        if method != 'VideoLibrary.OnUpdate':
+            return
+        addon = xbmcaddon.Addon(ADDON_ID)
+        if addon.getSettingString('history_source') == 'local' or not addon.getSettingBool('watched_to_service'):
+            return
+        change = watch_sync.library_update(data)
+        if not change:
+            return
+        media_type, dbid, watched = change
+        try:
+            path = watch_sync.library_file(media_type, dbid, _rpc)
+            params = watch_sync.plugin_params(watch_sync.strm_target(path, _read_text), ADDON_ID)
+            if params.get('action') != 'play' or not params.get('video_id'):
+                return
+            if not self.repeats.fresh(str(params['video_id']), watched):
+                return
+            query = {'action': 'mark_watched', 'video_id': params['video_id'],
+                     'watched': '1' if watched else '0', 'background': '1'}
+            for key in ('seo', 'parent_id', 'parent_seo'):
+                if params.get(key):
+                    query[key] = params[key]
+            from urllib.parse import urlencode
+            xbmc.executebuiltin('RunPlugin(plugin://{}/?{})'.format(ADDON_ID, urlencode(query)))
+        except Exception as exc:
+            xbmc.log('[Videoland] Library watched check failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+
+
+def repair_art_after_scan(addon):
+    store = library_mod.LibraryStore(library_mod.store_path())
+    if store.is_empty():
+        return 0
+    lib = library_mod.Library(None, addon.getSettingString, store=store)
+    return library_art.repair_kodi_art(lib, marker='plugin.video.videoland.nl/library')
 
 
 def run():
     addon = xbmcaddon.Addon('plugin.video.videoland.nl')
     directory = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.videoland.nl')
     store = SyncStore(directory)
-    monitor = xbmc.Monitor()
+    monitor = LibraryMonitor()
     xbmc.log('[Videoland] Cloud progress retry service started', xbmc.LOGINFO)
     source = addon.getSettingString('history_source')
     refresh_pending = False
@@ -74,6 +149,7 @@ def run():
     started = time.monotonic()
     next_library_check = 0
     next_library_run = 0
+    next_scan_check = 0
     while not monitor.abortRequested():
         current = addon.getSettingString('history_source')
         if current != source:
@@ -91,6 +167,32 @@ def run():
         except Exception as exc:
             xbmc.log('[Videoland] Progress retry unavailable ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         now = time.monotonic()
+        if now >= next_scan_check:
+            # A scan asked for while Kodi was busy runs as soon as it is free.
+            next_scan_check = now + 10
+            try:
+                library_art.run_pending_scan(library_mod.scan_flag_path())
+            except Exception:
+                pass
+            # Look up logos for titles seen in browse lists, a few at a time.
+            if not xbmc.Player().isPlaying() and os.path.isfile(os.path.join(directory, 'logo_queue.json')):
+                try:
+                    enricher = metadata_mod.Enricher(os.path.join(directory, 'metadata_cache.json'),
+                                                     tmdb_key=addon.getSettingString('tmdb_api_key'),
+                                                     user_agent='plugin.video.videoland.nl')
+                    logo_cache_mod.LogoCache(directory).process(enricher, limit=15,
+                                                               should_stop=monitor.abortRequested)
+                    enricher.save()
+                except Exception as exc:
+                    xbmc.log('[Videoland] Logo lookup failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
+        if monitor.scan_finished:
+            monitor.scan_finished = False
+            try:
+                fixed = repair_art_after_scan(addon)
+                if fixed:
+                    xbmc.log('[Videoland] Library artwork set for {} titles'.format(fixed), xbmc.LOGINFO)
+            except Exception as exc:
+                xbmc.log('[Videoland] Library artwork repair failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         if now - started >= LIBRARY_STARTUP_DELAY and now >= next_library_check:
             next_library_check = now + LIBRARY_CHECK_INTERVAL
             try:

@@ -61,16 +61,11 @@ msgid "Video quality and device compatibility"
 msgstr ""
 
 msgctxt "#31012"
-msgid ""
-"Compatible playback is the default and uses the software-protected stream, "
-"suitable for Raspberry Pi and similar devices. Highest available requests "
-"the higher-quality stream when offered, but may fail if your device cannot "
-"decrypt it. Neither option guarantees HD; the available quality also depends"
-" on the title and the licence granted by Videoland."
+msgid "Compatible playback is the default and uses the software-protected stream (up to 540p), which works on every device. Highest available uses the HD stream (720p/1080p) on Android devices with Widevine L1. Videoland only grants its HD key to L1, so on Linux/LibreELEC (Raspberry Pi), Windows and macOS it automatically plays the best stream that works there."
 msgstr ""
 
 msgctxt "#31013"
-msgid "Highest available (requires device support)"
+msgid "Highest available (HD only on Android with Widevine L1)"
 msgstr ""
 
 msgctxt "#31014"
@@ -428,4 +423,220 @@ msgstr ""
 
 msgctxt "#31132"
 msgid "Clean removed titles from the Kodi library"
+msgstr ""
+
+msgctxt "#31133"
+msgid "TMDb key works"
+msgstr ""
+
+msgctxt "#31134"
+msgid "TMDb does not accept this key. Check that you pasted the complete API Key (32 characters) or API Read Access Token."
+msgstr ""
+
+msgctxt "#31135"
+msgid "Extra metadata"
+msgstr ""
+
+msgctxt "#31136"
+msgid "Fill in missing data from TMDb / TVmaze"
+msgstr ""
+
+msgctxt "#31137"
+msgid "Videoland data is always used first. Only empty fields (description, poster, background, year, genre, rating, episode descriptions and images) are filled in. Also adds TMDb, TVDB and IMDb ids. Series work without a key through TVmaze; films need a TMDb key."
+msgstr ""
+
+msgctxt "#31138"
+msgid "TMDb API key (optional)"
+msgstr ""
+
+msgctxt "#31139"
+msgid "Free key from themoviedb.org: Settings > API. Paste the \"API Key\" or the \"API Read Access Token\"."
+msgstr ""
+
+msgctxt "#31140"
+msgid "Test TMDb key"
+msgstr ""
+
+msgctxt "#31141"
+msgid "Sign in"
+msgstr ""
+
+msgctxt "#31142"
+msgid "Sign out"
+msgstr ""
+
+msgctxt "#31143"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#31144"
+msgid "Artwork updated for {0} titles"
+msgstr ""
+
+msgctxt "#31145"
+msgid "Repair artwork in the Kodi library"
+msgstr ""
+
+msgctxt "#31146"
+msgid "No TMDb key is saved yet. Enter the key, press OK to save the settings and test again."
+msgstr ""
+
+msgctxt "#31147"
+msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
+msgstr ""
+
+msgctxt "#31148"
+msgid "Run diagnostics"
+msgstr ""
+
+msgctxt "#31149"
+msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
+msgstr ""
+
+msgctxt "#31150"
+msgid "Adding My watchlist to the library..."
+msgstr ""
+
+msgctxt "#31151"
+msgid "Watchlist: {0} added, {1} removed, {2} failed"
+msgstr ""
+
+msgctxt "#31152"
+msgid "Add My watchlist to the library now"
+msgstr ""
+
+msgctxt "#31153"
+msgid "Keep My watchlist in the library automatically"
+msgstr ""
+
+msgctxt "#31154"
+msgid "Every series and film in My watchlist is added to the Kodi library, and new titles are added at every automatic update. A bookmarked episode adds its series."
+msgstr ""
+
+msgctxt "#31155"
+msgid "Remove titles that left My watchlist"
+msgstr ""
+
+msgctxt "#31156"
+msgid "Only titles that were added from the watchlist are removed; titles you added yourself stay."
+msgstr ""
+
+msgctxt "#31157"
+msgid "Show logos in the menus too"
+msgstr ""
+
+msgctxt "#31158"
+msgid "Logos of titles outside the library are looked up on TMDb in the background (needs the TMDb key). Lists never wait: a logo appears the next time you open the list."
+msgstr ""
+
+msgctxt "#31159"
+msgid "Posters and backgrounds: TMDb first"
+msgstr ""
+
+msgctxt "#31160"
+msgid "On: posters and backgrounds come from TMDb when it has them, with Videoland's own images as fallback. Descriptions always come from Videoland first. Artwork you chose yourself in Kodi is never replaced."
+msgstr ""
+
+msgctxt "#31161"
+msgid "Choose the right TMDb title"
+msgstr ""
+
+msgctxt "#31162"
+msgid "Other search term..."
+msgstr ""
+
+msgctxt "#31163"
+msgid "TMDb title set; details and artwork are updated"
+msgstr ""
+
+msgctxt "#31164"
+msgid "Profile for the library"
+msgstr ""
+
+msgctxt "#31165"
+msgid "The active profile"
+msgstr ""
+
+msgctxt "#31166"
+msgid "Whose watchlist goes into the Kodi library. Handy when the family uses several profiles but the library should follow one."
+msgstr ""
+
+msgctxt "#31167"
+msgid "Choose the profile for the library"
+msgstr ""
+
+msgctxt "#31168"
+msgid "Folders"
+msgstr ""
+
+msgctxt "#31169"
+msgid "My watchlist to the library"
+msgstr ""
+
+msgctxt "#31170"
+msgid "Automatic updates"
+msgstr ""
+
+msgctxt "#31171"
+msgid "Maintenance"
+msgstr ""
+
+msgctxt "#31172"
+msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
+msgstr ""
+
+msgctxt "#31173"
+msgid "Skip the intro?"
+msgstr ""
+
+msgctxt "#31174"
+msgid "Skip the recap?"
+msgstr ""
+
+msgctxt "#31175"
+msgid "Next episode (Up Next)"
+msgstr ""
+
+msgctxt "#31176"
+msgid "Near the end of an episode the Up Next add-on offers the next episode, also when playing from the Kodi library. Needs the Up Next add-on (service.upnext)."
+msgstr ""
+
+msgctxt "#31177"
+msgid "Install the Up Next add-on"
+msgstr ""
+
+msgctxt "#31178"
+msgid "Offer to skip intro and recap"
+msgstr ""
+
+msgctxt "#31179"
+msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
+msgstr ""
+
+msgctxt "#31180"
+msgid "Send watched status to Videoland"
+msgstr ""
+
+msgctxt "#31181"
+msgid "When you mark something as watched or unwatched in the Kodi library, Videoland gets the same status."
+msgstr ""
+
+msgctxt "#31182"
+msgid "Widgets for the home screen"
+msgstr ""
+
+msgctxt "#31183"
+msgid "Pick these lists as a widget in your skin settings."
+msgstr ""
+
+msgctxt "#31184"
+msgid "Also search in NLZiet"
+msgstr ""
+
+msgctxt "#31185"
+msgid "Watched status sent to Videoland"
+msgstr ""
+
+msgctxt "#31186"
+msgid "My watchlist"
 msgstr ""
