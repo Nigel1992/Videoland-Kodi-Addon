@@ -676,3 +676,31 @@ msgstr "Intro en samenvatting overslaan aanbieden"
 msgctxt "#31179"
 msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
 msgstr "Als Videoland bij een video de tijden van intro of samenvatting meestuurt, verschijnt op dat moment de vraag om over te slaan. Of Videoland ze meestuurt staat in het Kodi-logboek (\"markers found\")."
+
+msgctxt "#31180"
+msgid "Send watched status to Videoland"
+msgstr "Kijkstatus naar Videoland sturen"
+
+msgctxt "#31181"
+msgid "When you mark something as watched or unwatched in the Kodi library, Videoland gets the same status."
+msgstr "Als je iets in de Kodi-bibliotheek als bekeken of niet bekeken markeert, krijgt Videoland dezelfde status."
+
+msgctxt "#31182"
+msgid "Widgets for the home screen"
+msgstr "Widgets voor je startscherm"
+
+msgctxt "#31183"
+msgid "Pick these lists as a widget in your skin settings."
+msgstr "Kies deze lijsten als widget in de instellingen van je skin."
+
+msgctxt "#31184"
+msgid "Also search in NLZiet"
+msgstr "Ook zoeken in NLZiet"
+
+msgctxt "#31185"
+msgid "Watched status sent to Videoland"
+msgstr "Kijkstatus naar Videoland gestuurd"
+
+msgctxt "#31186"
+msgid "My watchlist"
+msgstr "Mijn kijklijst"

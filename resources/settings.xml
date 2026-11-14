@@ -253,6 +253,12 @@
           </dependencies>
           <control type="toggle"/>
         </setting>
+        <setting id="watched_to_service" type="boolean" label="31180" help="31181">
+          <level>0</level>
+          <default>true</default>
+          <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>
+          <control type="toggle"/>
+        </setting>
         <setting id="sync_status" type="action" label="31062" help="31063">
           <level>0</level>
           <dependencies><dependency type="enable" setting="history_source" operator="is">cloud</dependency></dependencies>

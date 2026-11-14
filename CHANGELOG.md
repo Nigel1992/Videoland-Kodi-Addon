@@ -1,8 +1,19 @@
 # Changelog
 
-> **Latest Version:** v1.6.5 (November 14, 2026)
+> **Latest Version:** v1.7.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.7.0] - 2026-11-14
+
+### Added
+- **Watched status back to Videoland**: when you mark something as watched or unwatched in Kodi's own library, Videoland gets the same status (Settings → History → Send watched status to Videoland; needs cloud history). Watching to the end already updated Videoland and still does.
+- **Widgets for the home screen**: a new "Widgets" menu that groups Continue watching, My watchlist and the Library as ready-made lists for your skin's home-screen widgets.
+- **Search both services**: when NLZiet is installed, a search offers the same search in NLZiet at the top of the results.
+
+### Development
+- Shares the new `watch_sync.py` module with NLZiet (watched-status logic), kept identical via `scripts/sync-shared.py`.
+- 21 new unit tests (watch_sync, chapter markers).
 
 ## [1.6.5] - 2026-11-14
 

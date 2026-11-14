@@ -612,3 +612,31 @@ msgstr ""
 msgctxt "#31179"
 msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
 msgstr ""
+
+msgctxt "#31180"
+msgid "Send watched status to Videoland"
+msgstr ""
+
+msgctxt "#31181"
+msgid "When you mark something as watched or unwatched in the Kodi library, Videoland gets the same status."
+msgstr ""
+
+msgctxt "#31182"
+msgid "Widgets for the home screen"
+msgstr ""
+
+msgctxt "#31183"
+msgid "Pick these lists as a widget in your skin settings."
+msgstr ""
+
+msgctxt "#31184"
+msgid "Also search in NLZiet"
+msgstr ""
+
+msgctxt "#31185"
+msgid "Watched status sent to Videoland"
+msgstr ""
+
+msgctxt "#31186"
+msgid "My watchlist"
+msgstr ""

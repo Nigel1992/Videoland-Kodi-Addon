@@ -48,6 +48,8 @@ GLYPHS = {
 }
 GLYPHS['live'] = ('<circle cx="128" cy="128" r="10"/>'
                   '<path d="M100 100a40 40 0 0 0 0 56M156 100a40 40 0 0 1 0 56M80 80a68 68 0 0 0 0 96M176 80a68 68 0 0 1 0 96"/>')
+GLYPHS['widgets'] = ('<rect x="72" y="72" width="48" height="48" rx="8"/><rect x="136" y="72" width="48" height="48" rx="8"/>'
+                     '<rect x="72" y="136" width="48" height="48" rx="8"/><rect x="136" y="136" width="48" height="48" rx="8"/>')
 GLYPHS['collection'] = GLYPHS['series']
 
 # Colour per menu group so related entries are recognisable at a glance.
@@ -61,6 +63,7 @@ GROUPS = {
     'kijklijst': 'mine', 'continue': 'mine', 'bibliotheek': 'mine',
     'live': 'live',
     'zoeken': 'account', 'profiel': 'account', 'aanmelden': 'account', 'afmelden': 'account', 'cache': 'account',
+    'widgets': 'mine',
 }
 
 

@@ -88,6 +88,7 @@ from . import search_filters
 from . import logo_cache as logo_cache_mod
 from . import playback_extras
 from .progress import ProgressWriter, heartbeat_config, monitor_class
+from . import watch_sync
 from .sync_store import DurableWriter, SyncStore
 
 
@@ -334,6 +335,7 @@ _ICON_MAP = {
     "tv en gids": "live",
     "bibliotheek": "bibliotheek",
     "library": "bibliotheek",
+    "widgets": "widgets",
 }
 
 
@@ -691,6 +693,7 @@ def root():
         if not local_history():
             add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
         add(ADDON.getLocalizedString(31120), url(action="library"), True, icon_key="bibliotheek")
+        add(ADDON.getLocalizedString(31182), url(action="widgets"), True, icon_key="widgets")
         name = active_profile_name(client, auth)
         add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
         add(ADDON.getLocalizedString(31142), url(action="logout"), False, icon_key="afmelden")
@@ -1449,6 +1452,7 @@ def search(query="", period=None, genre=None, kind=None):
     ensure_profile(client, auth)
     data = _search_layout(client, query)
     if not (period or genre or kind):
+        _add_other_service_search(query)
         # Without a filter keep the familiar sectioned result page, with the
         # Filter entry on top.
         _add_search_filter_entry(query)
@@ -2470,6 +2474,68 @@ def library_play(movie_id, seo=""):
          play_target.get("parent_seo", ""))
 
 
+OTHER_SERVICE_ID = "plugin.video.nlziet"
+
+
+def _add_other_service_search(query):
+    """Top line of the search results: the same search in NLZiet."""
+    try:
+        if not xbmc.getCondVisibility("System.HasAddon({})".format(OTHER_SERVICE_ID)):
+            return
+    except Exception:
+        return
+    target = "plugin://{}/?{}".format(OTHER_SERVICE_ID, urlencode({"mode": "search", "q": query}))
+    item = xbmcgui.ListItem(label="[B]{}[/B]: {}".format(ADDON.getLocalizedString(31184), query))
+    icon = "special://home/addons/{}/icon.png".format(OTHER_SERVICE_ID)
+    item.setArt({"icon": icon, "thumb": icon})
+    xbmcplugin.addDirectoryItem(HANDLE, target, item, isFolder=True)
+
+
+def widgets_menu():
+    """Ready-made lists for the skin's home screen widgets."""
+    xbmcplugin.setContent(HANDLE, "files")
+    help_text = ADDON.getLocalizedString(31183)
+    entries = []
+    if not local_history():
+        entries.append((ADDON.getLocalizedString(31079), url(action="continue_watching"), "continue"))
+    entries.append((ADDON.getLocalizedString(31186), url(action="layout", kind="frontspace", entity_id="bookmarks"), "kijklijst"))
+    entries.append((ADDON.getLocalizedString(31120), url(action="library"), "bibliotheek"))
+    for label, route, icon in entries:
+        add(label, route, True, icon_key=icon, info={"plot": help_text})
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def mark_watched_on_service(video_id, seo="", parent_id="", parent_seo="", watched="1"):
+    """Send a watched/unwatched change from the Kodi library back to Videoland."""
+    if setting("history_source") == "local" or not setting_bool("watched_to_service", True):
+        return
+    if not cloud_sync_enabled() or not video_id:
+        return
+    client = api()
+    auth = ensure_login()
+    ensure_profile(client, auth)
+    location = "https://v2.videoland.com/"
+    if parent_id and parent_seo and seo:
+        location += "{}-p_{}/{}-c_{}".format(parent_seo, parent_id, seo, video_id.replace("clip_", ""))
+    layout = client.layout("video", video_id, location)
+    config = heartbeat_config(layout, video_id)
+    if not config:
+        xbmc.log("[Videoland] No progress metadata to mark watched for {}".format(video_id), xbmc.LOGWARNING)
+        return
+    writer = ProgressWriter(client, auth, setting("profile_id"), config, location)
+    client.timeout = 8
+    want_watched = str(watched) not in ("0", "false", "")
+    if want_watched:
+        # tc at the clip duration, reported as the end of the session.
+        writer.save(writer.duration, "end")
+    else:
+        # Back to the start so Videoland no longer counts it as watched.
+        writer.save(0, "seek")
+    xbmc.log("[Videoland] Watched status {} for {} sent".format(
+        "on" if want_watched else "off", video_id), xbmc.LOGINFO)
+
+
+
 def dispatch(params):
     set_breadcrumb(read_breadcrumb(params.get("breadcrumb")) or ["Videoland"])
     action = params.get("action")
@@ -2551,6 +2617,12 @@ def dispatch(params):
         library_from_watchlist(background=params.get("background") == "1")
     elif action == "library_play":
         library_play(params.get("id", ""), params.get("seo", ""))
+    elif action == "widgets":
+        widgets_menu()
+    elif action == "mark_watched":
+        mark_watched_on_service(params.get("video_id", ""), params.get("seo", ""),
+                                params.get("parent_id", ""), params.get("parent_seo", ""),
+                                params.get("watched", "1"))
 
 
 def run():
