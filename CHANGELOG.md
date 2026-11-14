@@ -1,8 +1,19 @@
 # Changelog
 
-> **Latest Version:** v1.3.1 (November 14, 2026)
+> **Latest Version:** v1.3.2 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.3.2] - 2026-11-14
+
+### Changed
+- **Menu icons**: coloured tiles per menu group (red = browse, plum = your own lists, orange = live tv, grey = account) with white line glyphs, rebuilt by `scripts/build-menu-icons.py`. Live TV has its own broadcast icon.
+- **Main menu order**: Videoland's own navigation first, then Continue Watching and Library, then profile, sign out and clear cache at the bottom.
+- **Translations**: "Sign in", "Sign out" and "Clear cache" are now translatable instead of fixed Dutch text.
+
+### Fixed
+- **Library posters**: series and films now get their poster and background in Kodi's library. The portrait and widescreen images of the card you added are remembered and used when the title page has none, and the images are saved as `poster.jpg`/`fanart.jpg` (films: `<name>-poster.jpg`/`<name>-fanart.jpg`) next to the files, which Kodi always uses.
+- **Library posters**: titles Kodi had already scanned without artwork get their poster and background after every library update and every Kodi library scan; artwork you chose in Kodi is never replaced. Settings → Library has a "Repair artwork in the Kodi library" button.
 
 ## [1.3.1] - 2026-11-14
 

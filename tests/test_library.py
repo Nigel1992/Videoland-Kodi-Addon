@@ -210,3 +210,29 @@ class EnrichmentTests(unittest.TestCase):
             self.assertIn("<title>Begin</title>", ep)
             self.assertIn("<plot>Plot 1</plot>", ep)
             self.assertIn('<uniqueid type="videoland" default="true">a</uniqueid>', ep)
+
+
+class ArtworkTests(unittest.TestCase):
+    def test_card_poster_used_and_saved_when_page_has_none(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = FakeSource()
+            source.shows["p1"] = {"title": "Show", "poster": "", "fanart": "", "episodes": [episode("a", 1, 1)]}
+            settings = {"library_tv_path": os.path.join(root, "TV")}
+            downloads = []
+            lib = library.Library(source, settings.get, store=library.LibraryStore(os.path.join(root, "l.json")),
+                                  downloader=lambda url: downloads.append(url) or b"img")
+            lib.add_series("p1", "show", "Show", poster="https://img/card.jpg", fanart="https://img/hero.jpg")
+            folder = os.path.join(root, "TV", "Show")
+            self.assertTrue(os.path.isfile(os.path.join(folder, "poster.jpg")))
+            self.assertTrue(os.path.isfile(os.path.join(folder, "fanart.jpg")))
+            with open(os.path.join(folder, "tvshow.nfo")) as handle:
+                self.assertIn("https://img/card.jpg", handle.read())
+            lib.update_all()
+            self.assertEqual(len(downloads), 2)  # hints kept, nothing downloaded twice
+
+    def test_ratio_image_picks_portrait(self):
+        plugin = load_plugin()
+        image = {"id": "land", "idsByRatio": {"2:3": "tall", "16:9": "wide"}}
+        self.assertTrue(plugin.ratio_image(image, ("2:3",)).endswith("/tall/raw"))
+        self.assertTrue(plugin.ratio_image(image, ("16:9",)).endswith("/wide/raw"))
+        self.assertEqual(plugin.ratio_image({"id": "x"}, ("2:3",)), "")

@@ -27,7 +27,7 @@ import time
 from urllib.parse import urlencode
 from xml.sax.saxutils import escape
 
-from . import metadata
+from . import library_art, metadata
 
 try:
     import xbmc
@@ -229,9 +229,12 @@ def store_path():
 
 
 class Library:
-    def __init__(self, source, settings, store=None, fs=None, now=None, enricher=None):
-        """``settings(name)`` returns a setting value as a string."""
+    def __init__(self, source, settings, store=None, fs=None, now=None, enricher=None, downloader=None):
+        """``settings(name)`` returns a setting value as a string;
+        ``downloader(url)`` returns image bytes (None: artwork stays URLs)."""
         self.enricher = enricher
+        self.downloader = downloader
+        self._pending_hints = {}
         self.source = source
         self.settings = settings
         self.fs = fs or LocalFS()
@@ -268,8 +271,22 @@ class Library:
         return sorted(section.items(), key=lambda pair: str(pair[1].get("title") or "").lower())
 
     # ----------------------------------------------------------------- series
-    def add_series(self, series_id, seo="", title=""):
+    def add_series(self, series_id, seo="", title="", poster="", fanart=""):
+        """``poster``/``fanart`` come from the card the user picked; they are
+        used when the title page has no artwork of its own."""
+        self._pending_hints[("series", str(series_id))] = {"poster_hint": poster, "fanart_hint": fanart}
         return self._sync_series(str(series_id), seo=seo, title=title, is_update=False)
+
+    def _apply_hints(self, kind, item_id, entry, data):
+        for key, value in self._pending_hints.pop((kind, str(item_id)), {}).items():
+            if value:
+                entry[key] = value
+        data = dict(data)
+        if not data.get("poster") and entry.get("poster_hint"):
+            data["poster"] = entry["poster_hint"]
+        if not data.get("fanart") and entry.get("fanart_hint"):
+            data["fanart"] = entry["fanart_hint"]
+        return data
 
     def _assign_numbers(self, entry, episodes):
         mapping = entry.setdefault("episodes", {})
@@ -322,6 +339,7 @@ class Library:
         series_title = data.get("title") or entry.get("title") or title or series_id
         entry.update({"title": series_title, "seo": seo, "missing": 0})
         entry.setdefault("added", int(self.now()))
+        data = self._apply_hints("series", series_id, entry, data)
         data = self._enrich_show(entry, series_title, data)
         if data.get("poster"):
             entry["thumb"] = data["poster"]
@@ -329,6 +347,8 @@ class Library:
             entry["folder"] = safe_filename(series_title)
         show_dir = self.fs.join(self.tv_root(), entry["folder"])
         self.fs.write(self.fs.join(show_dir, "tvshow.nfo"), self._tvshow_nfo(series_id, series_title, data))
+        library_art.save_art(self, entry, show_dir, {"poster": data.get("poster"), "fanart": data.get("fanart")},
+                             {"poster": "poster.jpg", "fanart": "fanart.jpg"}, self.downloader)
 
         wanted = set()
         for episode, season, number in self._assign_numbers(entry, episodes):
@@ -431,7 +451,8 @@ class Library:
         return "\n".join(lines) + "\n"
 
     # ----------------------------------------------------------------- movies
-    def add_movie(self, movie_id, seo="", title=""):
+    def add_movie(self, movie_id, seo="", title="", poster="", fanart=""):
+        self._pending_hints[("movie", str(movie_id))] = {"poster_hint": poster, "fanart_hint": fanart}
         return self._sync_movie(str(movie_id), seo=seo, title=title, is_update=False)
 
     def _sync_movie(self, movie_id, seo="", title="", is_update=False):
@@ -450,6 +471,7 @@ class Library:
             return result
 
         movie_title = data.get("title") or entry.get("title") or title or movie_id
+        data = self._apply_hints("movie", movie_id, entry, data)
         if self.enricher is not None:
             try:
                 extra = self.enricher.movie(movie_title, _int_or_none(data.get("year")), known=entry.get("ids"))
@@ -465,10 +487,14 @@ class Library:
             year = None
         if not entry.get("folder"):
             entry["folder"] = safe_filename("{} ({})".format(movie_title, year) if year else movie_title)
-        base = self.fs.join(self.movies_root(), entry["folder"], entry["folder"])
+        movie_dir = self.fs.join(self.movies_root(), entry["folder"])
+        base = self.fs.join(movie_dir, entry["folder"])
         if self.fs.write(base + ".strm", self.play_url(data["play"]) + "\n"):
             result["added"] = 1
         self.fs.write(base + ".nfo", self._movie_nfo(movie_id, movie_title, data, year))
+        library_art.save_art(self, entry, movie_dir, {"poster": data.get("poster"), "fanart": data.get("fanart")},
+                             {"poster": entry["folder"] + "-poster.jpg", "fanart": entry["folder"] + "-fanart.jpg"},
+                             self.downloader)
 
         entry.update({"title": movie_title, "seo": seo, "missing": 0, "updated": int(self.now())})
         entry.setdefault("added", int(self.now()))

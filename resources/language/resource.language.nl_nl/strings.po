@@ -531,3 +531,23 @@ msgstr "Gratis sleutel via themoviedb.org: Instellingen > API. Plak de \"API Key
 msgctxt "#31140"
 msgid "Test TMDb key"
 msgstr "TMDb-sleutel testen"
+
+msgctxt "#31141"
+msgid "Sign in"
+msgstr "Aanmelden"
+
+msgctxt "#31142"
+msgid "Sign out"
+msgstr "Afmelden"
+
+msgctxt "#31143"
+msgid "Clear cache"
+msgstr "Cache wissen"
+
+msgctxt "#31144"
+msgid "Artwork updated for {0} titles"
+msgstr "Posters bijgewerkt voor {0} titels"
+
+msgctxt "#31145"
+msgid "Repair artwork in the Kodi library"
+msgstr "Posters in Kodi-bibliotheek herstellen"

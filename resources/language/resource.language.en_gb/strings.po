@@ -461,3 +461,23 @@ msgstr ""
 msgctxt "#31140"
 msgid "Test TMDb key"
 msgstr ""
+
+msgctxt "#31141"
+msgid "Sign in"
+msgstr ""
+
+msgctxt "#31142"
+msgid "Sign out"
+msgstr ""
+
+msgctxt "#31143"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#31144"
+msgid "Artwork updated for {0} titles"
+msgstr ""
+
+msgctxt "#31145"
+msgid "Repair artwork in the Kodi library"
+msgstr ""

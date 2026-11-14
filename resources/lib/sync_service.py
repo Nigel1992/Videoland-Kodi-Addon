@@ -7,6 +7,7 @@ import xbmcgui
 import xbmcvfs
 
 from resources.lib import library as library_mod
+from resources.lib import library_art
 from resources.lib.api import VideolandApi
 from resources.lib.crypto import decrypt_json
 from resources.lib.progress import ProgressWriter
@@ -62,11 +63,31 @@ def library_update_due(addon, now=None):
     return library_mod.update_due(store, hours, now)
 
 
+class LibraryMonitor(xbmc.Monitor):
+    """Notices when Kodi finished a video library scan."""
+
+    def __init__(self):
+        super().__init__()
+        self.scan_finished = False
+
+    def onScanFinished(self, library):
+        if library == 'video':
+            self.scan_finished = True
+
+
+def repair_art_after_scan(addon):
+    store = library_mod.LibraryStore(library_mod.store_path())
+    if store.is_empty():
+        return 0
+    lib = library_mod.Library(None, addon.getSettingString, store=store)
+    return library_art.repair_kodi_art(lib, marker='plugin.video.videoland.nl/library')
+
+
 def run():
     addon = xbmcaddon.Addon('plugin.video.videoland.nl')
     directory = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.videoland.nl')
     store = SyncStore(directory)
-    monitor = xbmc.Monitor()
+    monitor = LibraryMonitor()
     xbmc.log('[Videoland] Cloud progress retry service started', xbmc.LOGINFO)
     source = addon.getSettingString('history_source')
     refresh_pending = False
@@ -91,6 +112,14 @@ def run():
         except Exception as exc:
             xbmc.log('[Videoland] Progress retry unavailable ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         now = time.monotonic()
+        if monitor.scan_finished:
+            monitor.scan_finished = False
+            try:
+                fixed = repair_art_after_scan(addon)
+                if fixed:
+                    xbmc.log('[Videoland] Library artwork set for {} titles'.format(fixed), xbmc.LOGINFO)
+            except Exception as exc:
+                xbmc.log('[Videoland] Library artwork repair failed ({})'.format(type(exc).__name__), xbmc.LOGWARNING)
         if now - started >= LIBRARY_STARTUP_DELAY and now >= next_library_check:
             next_library_check = now + LIBRARY_CHECK_INTERVAL
             try:

@@ -19,7 +19,7 @@ GLYPHS = {
     'action': '<path d="m140 68-58 70h41l-9 51 60-76h-43z"/>',
     'awards': '<circle cx="128" cy="106" r="34"/><path d="m104 133-13 54 37-20 37 20-13-54"/><path d="m128 85 6 13 15 2-11 11 3 15-13-7-13 7 3-15-11-11 15-2z" stroke-width="4"/>',
     'autumn': '<path d="M87 166C58 102 119 86 179 75c-6 64-28 112-79 94M78 184l77-80m-40 41-5-30m20 17 25 2"/>',
-    'recent': '<circle cx="128" cy="126" r="51"/><path d="M128 93v35l24 15"/><path d="M174 69v28m-14-14h28" stroke="#ff3547"/>',
+    'recent': '<circle cx="128" cy="126" r="51"/><path d="M128 93v35l24 15"/><path d="M174 69v28m-14-14h28" stroke="white"/>',
     'night': '<path d="M146 77a52 52 0 1 0 33 77 48 48 0 0 1-33-77zM173 88v20m-10-10h20"/>',
     'featured': '<path d="m128 72 17 35 39 6-28 27 7 39-35-18-35 18 7-39-28-27 39-6z"/>',
     'home': '<path d="M72 124 128 76l56 48M86 115v65h30v-40h24v40h30v-65"/>',
@@ -46,7 +46,22 @@ GLYPHS = {
     'bibliotheek': ('<rect x="78" y="78" width="24" height="94" rx="4"/><rect x="110" y="68" width="24" height="104" rx="4"/>'
                     '<path d="M86 96h8m24-12h8"/><path d="m145 88 22-7 26 85-22 7z"/><path d="M70 180h116"/>'),
 }
+GLYPHS['live'] = ('<circle cx="128" cy="128" r="10"/>'
+                  '<path d="M100 100a40 40 0 0 0 0 56M156 100a40 40 0 0 1 0 56M80 80a68 68 0 0 0 0 96M176 80a68 68 0 0 1 0 96"/>')
 GLYPHS['collection'] = GLYPHS['series']
+
+# Colour per menu group so related entries are recognisable at a glance.
+GROUP_COLORS = {
+    'watch': '#b3122a',    # browsing the catalogue
+    'mine': '#6d1a4f',     # watchlist, continue watching, library
+    'live': '#e0523a',     # live tv
+    'account': '#3c3f4a',  # search, profile, sign in/out, cache
+}
+GROUPS = {
+    'kijklijst': 'mine', 'continue': 'mine', 'bibliotheek': 'mine',
+    'live': 'live',
+    'zoeken': 'account', 'profiel': 'account', 'aanmelden': 'account', 'afmelden': 'account', 'cache': 'account',
+}
 
 
 def _glyph_bbox(glyph, size=512):
@@ -84,10 +99,8 @@ ICON_DIR.mkdir(parents=True, exist_ok=True)
 SVG_DIR.mkdir(parents=True, exist_ok=True)
 for name, glyph in GLYPHS.items():
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256">
-<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#29272b"/><stop offset="1" stop-color="#111114"/></linearGradient></defs>
-<rect x="8" y="8" width="240" height="240" rx="48" fill="url(#bg)" stroke="#454047" stroke-width="2"/>
-<rect x="105" y="31" width="46" height="5" rx="2.5" fill="#ff3547"/>
-<g fill="none" stroke="#f6f5f6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">{glyph}</g>
+<rect x="8" y="8" width="240" height="240" rx="52" fill="{GROUP_COLORS[GROUPS.get(name, 'watch')]}"/>
+<g transform="translate(128 128) scale(1.12) translate(-128 -128)" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">{glyph.replace('fill="white"', 'fill="white"')}</g>
 </svg>'''
     (SVG_DIR / (name + '.svg')).write_text(svg)
     cairosvg.svg2png(bytestring=svg.encode(), write_to=str(ICON_DIR / (name + '.png')))

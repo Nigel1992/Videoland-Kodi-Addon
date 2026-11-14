@@ -28,6 +28,7 @@ from .api import (
 from .crypto import CipherError, decrypt_json, encrypt_json
 from . import library as library_mod
 from . import metadata as metadata_mod
+from . import library_art
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -245,7 +246,8 @@ _ICON_MAP = {
     "profiel": "profiel",
     "mijn kijklijst": "kijklijst",
     "kijklijst": "kijklijst",
-    "live tv": "collection",
+    "live tv": "live",
+    "tv en gids": "live",
     "bibliotheek": "bibliotheek",
     "library": "bibliotheek",
 }
@@ -299,6 +301,18 @@ def content_art(image):
     if image_id:
         art.update(thumb=base.format(image_id), icon=base.format(image_id))
     return art
+
+
+def ratio_image(image, ratios):
+    """URL of a card image in one of the given aspect ratios ("2:3", "16:9"...)."""
+    if not isinstance(image, dict):
+        return ""
+    by_ratio = image.get("idsByRatio") or {}
+    for ratio in ratios:
+        image_id = by_ratio.get(ratio) or (image.get("id") if image.get("ratio") == ratio else None)
+        if image_id:
+            return "https://images-fio.videoland.bedrock.tech/v2/images/{}/raw".format(image_id)
+    return ""
 
 
 def hero_art(layout):
@@ -575,7 +589,7 @@ def root():
     xbmcplugin.setContent(HANDLE, "files")
     auth = auth_data()
     if not auth:
-        add("Aanmelden", url(action="login"), False, icon_key="aanmelden")
+        add(ADDON.getLocalizedString(31141), url(action="login"), False, icon_key="aanmelden")
     else:
         client = api()
         ensure_profile(client, auth)
@@ -589,13 +603,14 @@ def root():
         added = add_navigation(navigation)
         if not added:
             add_default_navigation()
-        name = active_profile_name(client, auth)
-        add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
+        # Order: browse (from Videoland), own lists, then account entries last.
         if not local_history():
             add(ADDON.getLocalizedString(31061), url(action="continue_watching"), True, icon_key="continue")
         add(ADDON.getLocalizedString(31120), url(action="library"), True, icon_key="bibliotheek")
-        add("Afmelden", url(action="logout"), False, icon_key="afmelden")
-    add("Cache wissen", url(action="clear_cache"), False, icon_key="cache")
+        name = active_profile_name(client, auth)
+        add(ADDON.getLocalizedString(31060).format(name), url(action="profiles"), False, icon_key="profiel")
+        add(ADDON.getLocalizedString(31142), url(action="logout"), False, icon_key="afmelden")
+    add(ADDON.getLocalizedString(31143), url(action="clear_cache"), False, icon_key="cache")
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -1122,7 +1137,9 @@ def _render_rows(rows, client=None, page_art=None):
                 ADDON.getLocalizedString(31111 if in_library else 31110),
                 "RunPlugin({})".format(url(
                     action="library_toggle", kind=library_kind, id=target_id,
-                    seo=target.get("seo", ""), title=label, thumb=art.get("thumb", ""))),
+                    seo=target.get("seo", ""), title=label,
+                    poster=ratio_image(image, ("2:3", "3:4")) or art.get("thumb", ""),
+                    fanart=backgrounds.get(target_id, {}).get("fanart") or ratio_image(image, ("16:9",)))),
             ))
         if target_kind == "live":
             add(label, url(
@@ -1752,8 +1769,22 @@ def _library_enricher():
 
 
 def _library(client=None):
-    return library_mod.Library(LibrarySource(client or api()), setting, store=_library_store(),
-                               enricher=_library_enricher())
+    return library_mod.Library(
+        LibrarySource(client or api()), setting, store=_library_store(), enricher=_library_enricher(),
+        downloader=lambda image_url: library_art.http_download(image_url, "plugin.video.videoland.nl"))
+
+
+def repair_library_art(background=True):
+    """Give titles Kodi already scanned their missing poster and background."""
+    try:
+        lib = library_mod.Library(None, setting, store=_library_store())
+        fixed = library_art.repair_kodi_art(lib, marker="plugin.video.videoland.nl/library")
+    except Exception as exc:
+        xbmc.log("[Videoland] Library artwork repair failed: {}".format(exc), xbmc.LOGWARNING)
+        fixed = 0
+    if not background:
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31144).format(fixed), time=3000)
+    return fixed
 
 
 def check_tmdb_key():
@@ -1770,7 +1801,7 @@ def _after_library_change(scan=True, clean=False):
         library_mod.run_library_jobs(scan=scan, clean=clean)
 
 
-def library_add(kind, item_id, seo="", title="", thumb=""):
+def library_add(kind, item_id, seo="", title="", poster="", fanart=""):
     client = api()
     auth = ensure_login()
     ensure_profile(client, auth)
@@ -1779,17 +1810,14 @@ def library_add(kind, item_id, seo="", title="", thumb=""):
     progress.create("Videoland", ADDON.getLocalizedString(31112).format(title))
     try:
         if kind == "series":
-            result = lib.add_series(item_id, seo, title)
+            result = lib.add_series(item_id, seo, title, poster, fanart)
         else:
-            result = lib.add_movie(item_id, seo, title)
+            result = lib.add_movie(item_id, seo, title, poster, fanart)
     finally:
         progress.close()
     if not result.get("ok"):
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31113), xbmcgui.NOTIFICATION_WARNING)
         return
-    entry = lib.store.get(kind, item_id)
-    if thumb and entry is not None and not entry.get("thumb"):
-        entry["thumb"] = thumb
     lib.store.save()
     if kind == "series":
         message = ADDON.getLocalizedString(31114).format(result.get("title") or title, result.get("total", 0))
@@ -1807,12 +1835,12 @@ def library_remove(kind, item_id, title=""):
         xbmc.executebuiltin("Container.Refresh")
 
 
-def library_toggle(kind, item_id, seo="", title="", thumb=""):
+def library_toggle(kind, item_id, seo="", title="", poster="", fanart=""):
     kind = "series" if kind == "series" else "movie"
     if _library_has(kind, item_id):
         library_remove(kind, item_id, title)
     else:
-        library_add(kind, item_id, seo, title, thumb)
+        library_add(kind, item_id, seo, title, poster, fanart)
         xbmc.executebuiltin("Container.Refresh")
 
 
@@ -1862,6 +1890,7 @@ def _library_update(background):
     changed = bool(totals["added"] or totals["removed"])
     if changed:
         _after_library_change(scan=True, clean=bool(totals["removed"]))
+    repair_library_art()
     if not background or (changed and setting_bool("sync_notifications", False)):
         xbmcgui.Dialog().notification(
             "Videoland", ADDON.getLocalizedString(31119).format(totals["added"], totals["removed"]), time=4000)
@@ -1960,11 +1989,14 @@ def dispatch(params):
         browse_library()
     elif action == "library_toggle":
         library_toggle(params.get("kind", ""), params.get("id", ""), params.get("seo", ""),
-                       params.get("title", ""), params.get("thumb", ""))
+                       params.get("title", ""), params.get("poster") or params.get("thumb", ""),
+                       params.get("fanart", ""))
     elif action == "library_remove":
         library_remove(params.get("kind", ""), params.get("id", ""), params.get("title", ""))
     elif action == "library_update":
         library_update(background=params.get("background") == "1")
+    elif action == "repair_library_art":
+        repair_library_art(background=params.get("background") == "1")
     elif action == "check_tmdb_key":
         check_tmdb_key()
     elif action == "library_play":
