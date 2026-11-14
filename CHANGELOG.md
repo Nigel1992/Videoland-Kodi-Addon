@@ -1,9 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.9.2 (November 14, 2026)
+> **Latest Version:** v1.9.3 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.9.3] - 2026-11-14
+
+### Fixed
+- **Nog steeds twee keer "verder kijken".** De vorige poging keek alleen naar bibliotheek-items met een database-id, maar bij afspelen vanuit de Videoland-pagina's zelf heeft Kodi vaak al een eigen hervatpunt (en toont dan z'n eigen "Hervatten?"-venster). Videoland slaat nu z'n eigen vraag over zodra Kodi al een hervatpunt voor het item heeft, zodat je nog maar één keer kiest. Heeft Kodi nog geen hervatpunt (bijv. eerste keer, verder kijken vanaf een ander apparaat), dan toont Videoland zelf de vraag zoals voorheen.
 ## [1.9.2] - 2026-11-14
 
 ### Fixed

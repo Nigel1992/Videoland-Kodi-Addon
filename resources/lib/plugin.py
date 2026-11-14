@@ -1693,15 +1693,18 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
 
 
 def kodi_library_resume():
-    """True when playback starts from Kodi's own video library.
+    """True when Kodi already offers its own resume for this item, so the
+    add-on must not ask a second time.
 
-    For a library item Kodi shows (and applies) its own "Resume from ...?"
-    prompt, so the add-on must not ask a second time. We treat it as a library
-    play when the item has a database id, or when it is played from inside the
-    video-library view (videodb://). We no longer require a resume point: a
-    library item without one simply starts at 0, which is also what Kodi does.
+    This is the case when Kodi has a resume point for the item (it shows its
+    own "Resume from ...?" prompt and applies the seek) -- whether the item
+    comes from the Kodi video library or from one of the add-on's own pages
+    that Kodi has a local bookmark for. A library item without a resume point
+    also counts, so playback there starts at 0 just like Kodi would.
     """
     try:
+        if xbmc.getCondVisibility("ListItem.IsResumable"):
+            return True
         dbid = xbmc.getInfoLabel("ListItem.DBID")
         has_dbid = isinstance(dbid, str) and dbid.isdigit() and int(dbid) > 0
         folder = xbmc.getInfoLabel("Container.FolderPath")

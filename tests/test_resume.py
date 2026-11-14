@@ -60,6 +60,8 @@ class ResumeTests(unittest.TestCase):
                 plugin.api = lambda: client
                 plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
                 plugin.ensure_profile = MagicMock()
+                plugin.xbmc.getCondVisibility = lambda cond: False
+                plugin.xbmc.getInfoLabel = lambda label: ""
                 plugin.xbmcgui.Dialog.return_value.yesnocustom.return_value = answer
                 with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
                     plugin.play('clip_46228')
@@ -84,6 +86,8 @@ class ResumeTests(unittest.TestCase):
                 plugin.ensure_profile = MagicMock()
                 plugin.video_assets = MagicMock()
                 plugin.progress_tracker = MagicMock()
+                plugin.xbmc.getCondVisibility = lambda cond: False
+                plugin.xbmc.getInfoLabel = lambda label: ""
                 plugin.xbmcgui.Dialog.return_value.yesnocustom.return_value = answer
                 with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
                     plugin.play('clip_46228')
@@ -133,14 +137,19 @@ class ResumeTests(unittest.TestCase):
 
 
 class LibraryResumeTests(unittest.TestCase):
-    def test_kodi_library_resume_detects_library_playback(self):
+    def test_kodi_library_resume_detects_kodi_owned_resume(self):
         plugin = load_plugin()
-        # A database id means Kodi owns the resume prompt.
+        # Kodi already has a resume point for the item -> Kodi will prompt.
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        plugin.xbmc.getCondVisibility = lambda cond: cond == "ListItem.IsResumable"
+        self.assertTrue(plugin.kodi_library_resume())
+        # No Kodi resume point, but a library database id still counts.
+        plugin.xbmc.getCondVisibility = lambda cond: False
         plugin.xbmc.getInfoLabel = lambda label: "42" if label == "ListItem.DBID" else ""
         self.assertTrue(plugin.kodi_library_resume())
-        # Played from the video-library view, even without a dbid in reach.
+        # Played from the video-library view.
         plugin.xbmc.getInfoLabel = lambda label: "videodb://tvshows/" if label == "Container.FolderPath" else ""
         self.assertTrue(plugin.kodi_library_resume())
-        # Neither: an in-add-on play, so the add-on may offer its own resume.
+        # Nothing: an in-add-on play with no Kodi resume, so the add-on may ask.
         plugin.xbmc.getInfoLabel = lambda label: ""
         self.assertFalse(plugin.kodi_library_resume())
