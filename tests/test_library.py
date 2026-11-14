@@ -261,8 +261,8 @@ class WatchlistTests(unittest.TestCase):
         client = MagicMock()
         client.cache_dir = "/cache"
         client.cache_ttl = 1800
-        card = lambda n: {"title": "T{}".format(n), "action": {"target": {"type": "layout", "value_layout": {
-            "type": "program", "id": str(n), "seo": "t{}".format(n)}}}}
+        card = lambda n: {"itemContent": {"title": "T{}".format(n), "action": {"target": {
+            "type": "layout", "value_layout": {"type": "program", "id": str(n), "seo": "t{}".format(n)}}}}}
         client.layout.return_value = {"blocks": [{
             "block_title": "Series", "feature": "feature.bookmarks",
             "content": {"items": [card(1), card(2)], "pagination": {"totalItems": 5}}}]}
