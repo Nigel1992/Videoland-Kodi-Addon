@@ -1554,6 +1554,34 @@ def progress_tracker(client, auth, layout, video_id, location, stream):
                                       xbmc.LOGWARNING if error else xbmc.LOGINFO))
 
 
+def hd_capable():
+    """Videoland only grants its HD key (720p/1080p) to Widevine L1, which in
+    Kodi exists only on Android. Linux/LibreELEC, Windows and macOS use the
+    software Widevine (L3): there the HD stream can never be decrypted."""
+    try:
+        return xbmc.getCondVisibility("System.Platform.Android") is True
+    except Exception:
+        return False
+
+
+def choose_asset(dash):
+    """Pick the DASH asset to play.
+
+    "Highest available" uses the hardware-protected (HD) asset only where it
+    can work; elsewhere it falls back to the best software stream instead of
+    starting a stream that cannot be decrypted.
+    """
+    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
+    hardware = [a for a in dash if (a.get("drm") or {}).get("type") != "software"]
+    want_best = setting_int("preferred_quality", 1) == 0
+    if want_best and hd_capable():
+        return (hardware or dash)[0]
+    if want_best and hardware and setting("hd_fallback_notice_shown") != "true":
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31172), time=8000)
+        save("hd_fallback_notice_shown", "true")
+    return software[0] if software else dash[0]
+
+
 def _dash_item(helper, asset, drm_token):
     """Build the inputstream.adaptive ListItem for a Widevine DASH asset."""
     item = xbmcgui.ListItem(path=asset["path"])
@@ -1639,9 +1667,7 @@ def play(video_id, seo="", parent_id="", parent_seo=""):
     # Some devices (e.g. Pi 5 / Widevine on LibreELEC) require the software-L3
     # rendition and fail to decrypt the hardware (L1) rendition (CDM "kNoKey").
     # Software-L3 is the default; "best available" opts into the highest stream.
-    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
-    prefer_software = setting_int("preferred_quality", 1) == 1
-    asset = (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
+    asset = choose_asset(dash)
     drm_token = client.upfront_token(auth["uid"], video_id)
     item = _dash_item(helper, asset, drm_token)
 
@@ -1824,9 +1850,7 @@ def _live_stream(client, channel_id, seo):
             and (a.get("format") == "dashcenc" or ".mpd" in a.get("path", ""))]
     if not dash:
         raise ApiError("Geen live DASH-stream gevonden")
-    software = [a for a in dash if (a.get("drm") or {}).get("type") == "software"]
-    prefer_software = setting_int("preferred_quality", 1) == 1
-    return (software[0] if software else dash[0]) if prefer_software else (dash[0] if dash else software[0])
+    return choose_asset(dash)
 
 
 def play_live(channel_id, seo=""):

@@ -45,6 +45,11 @@
           <default>false</default>
           <control type="edit" format="string"><hidden>true</hidden></control>
         </setting>
+        <setting id="hd_fallback_notice_shown" type="string" label="31009">
+          <level>4</level>
+          <default>false</default>
+          <control type="edit" format="string"><hidden>true</hidden></control>
+        </setting>
       </group>
     </category>
 

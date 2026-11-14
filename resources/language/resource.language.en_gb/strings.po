@@ -61,16 +61,11 @@ msgid "Video quality and device compatibility"
 msgstr ""
 
 msgctxt "#31012"
-msgid ""
-"Compatible playback is the default and uses the software-protected stream, "
-"suitable for Raspberry Pi and similar devices. Highest available requests "
-"the higher-quality stream when offered, but may fail if your device cannot "
-"decrypt it. Neither option guarantees HD; the available quality also depends"
-" on the title and the licence granted by Videoland."
+msgid "Compatible playback is the default and uses the software-protected stream (up to 540p), which works on every device. Highest available uses the HD stream (720p/1080p) on Android devices with Widevine L1. Videoland only grants its HD key to L1, so on Linux/LibreELEC (Raspberry Pi), Windows and macOS it automatically plays the best stream that works there."
 msgstr ""
 
 msgctxt "#31013"
-msgid "Highest available (requires device support)"
+msgid "Highest available (HD only on Android with Widevine L1)"
 msgstr ""
 
 msgctxt "#31014"
@@ -584,4 +579,8 @@ msgstr ""
 
 msgctxt "#31171"
 msgid "Maintenance"
+msgstr ""
+
+msgctxt "#31172"
+msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
 msgstr ""

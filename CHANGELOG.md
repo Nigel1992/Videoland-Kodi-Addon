@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.6.1 (November 14, 2026)
+> **Latest Version:** v1.6.2 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.6.2] - 2026-11-14
+
+### Fixed
+- **"Highest available" quality did not play** on Linux/LibreELEC, Windows and macOS: Videoland only grants its HD key (720p/1080p) to Widevine L1, which Kodi has only on Android, so the HD stream could never be decrypted there (see docs/playback-quality-investigation.md). The setting now uses the HD stream only on Android and otherwise plays the best software stream (up to 540p) and says so once. The setting label and help explain this.
 
 ## [1.6.1] - 2026-11-14
 

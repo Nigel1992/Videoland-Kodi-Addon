@@ -333,3 +333,29 @@ class LibraryProfileTests(unittest.TestCase):
         client = MagicMock()
         plugin._watchlist_of_library_profile(client)
         client.jwt.assert_not_called()
+
+
+class QualityTests(unittest.TestCase):
+    def setUp(self):
+        self.plugin = load_plugin()
+        self.values = {"preferred_quality": 0}
+        self.plugin.setting_int = lambda name, default=0: self.values.get(name, default)
+        self.plugin.setting = lambda name, default="": str(self.values.get(name, default))
+        self.plugin.save = lambda name, value: self.values.__setitem__(name, value)
+        self.dash = [{"path": "hd.mpd", "drm": {"type": "hardware"}}, {"path": "sd.mpd", "drm": {"type": "software"}}]
+
+    def test_best_uses_hd_only_where_l1_exists(self):
+        self.plugin.xbmc.getCondVisibility = lambda cond: True  # Android
+        self.assertEqual(self.plugin.choose_asset(self.dash)["path"], "hd.mpd")
+
+    def test_best_falls_back_to_software_and_says_so_once(self):
+        self.plugin.xbmc.getCondVisibility = lambda cond: False  # LibreELEC
+        notify = self.plugin.xbmcgui.Dialog.return_value.notification
+        self.assertEqual(self.plugin.choose_asset(self.dash)["path"], "sd.mpd")
+        self.assertEqual(self.plugin.choose_asset(self.dash)["path"], "sd.mpd")
+        self.assertEqual(notify.call_count, 1)
+
+    def test_compatible_always_software(self):
+        self.values["preferred_quality"] = 1
+        self.plugin.xbmc.getCondVisibility = lambda cond: True
+        self.assertEqual(self.plugin.choose_asset(self.dash)["path"], "sd.mpd")
