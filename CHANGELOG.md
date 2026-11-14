@@ -1,8 +1,14 @@
 # Changelog
 
-> **Latest Version:** v1.3.4 (November 14, 2026)
+> **Latest Version:** v1.4.0 (November 14, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.4.0] - 2026-11-14
+
+### Added
+- **Search filters**: a Filter entry on top of search results narrows them by type (series, films, episodes), period and genre (period and genre when Videoland supplies them).
+- The diagnostics button moved to Settings → Library.
 
 ## [1.3.4] - 2026-11-14
 

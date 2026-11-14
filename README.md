@@ -121,7 +121,7 @@ Coming soon...
 
 ## 🚀 Installation
 
-1. Download **`plugin.video.videoland.nl-1.2.1.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
+1. Download **`plugin.video.videoland.nl-<version>.zip`** from [GitHub Releases](https://github.com/Nigel1992/Videoland-Kodi-Addon/releases/latest). Choose the addon ZIP asset, not GitHub’s automatically generated source archives.
 2. In Kodi, go to **Add-ons > Install from zip file** and select the downloaded zip.
 3. Open the add-on and use **Aanmelden** to authenticate with Videoland the first time.
 4. Start a video and follow InputStream Helper's prompts to install or enable InputStream Adaptive and set up Widevine on supported platforms. Kodi installs InputStream Helper as an add-on dependency. If you cancel setup, playback stops; start the video again when you are ready to finish setup.
@@ -146,10 +146,10 @@ scripts/run-addon-check-local.sh --branch omega
 
 ## 🛣️ Roadmap / Coming Soon
 
-- **Enhanced search**: filter by genre, year, release date, and more.
-- **Better artwork and fanart for all content**.
-- **Automated Testing**: expanded CI/CD pipeline for code quality and automated releases.
-- **UI Polish**: enhanced skins integration, custom info dialogs, and animations.
+- ✅ **Enhanced search**: a Filter entry narrows results by type (series, films, episodes), period and genre (v1.4.0).
+- ✅ **Better artwork and fanart**: library posters and backgrounds, TMDb/TVmaze fill-in (v1.3.1–1.3.2).
+- ✅ **Automated testing**: GitHub Actions run the tests and build the zip; `v*` tags publish a release (v1.3.3).
+- **UI polish**: new colour-tile icon set done (v1.3.2). Custom info dialogs and animations are left to the skin, so the add-on looks right in every skin.
 
 ---
 
@@ -161,9 +161,9 @@ scripts/run-addon-check-local.sh --branch omega
 - [X] **Professional icon set for the main menu**
 - [X] **Per-episode titles and descriptions in season folders**
 - [X] **Automated unit tests for routing, layout parsing and authentication**
-- [ ] **Improve error messages and user feedback**
-- [ ] **Add more debug and diagnostic tools**
-- [ ] **Accessibility improvements for screen readers**
+- [X] **Improve error messages and user feedback** (one clear sentence per problem, details in the log)
+- [X] **Add more debug and diagnostic tools** (Settings → Library → Run diagnostics)
+- [X] **Accessibility improvements for screen readers** (translatable labels, status words instead of colour-only markers)
 
 ## 💖 Support the Project
 
