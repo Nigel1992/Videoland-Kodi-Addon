@@ -435,7 +435,7 @@ msgid "TMDb key works"
 msgstr ""
 
 msgctxt "#31134"
-msgid "TMDb key does not work. Check the key."
+msgid "TMDb does not accept this key. Check that you pasted the complete API Key (32 characters) or API Read Access Token."
 msgstr ""
 
 msgctxt "#31135"
@@ -480,4 +480,12 @@ msgstr ""
 
 msgctxt "#31145"
 msgid "Repair artwork in the Kodi library"
+msgstr ""
+
+msgctxt "#31146"
+msgid "No TMDb key is saved yet. Enter the key, press OK to save the settings and test again."
+msgstr ""
+
+msgctxt "#31147"
+msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
 msgstr ""

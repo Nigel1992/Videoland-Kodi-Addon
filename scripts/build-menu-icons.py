@@ -4,7 +4,7 @@ import io
 import cairosvg
 from PIL import Image
 
-ICON_DIR = Path(__file__).resolve().parents[1] / 'resources/icons/polished'
+ICON_DIR = Path(__file__).resolve().parents[1] / 'resources/icons/tiles'
 # Vector sources are kept outside the addon package (dev-only): Kodi ships PNG
 # art and kodi-addon-checker does not whitelist .svg inside the addon.
 SVG_DIR = Path(__file__).resolve().parents[1] / 'scripts/icons-svg'

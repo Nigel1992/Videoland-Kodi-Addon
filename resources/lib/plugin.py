@@ -1,3 +1,12 @@
+def check_tmdb_key():
+    """Settings button: test the saved TMDb key and say exactly what is wrong."""
+    status, detail = metadata_mod.test_tmdb_key(setting("tmdb_api_key"))
+    if detail:
+        xbmc.log("[Videoland] TMDb key test: {} ({})".format(status, detail), xbmc.LOGINFO)
+    message = {"ok": 31133, "missing": 31146, "invalid": 31134, "offline": 31147}[status]
+    xbmcgui.Dialog().ok("Videoland", ADDON.getLocalizedString(message))
+
+
 import json
 import math
 import os
@@ -29,6 +38,7 @@ from .crypto import CipherError, decrypt_json, encrypt_json
 from . import library as library_mod
 from . import metadata as metadata_mod
 from . import library_art
+from . import errors as errors_mod
 from .progress import ProgressWriter, heartbeat_config, monitor_class
 from .sync_store import DurableWriter, SyncStore
 
@@ -140,6 +150,26 @@ def api():
     return client
 
 
+_SORTABLE_ACTIONS = {"layout", "search", "related", "continue_watching", "library"}
+
+
+def add_sort_methods(action=None, season=None):
+    """Kodi's sort menu for list pages; the first option keeps Videoland's order."""
+    if action not in _SORTABLE_ACTIONS:
+        return
+    names = ["SORT_METHOD_UNSORTED"]
+    if season not in (None, "", "None"):
+        names.append("SORT_METHOD_EPISODE")
+    names += ["SORT_METHOD_LABEL_IGNORE_THE", "SORT_METHOD_VIDEO_YEAR"]
+    for name in names:
+        method = getattr(xbmcplugin, name, None)
+        if method is not None:
+            try:
+                xbmcplugin.addSortMethod(HANDLE, method)
+            except Exception:
+                pass
+
+
 def url(**params):
     return BASE_URL + "?" + urlencode(params)
 
@@ -215,7 +245,7 @@ def add(label, route, folder=True, art=None, info=None, playable=False, icon_key
 
 
 # Mapping of menu labels (and localised names) to the flat rounded-tile icon.
-_ICON_DIR = os.path.join(ADDON_PATH, "resources", "icons", "polished")
+_ICON_DIR = os.path.join(ADDON_PATH, "resources", "icons", "tiles")
 _ICON_MAP = {
     **{name: name for name in ("top10", "genres", "romance", "crime", "action",
                                "awards", "autumn", "recent", "night", "featured", "collection",
@@ -1934,6 +1964,7 @@ def library_play(movie_id, seo=""):
 def dispatch(params):
     set_breadcrumb(read_breadcrumb(params.get("breadcrumb")) or ["Videoland"])
     action = params.get("action")
+    add_sort_methods(action, params.get("season"))
     if not action:
         return root()
     if action == "login":
@@ -2010,9 +2041,21 @@ def run():
         _dispatch_with_retry(params)
     except (ApiError, CipherError) as exc:
         xbmc.log("[Videoland] {}".format(exc), xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Videoland", str(exc))
+        if params.get("background") != "1":
+            message = str(exc)
+            if errors_mod.classify(exc) != "unknown":
+                message = errors_mod.user_message(exc, "Videoland", xbmc.getLanguage(xbmc.ISO_639_1) or "nl")
+            xbmcgui.Dialog().ok("Videoland", message)
         if params.get("action") == "play":
             xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+    except Exception as exc:
+        # Unexpected problem: one clear sentence for the user, details in the log.
+        xbmc.log("[Videoland] Unexpected error\n" + errors_mod.log_text(exc), xbmc.LOGERROR)
+        if params.get("action") in ("play", "play_live", "library_play"):
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        if params.get("background") != "1":
+            xbmcgui.Dialog().notification("Videoland", errors_mod.user_message(
+                exc, "Videoland", xbmc.getLanguage(xbmc.ISO_639_1) or "nl"), xbmcgui.NOTIFICATION_ERROR, 7000)
 
 
 def _dispatch_with_retry(params, retried=False):
