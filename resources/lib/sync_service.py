@@ -215,20 +215,23 @@ class PlaybackFollower(xbmc.Player):
 
     def _binge(self, natural=True):
         current, self.current = self.current, {}
-        # inputstream.adaptive (DRM) often reports the end of a video as
-        # "stopped" rather than "ended", so also treat a stop within the final
-        # seconds as a natural end; otherwise auto-play-next never fires.
+        # Start the next episode when the video ended, stopped within the final
+        # seconds, or counts as watched (>= threshold). inputstream.adaptive
+        # (DRM) often reports the end as "stopped" with a slightly stale
+        # position, so the "watched" signal is the reliable trigger (same idea
+        # as the Lucent Video add-on).
         near_end = bool(self.total and self.total > 0 and self.position >= self.total - 20)
-        if not current.get('video_id') or (not natural and not near_end):
+        try:
+            share = max(0.5, min(0.99, int(self.addon.getSettingInt('watched_threshold') or 90) / 100.0))
+        except Exception:
+            share = 0.9
+        watched_enough = watch_sync.watched_enough(self.position, self.total, share)
+        if not current.get('video_id') or not (natural or near_end or watched_enough):
             return
         if (self.addon.getSettingString('next_episode') or 'upnext') != 'auto':
             return
         if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
             return
-        # Diagnostic: show on screen that the end was detected and the next
-        # episode is being looked up.
-        xbmcgui.Dialog().notification('Videoland', 'Einde: volgende aflevering zoeken…',
-                                      xbmcgui.NOTIFICATION_INFO, 3000)
         query = {'action': 'play_next', 'video_id': current['video_id'],
                  'parent_id': current.get('parent_id', ''), 'parent_seo': current.get('parent_seo', ''),
                  'background': '1'}

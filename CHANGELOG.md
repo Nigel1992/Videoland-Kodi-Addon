@@ -1,8 +1,14 @@
 # Changelog
 
-> **Latest Version:** v1.10.6 (November 15, 2026)
+> **Latest Version:** v1.10.7 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.7] - 2026-11-15
+
+### Opgelost
+- **Automatisch doorspelen werkt nu echt.** De volgende aflevering start nu zodra de aflevering als *bekeken* telt (voorbij de drempel), net zoals de Lucent Video-add-on het doet — niet meer alleen bij het "afgelopen"-signaal, dat bij DRM vaak als "gestopt" met een iets verouderde positie binnenkomt.
+- Tijdelijke diagnose-meldingen weer verwijderd.
 
 ## [1.10.6] - 2026-11-15
 
