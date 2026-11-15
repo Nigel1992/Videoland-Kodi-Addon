@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.2 (November 15, 2026)
+> **Latest Version:** v1.10.3 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.3] - 2026-11-15
+
+### Opgelost
+- **Automatisch doorspelen werkt nu ook bij DRM-afspelen.** Kodi meldt het einde van een beveiligde video (inputstream adaptive) vaak als "gestopt" in plaats van "afgelopen", waardoor de volgende aflevering niet startte. De add-on ziet nu aan de positie (laatste seconden) dat de aflevering klaar is en speelt in de stand "automatisch" de volgende af.
 
 ## [1.10.2] - 2026-11-15
 

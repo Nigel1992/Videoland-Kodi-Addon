@@ -207,15 +207,21 @@ class PlaybackFollower(xbmc.Player):
 
     def onPlayBackStopped(self):
         self._threshold_watched()
+        self._binge(natural=False)
 
     def onPlayBackEnded(self):
         self._threshold_watched()
-        self._binge()
+        self._binge(natural=True)
 
-    def _binge(self):
-        current = self.current
-        self.current = {}
-        if (self.addon.getSettingString('next_episode') or 'upnext') != 'auto' or not current.get('video_id'):
+    def _binge(self, natural=True):
+        current, self.current = self.current, {}
+        # inputstream.adaptive (DRM) often reports the end of a video as
+        # "stopped" rather than "ended", so also treat a stop within the final
+        # seconds as a natural end; otherwise auto-play-next never fires.
+        near_end = bool(self.total and self.total > 0 and self.position >= self.total - 20)
+        if not current.get('video_id') or (not natural and not near_end):
+            return
+        if (self.addon.getSettingString('next_episode') or 'upnext') != 'auto':
             return
         if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
             return
