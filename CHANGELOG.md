@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.7 (November 15, 2026)
+> **Latest Version:** v1.10.8 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.8] - 2026-11-15
+
+### Opgelost
+- **"Nee" bij de vraag start de volgende aflevering niet meer.** De achtergronddienst leest de instelling nu vers bij elke beslissing (hield 'm anders vast zoals bij het opstarten), en "Nee" zet een "stop na deze"-vlag zodat de dienst sowieso niets meer doet.
 
 ## [1.10.7] - 2026-11-15
 

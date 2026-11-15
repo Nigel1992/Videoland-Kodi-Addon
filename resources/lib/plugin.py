@@ -1694,8 +1694,13 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
             if next_mode == "ask":
                 # The add-on asks itself, near the end, without the Up Next add-on.
                 def _ask():
-                    return bool(xbmcgui.Dialog().yesno(
+                    yes = bool(xbmcgui.Dialog().yesno(
                         "Videoland", ADDON.getLocalizedString(31228), autoclose=15000))
+                    if not yes:
+                        # "No" means: don't start the next episode. Also tell the
+                        # background service, so it doesn't auto-play at the end.
+                        xbmcgui.Window(10000).setProperty("videoland.stop_after", "1")
+                    return yes
 
                 def _play():
                     xbmc.executebuiltin("RunPlugin({})".format(url(

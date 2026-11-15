@@ -228,7 +228,12 @@ class PlaybackFollower(xbmc.Player):
         watched_enough = watch_sync.watched_enough(self.position, self.total, share)
         if not current.get('video_id') or not (natural or near_end or watched_enough):
             return
-        if (self.addon.getSettingString('next_episode') or 'upnext') != 'auto':
+        # Read the setting from a fresh add-on instance: the long-running
+        # service holds a cached addon object that can keep returning the value
+        # it read at startup, so a change the user makes while Kodi runs (e.g.
+        # switching to 'ask') would otherwise be missed and it would auto-play.
+        import xbmcaddon
+        if (xbmcaddon.Addon().getSettingString('next_episode') or 'upnext') != 'auto':
             return
         if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
             return
