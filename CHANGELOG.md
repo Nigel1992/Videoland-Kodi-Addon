@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.4 (November 15, 2026)
+> **Latest Version:** v1.10.5 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.5] - 2026-11-15
+
+### Opgelost
+- **Dubbele "volgende aflevering"-vraag echt weg.** Het slot stond in de achtergrondtaak en het wissen bij het starten maakte het stuk (een race). Het slot wordt nu meteen in de afspeel-aanroep gezet, zodat een tweede start het al ziet voordat er iets draait. Eén vraag (of melding) per aflevering.
 
 ## [1.10.4] - 2026-11-15
 
