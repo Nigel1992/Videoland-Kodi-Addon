@@ -225,6 +225,10 @@ class PlaybackFollower(xbmc.Player):
             return
         if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
             return
+        # Diagnostic: show on screen that the end was detected and the next
+        # episode is being looked up.
+        xbmcgui.Dialog().notification('Videoland', 'Einde: volgende aflevering zoeken…',
+                                      xbmcgui.NOTIFICATION_INFO, 3000)
         query = {'action': 'play_next', 'video_id': current['video_id'],
                  'parent_id': current.get('parent_id', ''), 'parent_seo': current.get('parent_seo', ''),
                  'background': '1'}

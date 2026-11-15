@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.5 (November 15, 2026)
+> **Latest Version:** v1.10.6 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.6] - 2026-11-15
+
+### Diagnose
+- **Tijdelijke meldingen om "volgende aflevering" te vinden.** Aan het eind tonen "Einde: volgende aflevering zoeken…", en daarna "Volgende aflevering starten…" of "Geen volgende aflevering gevonden". Zo is zichtbaar waar het vastloopt. Worden later weer weggehaald.
 
 ## [1.10.5] - 2026-11-15
 

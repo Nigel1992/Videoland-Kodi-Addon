@@ -2626,6 +2626,9 @@ def play_next(video_id, parent_id="", parent_seo="", background=False):
     query = {"action": "play", "video_id": next_id, "seo": target.get("seo", ""),
              "parent_id": parent.get("id") or parent_id, "parent_seo": parent.get("seo") or parent_seo}
     xbmc.log("[Videoland] play_next: {} -> {}".format(video_id, next_id), xbmc.LOGINFO)
+    # Diagnostic: show that a next episode was found and is starting.
+    xbmcgui.Dialog().notification("Videoland", "Volgende aflevering starten…",
+                                  xbmcgui.NOTIFICATION_INFO, 3000)
     xbmc.executebuiltin("PlayMedia({})".format(url(**query)))
 
 
