@@ -1666,7 +1666,8 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
             text = ADDON.getLocalizedString(31174 if kind == "recap" else 31173)
             return xbmcgui.Dialog().yesno("Videoland", text, autoclose=8000)
         playback_extras.start_skip_watcher(markers, ask)
-    if not setting_bool("upnext", True) or not playback_extras.upnext_available():
+    next_mode = setting("next_episode", "upnext")
+    if next_mode not in ("upnext", "ask"):
         return
 
     def announce():
@@ -1674,21 +1675,38 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
             current, following = _next_episode(client, video_id, parent_id, parent_seo)
             if not following:
                 return
+            credits = markers.get("credits")
+            credits_start = credits[0] if credits and credits[0] else None
+            if next_mode == "ask":
+                # The add-on asks itself, near the end, without the Up Next add-on.
+                def _ask():
+                    return bool(xbmcgui.Dialog().yesno(
+                        "Videoland", ADDON.getLocalizedString(31228), autoclose=15000))
+
+                def _play():
+                    xbmc.executebuiltin("RunPlugin({})".format(url(
+                        action="play_next", video_id=video_id,
+                        parent_id=parent_id, parent_seo=parent_seo, background="1")))
+
+                playback_extras.start_next_prompt(_play, _ask, credits_start=credits_start)
+                return
+            # next_mode == "upnext": hand the next episode to the Up Next add-on.
+            if not playback_extras.upnext_available():
+                return
             showtitle = _layout_title(client.layout("program", parent_id, program_location(parent_seo, parent_id)))
             target = following[1]
             parent = target.get("parent") or {}
             play_url = url(action="play", video_id=target.get("id", ""), seo=target.get("seo", ""),
                            parent_id=parent.get("id") or parent_id, parent_seo=parent.get("seo") or parent_seo)
-            credits = markers.get("credits")
-            notify_at = duration - credits[0] if credits and credits[0] and duration else None
+            notify_at = duration - credits_start if credits_start and duration else None
             if playback_extras.wait_for_playback(xbmc.Player()):
                 playback_extras.send_upnext(ADDON.getAddonInfo("id"), _episode_info(current, showtitle),
                                             _episode_info(following, showtitle), play_url, notify_at)
         except Exception as exc:
-            xbmc.log("[Videoland] Up Next skipped: {}".format(exc), xbmc.LOGINFO)
+            xbmc.log("[Videoland] Next episode skipped: {}".format(exc), xbmc.LOGINFO)
 
     import threading
-    thread = threading.Thread(target=announce, name="VideolandUpNext")
+    thread = threading.Thread(target=announce, name="VideolandNextEpisode")
     thread.daemon = True
     thread.start()
 

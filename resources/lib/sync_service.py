@@ -215,11 +215,9 @@ class PlaybackFollower(xbmc.Player):
     def _binge(self):
         current = self.current
         self.current = {}
-        if not self.addon.getSettingBool('autoplay_next') or not current.get('video_id'):
+        if (self.addon.getSettingString('next_episode') or 'upnext') != 'auto' or not current.get('video_id'):
             return
         if xbmcgui.Window(10000).getProperty('videoland.stop_after') == '1':
-            return
-        if xbmc.getCondVisibility('System.HasAddon(service.upnext)'):
             return
         query = {'action': 'play_next', 'video_id': current['video_id'],
                  'parent_id': current.get('parent_id', ''), 'parent_seo': current.get('parent_seo', ''),
