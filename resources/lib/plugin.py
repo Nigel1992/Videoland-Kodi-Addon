@@ -1682,6 +1682,12 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
             credits = markers.get("credits")
             credits_start = credits[0] if credits and credits[0] else None
             if next_mode == "ask":
+                # Kodi can start the same playback more than once; ask only once
+                # per episode.
+                win = xbmcgui.Window(10000)
+                if win.getProperty("videoland.next_armed") == str(video_id):
+                    return
+                win.setProperty("videoland.next_armed", str(video_id))
                 # The add-on asks itself, near the end, without the Up Next add-on.
                 def _ask():
                     return bool(xbmcgui.Dialog().yesno(

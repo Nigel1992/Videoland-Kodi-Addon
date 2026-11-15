@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.3 (November 15, 2026)
+> **Latest Version:** v1.10.4 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.4] - 2026-11-15
+
+### Opgelost
+- **De vraag komt nu maar één keer.** Kodi start hetzelfde afspelen soms dubbel, waardoor "Volgende aflevering afspelen?" twee keer verscheen. Er zit nu een slot op: per aflevering één keer.
 
 ## [1.10.3] - 2026-11-15
 

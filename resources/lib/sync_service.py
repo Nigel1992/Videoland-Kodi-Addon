@@ -150,6 +150,7 @@ class PlaybackFollower(xbmc.Player):
         except ValueError:
             self.current = {}
         window.clearProperty('videoland.stop_after')
+        window.clearProperty('videoland.next_armed')
         self.position = 0.0
         self.total = 0.0
         audio = self.addon.getSettingString('preferred_audio') or 'off'
