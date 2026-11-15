@@ -1689,6 +1689,8 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
                         parent_id=parent_id, parent_seo=parent_seo, background="1")))
 
                 playback_extras.start_next_prompt(_play, _ask, credits_start=credits_start)
+                xbmc.log("[Videoland] Next episode: own prompt armed (credits_start={})".format(
+                    credits_start), xbmc.LOGINFO)
                 return
             # next_mode == "upnext": hand the next episode to the Up Next add-on.
             if not playback_extras.upnext_available():
@@ -1705,10 +1707,10 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
         except Exception as exc:
             xbmc.log("[Videoland] Next episode skipped: {}".format(exc), xbmc.LOGINFO)
 
-    import threading
-    thread = threading.Thread(target=announce, name="VideolandNextEpisode")
-    thread.daemon = True
-    thread.start()
+    # Not a daemon thread: the play handler returns right after handing Kodi
+    # the stream, and Kodi would kill a daemon thread before it could arm the
+    # prompt. start_background uses a non-daemon thread that ends on its own.
+    playback_extras.start_background(announce, "VideolandNextEpisode")
 
 
 def kodi_library_resume():

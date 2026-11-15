@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.0 (November 15, 2026)
+> **Latest Version:** v1.10.1 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.1] - 2026-11-15
+
+### Opgelost
+- **Eigen "volgende aflevering"-popup kwam niet.** De aankondiging liep in een thread die Kodi te vroeg kon afbreken, waardoor de popup-wachter nooit startte. Die draait nu in een blijvende thread, met een logregel (`Next episode: own prompt armed` / `Next episode prompt at ...`) zodat te zien is wanneer hij afgaat.
 
 ## [1.10.0] - 2026-11-15
 
