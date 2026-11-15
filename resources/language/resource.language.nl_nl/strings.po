@@ -884,3 +884,7 @@ msgstr "Door de add-on zelf (automatisch)"
 msgctxt "#31231"
 msgid "Off"
 msgstr "Uit"
+
+msgctxt "#31232"
+msgid "No next episode found"
+msgstr "Geen volgende aflevering gevonden"

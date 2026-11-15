@@ -820,3 +820,7 @@ msgstr ""
 msgctxt "#31231"
 msgid "Off"
 msgstr ""
+
+msgctxt "#31232"
+msgid "No next episode found"
+msgstr ""

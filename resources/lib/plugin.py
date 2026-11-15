@@ -1674,6 +1674,10 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
         try:
             current, following = _next_episode(client, video_id, parent_id, parent_seo)
             if not following:
+                xbmc.log("[Videoland] Next episode: none for {}".format(video_id), xbmc.LOGINFO)
+                if next_mode == "ask":
+                    xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31232),
+                                                  xbmcgui.NOTIFICATION_INFO, 4000)
                 return
             credits = markers.get("credits")
             credits_start = credits[0] if credits and credits[0] else None
@@ -2596,11 +2600,22 @@ def play_next(video_id, parent_id="", parent_seo="", background=False):
     ensure_profile(client, auth)
     current, following = _next_episode(client, video_id, parent_id, parent_seo)
     if not following:
+        xbmc.log("[Videoland] play_next: no next episode for {}".format(video_id), xbmc.LOGINFO)
+        xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31232),
+                                      xbmcgui.NOTIFICATION_INFO, 4000)
         return
     target = following[1]
+    next_id = str(target.get("id") or "")
+    # Never replay the same episode: if the "next" resolves to what is playing,
+    # there is nothing to advance to.
+    if not next_id or next_id == str(video_id):
+        xbmc.log("[Videoland] play_next: next equals current ({}), skipping".format(video_id),
+                 xbmc.LOGINFO)
+        return
     parent = target.get("parent") or {}
-    query = {"action": "play", "video_id": target.get("id", ""), "seo": target.get("seo", ""),
+    query = {"action": "play", "video_id": next_id, "seo": target.get("seo", ""),
              "parent_id": parent.get("id") or parent_id, "parent_seo": parent.get("seo") or parent_seo}
+    xbmc.log("[Videoland] play_next: {} -> {}".format(video_id, next_id), xbmc.LOGINFO)
     xbmc.executebuiltin("PlayMedia({})".format(url(**query)))
 
 

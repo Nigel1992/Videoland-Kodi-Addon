@@ -1,8 +1,15 @@
 # Changelog
 
-> **Latest Version:** v1.10.1 (November 15, 2026)
+> **Latest Version:** v1.10.2 (November 15, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.2] - 2026-11-15
+
+### Opgelost
+- **Speelt nooit meer dezelfde aflevering opnieuw.** Als de "volgende" aflevering toch de huidige blijkt te zijn, slaat de add-on het over in plaats van opnieuw te starten. Dit verhelpt het opnieuw afspelen van dezelfde aflevering.
+- **Je ziet nu waarom er geen popup komt.** In de stand "met vraag" toont de add-on kort op het scherm "Geen volgende aflevering gevonden" als er geen volgende is.
+- **Betere timing van de popup.** De aftiteling-markering wordt alleen gebruikt als die in de tweede helft van de aflevering ligt; anders komt de vraag ~45 sec voor het eind.
 
 ## [1.10.1] - 2026-11-15
 
