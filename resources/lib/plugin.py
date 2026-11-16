@@ -91,6 +91,7 @@ from .progress import ProgressWriter, heartbeat_config, monitor_class
 from . import watch_sync
 from . import watch_history
 from . import library_resume
+from . import corner
 from .sync_store import DurableWriter, SyncStore
 
 
@@ -1669,8 +1670,10 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
              xbmc.LOGINFO)
     if setting_bool("skip_markers", True) and markers:
         def ask(kind):
-            text = ADDON.getLocalizedString(31174 if kind == "recap" else 31173)
-            return xbmcgui.Dialog().yesno("Videoland", text, autoclose=8000)
+            # A small corner button (like the Videoland app), not a full-screen
+            # yes/no dialog.
+            label = ADDON.getLocalizedString(31234 if kind == "recap" else 31233)
+            return corner.ask(label, seconds=12)
         playback_extras.start_skip_watcher(markers, ask)
     next_mode = setting("next_episode", "upnext")
     if next_mode not in ("upnext", "ask"):
@@ -1698,15 +1701,10 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
             credits = markers.get("credits")
             credits_start = credits[0] if credits and credits[0] else None
             if next_mode == "ask":
-                # The add-on asks itself, near the end, without the Up Next add-on.
+                # A small corner card (like the Videoland app): press it to play
+                # the next episode, ignore it to stay. No full-screen dialog.
                 def _ask():
-                    yes = bool(xbmcgui.Dialog().yesno(
-                        "Videoland", ADDON.getLocalizedString(31228), autoclose=15000))
-                    if not yes:
-                        # "No" means: don't start the next episode. Also tell the
-                        # background service, so it doesn't auto-play at the end.
-                        xbmcgui.Window(10000).setProperty("videoland.stop_after", "1")
-                    return yes
+                    return corner.ask(ADDON.getLocalizedString(31235), seconds=15)
 
                 def _play():
                     xbmc.executebuiltin("RunPlugin({})".format(url(

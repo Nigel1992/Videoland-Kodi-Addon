@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.11 (November 16, 2026)
+> **Latest Version:** v1.10.12 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.12] - 2026-11-16
+
+### Gewijzigd
+- **"Overslaan" nu als klein knopje in de hoek, zoals de Videoland-app.** De intro/terugblik-vraag en de "volgende aflevering"-vraag verschijnen niet meer als beeldvullend ja/nee-venster, maar als een wit pilletje rechtsonder (druk op OK om te doen, negeren om door te kijken). De video blijft erachter zichtbaar.
 
 ## [1.10.11] - 2026-11-16
 

@@ -888,3 +888,15 @@ msgstr "Uit"
 msgctxt "#31232"
 msgid "No next episode found"
 msgstr "Geen volgende aflevering gevonden"
+
+msgctxt "#31233"
+msgid "Skip intro"
+msgstr "Intro overslaan"
+
+msgctxt "#31234"
+msgid "Skip recap"
+msgstr "Terugblik overslaan"
+
+msgctxt "#31235"
+msgid "Next episode"
+msgstr "Volgende aflevering"
