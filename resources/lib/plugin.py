@@ -1658,39 +1658,15 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
     card = _video_item(layout, video_id)
     raw_duration = (card.get("video") or {}).get("duration") if isinstance(card, dict) else None
     duration = float(raw_duration) if isinstance(raw_duration, (int, float)) and not isinstance(raw_duration, bool) else 0.0
-    markers = playback_extras.find_markers([card, asset], duration)
+    # Videoland's own intro/credits markers (the app's "Overslaan") live in
+    # video.chapters as a typed list: [{tcStart, tcEnd, type}]. Use those; fall
+    # back to the generic finder only when the chapter list is missing.
+    video = card.get("video") if isinstance(card, dict) else None
+    markers = playback_extras.markers_from_typed_chapters((video or {}).get("chapters"))
+    if not markers:
+        markers = playback_extras.find_markers([card, asset], duration)
     xbmc.log("[Videoland] {}: markers found: {}".format(video_id, playback_extras.marker_summary(markers)),
              xbmc.LOGINFO)
-    # Diagnostic: reveal where Videoland keeps intro/credits markers (the app's
-    # "Overslaan"), so the real skip data can be wired up. The generic finder
-    # misses a typed markers/highlights list. Logs any marker-like keys and
-    # their values found in the video card and the stream asset.
-    try:
-        import json as _probe_json
-        _hits, _seen = {}, 0
-        _pat = ("marker", "highlight", "chapter", "segment", "intro", "credit",
-                "skip", "recap", "tcin", "tcout", "timecode")
-        _stack = [("video", card.get("video") or {}), ("card", card),
-                  ("asset", asset), ("layout", layout)]
-        while _stack and _seen < 3000:
-            _name, _node = _stack.pop()
-            _seen += 1
-            if isinstance(_node, dict):
-                for _k, _v in _node.items():
-                    _lk = str(_k).lower()
-                    if any(p in _lk for p in _pat):
-                        _hits[_name + "." + str(_k)] = _v
-                    if isinstance(_v, (dict, list)):
-                        _stack.append((_name + "." + str(_k), _v))
-            elif isinstance(_node, list):
-                for _i, _v in enumerate(_node[:30]):
-                    if isinstance(_v, (dict, list)):
-                        _stack.append(("{}[{}]".format(_name, _i), _v))
-        _vkeys = sorted((card.get("video") or {}).keys())
-        xbmc.log("[Videoland] marker-probe {} video_keys={} hits={}".format(
-            video_id, _vkeys, _probe_json.dumps(_hits, default=str)[:1800]), xbmc.LOGINFO)
-    except Exception as _exc:
-        xbmc.log("[Videoland] marker-probe failed ({})".format(type(_exc).__name__), xbmc.LOGINFO)
     if setting_bool("skip_markers", True) and markers:
         def ask(kind):
             text = ADDON.getLocalizedString(31174 if kind == "recap" else 31173)

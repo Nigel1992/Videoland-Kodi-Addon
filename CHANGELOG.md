@@ -1,8 +1,17 @@
 # Changelog
 
-> **Latest Version:** v1.10.10 (November 16, 2026)
+> **Latest Version:** v1.10.11 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.11] - 2026-11-16
+
+### Toegevoegd
+- **Intro overslaan, zoals de Videoland-app.** Videoland levert z'n eigen intro- en aftiteling-markeringen (in `video.chapters`). De add-on gebruikt die nu: aan het begin van de intro verschijnt "Intro overslaan?", en hij springt naar het einde van de intro.
+- **"Volgende aflevering" op het juiste moment.** De vraag verschijnt nu precies als de **aftiteling** begint (uit dezelfde markeringen), niet meer ~45 sec voor het eind geschat.
+
+### Verwijderd
+- De tijdelijke marker-probe.
 
 ## [1.10.10] - 2026-11-16
 
