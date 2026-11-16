@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.12 (November 16, 2026)
+> **Latest Version:** v1.10.13 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.13] - 2026-11-16
+
+### Opgelost
+- **Niet meer twee keer de "volgende aflevering"-vraag.** Bij de overgang naar de volgende aflevering las de nieuwe wachter heel even nog de oude positie (bijna het eind), waardoor de kaart meteen weer verscheen. De kaart komt nu alleen als de video eerst vóór de aftiteling is gezien.
 
 ## [1.10.12] - 2026-11-16
 
