@@ -1670,8 +1670,9 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
         _hits, _seen = {}, 0
         _pat = ("marker", "highlight", "chapter", "segment", "intro", "credit",
                 "skip", "recap", "tcin", "tcout", "timecode")
-        _stack = [("video", card.get("video") or {}), ("card", card), ("asset", asset)]
-        while _stack and _seen < 400:
+        _stack = [("video", card.get("video") or {}), ("card", card),
+                  ("asset", asset), ("layout", layout)]
+        while _stack and _seen < 3000:
             _name, _node = _stack.pop()
             _seen += 1
             if isinstance(_node, dict):

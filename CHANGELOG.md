@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.9 (November 16, 2026)
+> **Latest Version:** v1.10.10 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.10] - 2026-11-16
+
+### Diagnose
+- Probe om Videoland's intro-markeringen te vinden, nu ook over de volledige afspeel-data (niet alleen de kaart). Logt `[Videoland] marker-probe …`.
 
 ## [1.10.9] - 2026-11-16
 
