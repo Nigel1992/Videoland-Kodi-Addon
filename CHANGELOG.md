@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.19 (November 16, 2026)
+> **Latest Version:** v1.10.20 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.20] - 2026-11-16
+
+### Gewijzigd
+- De recap-scanner herkent nu markers met wélke tijdcode-veldnaam dan ook (niet alleen `tcStart`), zodat een Android-marker met afwijkende veldnamen toch gevonden wordt. Als er nog niets gevonden wordt, logt de addon de top-sleutels van het Android-antwoord en de veldnamen van elk object met een `type`, zodat zichtbaar wordt waar een eventuele terugblik-markering zit.
 
 ## [1.10.19] - 2026-11-16
 

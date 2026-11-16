@@ -252,6 +252,13 @@ class VideolandApi:
                                 for c in lst if isinstance(c, dict)})
             say("mobile {}/{}: matched {} | all chapter types {}".format(
                 platform, token, matched_types, all_types))
+            if not all_types:
+                # No recognised chapter list anywhere: log the top-level keys
+                # and the shape of every typed object, to see where (if at all)
+                # a recap marker lives in the Android response.
+                top = sorted(data.keys()) if isinstance(data, dict) else type(data).__name__
+                say("mobile {}/{}: top keys {} | typed objects {}".format(
+                    platform, token, top, _typed_object_shapes(data)))
 
             def has_recap(types):
                 return any("recap" in str(t).lower() or "previous" in str(t).lower()
@@ -499,8 +506,15 @@ def _deep_chapter_lists(value):
     found = []
 
     def looks_like_chapter(entry):
-        return (isinstance(entry, dict) and "type" in entry
-                and any(k in entry for k in ("tcStart", "tcIn", "start")))
+        if not isinstance(entry, dict) or "type" not in entry:
+            return False
+        # Accept any timecode-ish field name (tcStart/start/startTime/from/
+        # begin/tcIn/...), so a differently-named Android marker is still caught.
+        for key in entry:
+            low = str(key).lower()
+            if "start" in low or low.startswith("tc") or low in ("from", "begin", "in"):
+                return True
+        return False
 
     def walk(node):
         if isinstance(node, dict):
@@ -516,6 +530,32 @@ def _deep_chapter_lists(value):
 
     walk(value)
     return found
+
+
+def _typed_object_shapes(value, limit=12):
+    """Collect the distinct field-name sets of every dict that carries a
+    ``type`` key, plus their ``type`` values. Field names only (no values),
+    so a differently-named marker object reveals its shape in the log without
+    leaking data."""
+    shapes = []
+    seen = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if "type" in node:
+                keys = tuple(sorted(node.keys()))
+                sig = (keys, str(node.get("type")))
+                if sig not in seen and len(shapes) < limit:
+                    seen.add(sig)
+                    shapes.append("{}={}".format(node.get("type"), list(keys)))
+            for child in node.values():
+                walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(value)
+    return shapes
 
 
 def walk_item_content(value, block=None):
