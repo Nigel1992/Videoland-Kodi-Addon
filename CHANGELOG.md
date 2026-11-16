@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.8 (November 15, 2026)
+> **Latest Version:** v1.10.9 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.9] - 2026-11-16
+
+### Diagnose
+- **Probe om Videoland's intro-markeringen te vinden.** Logt bij het afspelen `[Videoland] marker-probe …` met de velden waarin Videoland z'n intro/aftiteling-markeringen bewaart, zodat de echte "Overslaan" (zoals de app) ingebouwd kan worden. Wordt daarna weggehaald.
 
 ## [1.10.8] - 2026-11-15
 
