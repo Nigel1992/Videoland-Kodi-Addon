@@ -222,7 +222,8 @@ class VideolandApi:
             try:
                 jwt = self._platform_jwt(auth, platform)
             except Exception as exc:
-                say("mobile {}/{}: jwt {}".format(platform, token, type(exc).__name__))
+                say("mobile {}/{}: jwt {} | {}".format(
+                    platform, token, type(exc).__name__, str(exc)[:200]))
                 continue
             url = self.LAYOUT + "/front/v1/{}/{}/main/{}/video/{}/layout".format(
                 self.CUSTOMER, platform, token, video_id)
@@ -231,7 +232,8 @@ class VideolandApi:
             try:
                 data = self._request(url, headers)
             except Exception as exc:
-                say("mobile {}/{}: get {}".format(platform, token, type(exc).__name__))
+                say("mobile {}/{}: get {} | {}".format(
+                    platform, token, type(exc).__name__, str(exc)[:200]))
                 continue
             chapters = None
             for item, _block in walk_item_content(data):

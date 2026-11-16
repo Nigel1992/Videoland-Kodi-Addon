@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.16 (November 16, 2026)
+> **Latest Version:** v1.10.17 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.17] - 2026-11-16
+
+### Diagnose
+- De mobiele-platform-proef logt nu de volledige foutmelding (met HTTP-status) in plaats van alleen "ApiError", zodat zichtbaar wordt waaróm een combinatie faalt (bv. 404 verkeerde token, 400 verkeerd verzoek, of JWT-fout). Alle web-functies blijven ongewijzigd.
 
 ## [1.10.16] - 2026-11-16
 
