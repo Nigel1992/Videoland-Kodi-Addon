@@ -1,9 +1,16 @@
 # Changelog
 
-> **Latest Version:** v1.10.15 (November 16, 2026)
+> **Latest Version:** v1.10.16 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
 
+## [1.10.16] - 2026-11-16
+
+### Toegevoegd (proef)
+- **Terugblik-skip via Videoland's mobiele kant.** De web-API geeft geen recap-markering; de addon probeert die nu op de achtergrond uit Videoland's mobiele platform te halen en toont dan "Terugblik overslaan". Logt welke platform/token-combinatie werkt (`[Videoland] mobile …`), zodat de juiste vastgezet kan worden.
+
+### Verwijderd
+- De volledige video-dump-probe.
 ## [1.10.15] - 2026-11-16
 
 ### Diagnose

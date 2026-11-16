@@ -1675,15 +1675,30 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
         raw_types = []
     xbmc.log("[Videoland] {}: markers found: {} | chapter types: {}".format(
         video_id, playback_extras.marker_summary(markers), raw_types), xbmc.LOGINFO)
-    # Decisive diagnostic: dump the whole video object (minus the heavy
-    # assets/images), so any recap/skip field anywhere in the web data shows up.
-    try:
-        import json as _vj
-        _slim = {k: v for k, v in (video or {}).items() if k not in ("assets", "images")}
-        xbmc.log("[Videoland] video-dump {} = {}".format(
-            video_id, _vj.dumps(_slim, default=str)[:4000]), xbmc.LOGINFO)
-    except Exception as _ve:
-        xbmc.log("[Videoland] video-dump failed ({})".format(type(_ve).__name__), xbmc.LOGINFO)
+
+    # The web layout omits the recap ("Terugblik") chapter. If there is no recap
+    # yet and skipping is on, try Videoland's mobile platform for it in the
+    # background, and offer "Terugblik overslaan" if it turns up.
+    if setting_bool("skip_markers", True) and "recap" not in markers:
+        def _mobile_recap():
+            try:
+                auth = ensure_login()
+                extra = client.mobile_chapters(
+                    auth, video_id, "https://v2.videoland.com/",
+                    log=lambda m: xbmc.log("[Videoland] " + m, xbmc.LOGINFO))
+            except Exception as exc:
+                xbmc.log("[Videoland] mobile chapters failed ({})".format(type(exc).__name__), xbmc.LOGINFO)
+                return
+            recap = {k: v for k, v in playback_extras.markers_from_typed_chapters(extra).items()
+                     if k == "recap"}
+            if not recap:
+                return
+            xbmc.log("[Videoland] recap from mobile: {}".format(recap), xbmc.LOGINFO)
+
+            def ask(kind, seconds=12):
+                return corner.ask(ADDON.getLocalizedString(31234), seconds=seconds)
+            playback_extras.start_skip_watcher(recap, ask)
+        playback_extras.start_background(_mobile_recap, "VideolandRecap")
     if setting_bool("skip_markers", True) and markers:
         def ask(kind, seconds=12):
             # A small corner button (like the Videoland app), not a full-screen

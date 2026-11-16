@@ -180,6 +180,72 @@ class VideolandApi:
             raise ApiError("Login response did not contain a Videoland session signature")
         return {"uid": uid, "signature": signature, "timestamp": str(timestamp)}
 
+    def _platform_jwt(self, auth, platform):
+        """A JWT for another platform (e.g. mobile), without touching the
+        playback token. Uses the same account Gigya signature."""
+        headers = self._headers(authenticated=False)
+        headers.update({
+            "X-Auth-gigya-uid": auth["uid"],
+            "X-Auth-gigya-signature": auth["signature"],
+            "X-Auth-gigya-signature-timestamp": auth["timestamp"],
+            "X-Auth-Device-Id": self.device_id,
+            "X-Auth-Device-Name": "Kodi",
+        })
+        result = self._request(self.FRONT_AUTH + "/v2/platforms/{}/getJwt".format(platform), headers)
+        token = result.get("token")
+        if not token:
+            raise ApiError("no JWT for " + platform)
+        return token
+
+    # Mobile platforms carry a recap ("Terugblik") chapter that the web layout
+    # omits. Try a few known Bedrock platform/token combinations.
+    MOBILE_LAYOUTS = (
+        ("m6group_androidmob", "token-android-5"),
+        ("m6group_androidmob", "token-android-4"),
+        ("m6group_androidmob", "token-android-1"),
+        ("m6group_androidmob", "token-web-31"),
+        ("m6group_ios", "token-ios-5"),
+        ("m6group_ios", "token-ios-1"),
+    )
+
+    def mobile_chapters(self, auth, video_id, location, log=None):
+        """Best-effort chapters (incl. recap) from a mobile platform, or None.
+        Does not disturb the playback token. ``log`` is called with short
+        progress strings for diagnosis."""
+        def say(message):
+            if log:
+                try:
+                    log(message)
+                except Exception:
+                    pass
+        for platform, token in self.MOBILE_LAYOUTS:
+            try:
+                jwt = self._platform_jwt(auth, platform)
+            except Exception as exc:
+                say("mobile {}/{}: jwt {}".format(platform, token, type(exc).__name__))
+                continue
+            url = self.LAYOUT + "/front/v1/{}/{}/main/{}/video/{}/layout".format(
+                self.CUSTOMER, platform, token, video_id)
+            headers = self._headers(location)
+            headers["Authorization"] = "Bearer " + jwt
+            try:
+                data = self._request(url, headers)
+            except Exception as exc:
+                say("mobile {}/{}: get {}".format(platform, token, type(exc).__name__))
+                continue
+            chapters = None
+            for item, _block in walk_item_content(data):
+                video = item.get("video")
+                if isinstance(video, dict) and str(video.get("id")) == str(video_id):
+                    chapters = video.get("chapters")
+                    break
+            types = [c.get("type") for c in (chapters or []) if isinstance(c, dict)]
+            say("mobile {}/{}: types {}".format(platform, token, types))
+            if any("recap" in str(t).lower() or "previous" in str(t).lower()
+                   or "terugblik" in str(t).lower() for t in types):
+                return chapters
+        return None
+
     def jwt(self, auth, profile_id=None):
         # front-auth rejects an existing Bearer token when exchanging the
         # Gigya signature for an account- or profile-scoped JWT.
