@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.14 (November 16, 2026)
+> **Latest Version:** v1.10.15 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.15] - 2026-11-16
+
+### Diagnose
+- Dumpt de volledige video-info (`video-dump …`) om te bepalen of de recap-markering ergens in de web-data zit. Wordt daarna weggehaald.
 
 ## [1.10.14] - 2026-11-16
 
