@@ -1676,29 +1676,19 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
     xbmc.log("[Videoland] {}: markers found: {} | chapter types: {}".format(
         video_id, playback_extras.marker_summary(markers), raw_types), xbmc.LOGINFO)
 
-    # The web layout omits the recap ("Terugblik") chapter. If there is no recap
-    # yet and skipping is on, try Videoland's mobile platform for it in the
-    # background, and offer "Terugblik overslaan" if it turns up.
-    if setting_bool("skip_markers", True) and "recap" not in markers:
-        def _mobile_recap():
-            try:
-                auth = ensure_login()
-                extra = client.mobile_chapters(
-                    auth, video_id, "https://v2.videoland.com/",
-                    log=lambda m: xbmc.log("[Videoland] " + m, xbmc.LOGINFO))
-            except Exception as exc:
-                xbmc.log("[Videoland] mobile chapters failed ({})".format(type(exc).__name__), xbmc.LOGINFO)
-                return
-            recap = {k: v for k, v in playback_extras.markers_from_typed_chapters(extra).items()
-                     if k == "recap"}
-            if not recap:
-                return
-            xbmc.log("[Videoland] recap from mobile: {}".format(recap), xbmc.LOGINFO)
-
-            def ask(kind, seconds=12):
-                return corner.ask(ADDON.getLocalizedString(31234), seconds=seconds)
-            playback_extras.start_skip_watcher(recap, ask)
-        playback_extras.start_background(_mobile_recap, "VideolandRecap")
+    # Videoland delivers no separate "recap" chapter: the web layout gives only
+    # intro + ending_credits, and the mobile layout gives no chapters at all
+    # (confirmed from logs). What the Videoland app calls "Terugblik overslaan"
+    # is the opening segment the backend simply types as `intro` when it is long
+    # enough to be a recap ("wat voorafging"). So a long opening marker (>= 45s)
+    # with no explicit recap is relabelled as a recap, matching the app.
+    RECAP_MIN_SECONDS = 45
+    intro = markers.get("intro") if isinstance(markers, dict) else None
+    if (intro and "recap" not in markers
+            and (intro[1] - intro[0]) >= RECAP_MIN_SECONDS):
+        markers["recap"] = markers.pop("intro")
+        xbmc.log("[Videoland] {}: long intro {:.0f}-{:.0f}s shown as recap".format(
+            video_id, intro[0], intro[1]), xbmc.LOGINFO)
     if setting_bool("skip_markers", True) and markers:
         def ask(kind, seconds=12):
             # A small corner button (like the Videoland app), not a full-screen

@@ -1,8 +1,16 @@
 # Changelog
 
-> **Latest Version:** v1.10.20 (November 16, 2026)
+> **Latest Version:** v1.10.21 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.21] - 2026-11-16
+
+### Toegevoegd
+- **"Terugblik overslaan" zoals in de Videoland-app.** Uit de logs bleek dat Videoland geen apart recap-hoofdstuk levert (web geeft alleen intro + aftiteling, het mobiele layout helemaal geen hoofdstukken). Wat de app "Terugblik overslaan" noemt, is het lange openingssegment dat de backend simpelweg `intro` noemt. Een lange opening (≥45s) wordt nu als terugblik getoond met "Terugblik overslaan"; een korte opening blijft "Intro overslaan".
+
+### Verwijderd
+- De mobiele-platform-proef voor de recap (deed elke keer een nutteloze netwerk-call; bewezen dat dat endpoint geen recap levert).
 
 ## [1.10.20] - 2026-11-16
 
