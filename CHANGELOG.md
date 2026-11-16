@@ -1,8 +1,14 @@
 # Changelog
 
-> **Latest Version:** v1.10.13 (November 16, 2026)
+> **Latest Version:** v1.10.14 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.14] - 2026-11-16
+
+### Gewijzigd
+- **"Overslaan"-knop blijft staan tot de intro/terugblik voorbij is** (i.p.v. na ~12 sec te sluiten). Met Terug weg te klikken als je wilt doorkijken.
+- Logt nu ook de ruwe chapter-types (`chapter types: [...]`), zodat een niet-herkende terugblik-type zichtbaar wordt en toegevoegd kan worden.
 
 ## [1.10.13] - 2026-11-16
 

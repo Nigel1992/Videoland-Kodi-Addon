@@ -1663,17 +1663,24 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
     # video.chapters as a typed list: [{tcStart, tcEnd, type}]. Use those; fall
     # back to the generic finder only when the chapter list is missing.
     video = card.get("video") if isinstance(card, dict) else None
-    markers = playback_extras.markers_from_typed_chapters((video or {}).get("chapters"))
+    chapters = (video or {}).get("chapters")
+    markers = playback_extras.markers_from_typed_chapters(chapters)
     if not markers:
         markers = playback_extras.find_markers([card, asset], duration)
-    xbmc.log("[Videoland] {}: markers found: {}".format(video_id, playback_extras.marker_summary(markers)),
-             xbmc.LOGINFO)
+    # Also log the raw chapter types, so an unrecognised recap/intro type shows
+    # up and can be mapped.
+    try:
+        raw_types = [str((c or {}).get("type")) for c in (chapters or []) if isinstance(c, dict)]
+    except Exception:
+        raw_types = []
+    xbmc.log("[Videoland] {}: markers found: {} | chapter types: {}".format(
+        video_id, playback_extras.marker_summary(markers), raw_types), xbmc.LOGINFO)
     if setting_bool("skip_markers", True) and markers:
-        def ask(kind):
+        def ask(kind, seconds=12):
             # A small corner button (like the Videoland app), not a full-screen
-            # yes/no dialog.
+            # yes/no dialog. It stays until the intro/recap is over.
             label = ADDON.getLocalizedString(31234 if kind == "recap" else 31233)
-            return corner.ask(label, seconds=12)
+            return corner.ask(label, seconds=seconds)
         playback_extras.start_skip_watcher(markers, ask)
     next_mode = setting("next_episode", "upnext")
     if next_mode not in ("upnext", "ask"):
