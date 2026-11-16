@@ -197,15 +197,13 @@ class VideolandApi:
             raise ApiError("no JWT for " + platform)
         return token
 
-    # Mobile platforms carry a recap ("Terugblik") chapter that the web layout
-    # omits. Try a few known Bedrock platform/token combinations.
+    # The Android app platform (m6group_androidmob) carries a recap
+    # ("Terugblik") chapter that the m6group_web layout omits. The capacity
+    # token is token-web-31 (the android-* tokens return "capacity token not
+    # found"; m6group_ios is an unsupported platform for rtlnl). The layout
+    # endpoint requires the same pagination query as the web layout.
     MOBILE_LAYOUTS = (
-        ("m6group_androidmob", "token-android-5"),
-        ("m6group_androidmob", "token-android-4"),
-        ("m6group_androidmob", "token-android-1"),
         ("m6group_androidmob", "token-web-31"),
-        ("m6group_ios", "token-ios-5"),
-        ("m6group_ios", "token-ios-1"),
     )
 
     def mobile_chapters(self, auth, video_id, location, log=None):
@@ -227,6 +225,9 @@ class VideolandApi:
                 continue
             url = self.LAYOUT + "/front/v1/{}/{}/main/{}/video/{}/layout".format(
                 self.CUSTOMER, platform, token, video_id)
+            # The layout endpoint has pagination blocks enabled on this token
+            # and rejects the request without the paging query (same as web).
+            url += "?" + urlencode({"blockPage": 1, "nbPages": 2})
             headers = self._headers(location)
             headers["Authorization"] = "Bearer " + jwt
             try:

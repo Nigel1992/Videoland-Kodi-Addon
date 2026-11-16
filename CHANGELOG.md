@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.17 (November 16, 2026)
+> **Latest Version:** v1.10.18 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.18] - 2026-11-16
+
+### Toegevoegd
+- **Terugblik-skip via het Android-platform van Videoland.** Het juiste adres is gevonden: platform `m6group_androidmob` met token `token-web-31`, mét de paginatie-parameters die de web-layout ook gebruikt. De addon haalt de recap-markering nu uit Videoland's mobiele kant en toont "Terugblik overslaan" zodra die er is. De verkeerde combinaties (niet-bestaande android-tokens, het niet-ondersteunde iOS-platform) zijn eruit.
 
 ## [1.10.17] - 2026-11-16
 
