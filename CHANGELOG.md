@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.18 (November 16, 2026)
+> **Latest Version:** v1.10.19 (November 16, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.19] - 2026-11-16
+
+### Gewijzigd
+- De recap-zoeker op het Android-platform doorzoekt nu het hele antwoord naar chapter-data in plaats van alleen het `chapters`-veld van de hoofdvideo. Zo wordt een terugblik-markering ook gevonden als Videoland die elders in het Android-antwoord plaatst. De log toont nu zowel de chapters van de hoofdvideo als álle gevonden chapter-types (`matched [...] | all chapter types [...]`).
 
 ## [1.10.18] - 2026-11-16
 

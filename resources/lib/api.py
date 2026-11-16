@@ -236,17 +236,34 @@ class VideolandApi:
                 say("mobile {}/{}: get {} | {}".format(
                     platform, token, type(exc).__name__, str(exc)[:200]))
                 continue
-            chapters = None
+            # The matching video item is the first place to look, but the
+            # Android layout may carry the recap elsewhere (another item, a
+            # different field). Collect every chapter list in the response.
+            matched = None
             for item, _block in walk_item_content(data):
                 video = item.get("video")
                 if isinstance(video, dict) and str(video.get("id")) == str(video_id):
-                    chapters = video.get("chapters")
+                    matched = video.get("chapters")
                     break
-            types = [c.get("type") for c in (chapters or []) if isinstance(c, dict)]
-            say("mobile {}/{}: types {}".format(platform, token, types))
-            if any("recap" in str(t).lower() or "previous" in str(t).lower()
-                   or "terugblik" in str(t).lower() for t in types):
-                return chapters
+            all_lists = _deep_chapter_lists(data)
+            matched_types = [c.get("type") for c in (matched or [])
+                             if isinstance(c, dict)]
+            all_types = sorted({str(c.get("type")) for lst in all_lists
+                                for c in lst if isinstance(c, dict)})
+            say("mobile {}/{}: matched {} | all chapter types {}".format(
+                platform, token, matched_types, all_types))
+
+            def has_recap(types):
+                return any("recap" in str(t).lower() or "previous" in str(t).lower()
+                           or "terugblik" in str(t).lower() for t in types)
+
+            # Prefer the matched video's own chapters, then any list in the
+            # response that contains a recap marker.
+            if has_recap(matched_types):
+                return matched
+            for lst in all_lists:
+                if has_recap(c.get("type") for c in lst if isinstance(c, dict)):
+                    return lst
         return None
 
     def jwt(self, auth, profile_id=None):
@@ -471,6 +488,34 @@ def _block_context(value):
     if isinstance(content, dict) and content.get("contentTemplateId"):
         context["template"] = content["contentTemplateId"]
     return context
+
+
+def _deep_chapter_lists(value):
+    """Collect every list of chapter/marker dicts anywhere in a layout
+    response. A chapter dict is recognised by a timecode key (tcStart/tcIn/
+    start) plus a ``type``. Returns a list of the lists found, so a recap
+    marker is caught even when it is not under the matched video's
+    ``chapters`` field."""
+    found = []
+
+    def looks_like_chapter(entry):
+        return (isinstance(entry, dict) and "type" in entry
+                and any(k in entry for k in ("tcStart", "tcIn", "start")))
+
+    def walk(node):
+        if isinstance(node, dict):
+            for child in node.values():
+                if (isinstance(child, list) and child
+                        and all(looks_like_chapter(c) for c in child)):
+                    found.append(child)
+                else:
+                    walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(value)
+    return found
 
 
 def walk_item_content(value, block=None):
