@@ -2113,11 +2113,32 @@ class LibrarySource:
     def series(self, series_id, seo):
         data = self._program(series_id, seo)
         episodes = []
+        _logged_fields = False
         for item, target, kind, block in _build_rows(data):
             if kind != "video" or is_hero_block(block):
                 continue
             parent = target.get("parent") or {}
             episode_id = str(target.get("id") or "")
+            if not _logged_fields:
+                _logged_fields = True
+                try:
+                    video = item.get("video") if isinstance(item.get("video"), dict) else {}
+                    def _dateish(d, prefix=""):
+                        out = []
+                        if isinstance(d, dict):
+                            for k, v in d.items():
+                                low = str(k).lower()
+                                if isinstance(v, str) and ("date" in low or "diffus" in low
+                                        or "broadcast" in low or "avail" in low or "air" in low):
+                                    out.append("{}{}={}".format(prefix, k, v[:25]))
+                                elif isinstance(v, dict):
+                                    out += _dateish(v, prefix + k + ".")
+                        return out
+                    xbmc.log("[Videoland] episode date fields: item {} | video {} | values {}".format(
+                        sorted(item.keys()), sorted(video.keys()),
+                        _dateish(item) + _dateish(video)), xbmc.LOGINFO)
+                except Exception:
+                    pass
             episodes.append({
                 "id": episode_id,
                 "seo": target.get("seo", ""),
