@@ -207,6 +207,13 @@
             <close>false</close>
           </control>
         </setting>
+        <setting id="sync_resume_now" type="action" label="31237">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=sync_resume)</data>
+          <control type="button" format="action">
+            <close>false</close>
+          </control>
+        </setting>
         <setting id="library_register_sources" type="action" label="31236">
           <level>0</level>
           <data>RunPlugin(plugin://plugin.video.videoland.nl/?action=register_library_sources)</data>

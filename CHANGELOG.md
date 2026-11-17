@@ -1,8 +1,14 @@
 # Changelog
 
-> **Latest Version:** v1.10.25 (November 17, 2026)
+> **Latest Version:** v1.10.26 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.26] - 2026-11-17
+
+### Toegevoegd / diagnose
+- **Knop "Verder kijken nu synchroniseren"** in de instellingen (bibliotheek-sectie). Zet de kijkposities van de dienst meteen in de bibliotheek, zonder op de uursync of een herstart te wachten, met een melding over het resultaat.
+- De hervatten-sync logt nu wat hij doet (aantal posities, bijgewerkte afleveringen, en de reden als hij stopt: niet ingelogd, sync uit, of lokale-geschiedenis-modus aan). Zo wordt zichtbaar waaróm "verder kijken" leeg zou blijven.
 
 ## [1.10.25] - 2026-11-17
 

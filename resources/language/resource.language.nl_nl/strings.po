@@ -904,3 +904,7 @@ msgstr "Volgende aflevering"
 msgctxt "#31236"
 msgid "Register library folders in Kodi"
 msgstr "Bibliotheekmappen in Kodi registreren"
+
+msgctxt "#31237"
+msgid "Sync continue watching now"
+msgstr "Verder kijken nu synchroniseren"

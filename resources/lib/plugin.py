@@ -2958,8 +2958,22 @@ def sync_resume(background=True):
     shows up in the skin's "Afleveringen die je kijkt" row here, which reads the
     Kodi library.
     """
-    if (not setting_bool("sync_resume_from_service", True) or local_history()
-            or not auth_data()):
+    if not setting_bool("sync_resume_from_service", True):
+        xbmc.log("[Videoland] Resume sync is turned off in settings", xbmc.LOGINFO)
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", "Hervatten-sync staat uit in instellingen",
+                                          xbmcgui.NOTIFICATION_INFO)
+        return
+    if local_history():
+        xbmc.log("[Videoland] Resume sync skipped: local history mode is on", xbmc.LOGINFO)
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", "Lokale geschiedenis staat aan - sync uit",
+                                          xbmcgui.NOTIFICATION_INFO, 6000)
+        return
+    if not auth_data():
+        xbmc.log("[Videoland] Resume sync skipped: not logged in", xbmc.LOGINFO)
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", "Niet ingelogd", xbmcgui.NOTIFICATION_INFO)
         return
     addon_id = "plugin.video.videoland.nl"
     try:
@@ -2970,8 +2984,16 @@ def sync_resume(background=True):
     except Exception as exc:
         xbmc.log("[Videoland] Resume sync could not reach the service ({})".format(
             type(exc).__name__), xbmc.LOGWARNING)
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", "Kon de dienst niet bereiken",
+                                          xbmcgui.NOTIFICATION_ERROR)
         return
+    xbmc.log("[Videoland] Resume sync got {} watch position(s) from the service".format(
+        len(positions or {})), xbmc.LOGINFO)
     if not positions:
+        if not background:
+            xbmcgui.Dialog().notification("Videoland", "De dienst geeft geen kijkposities terug",
+                                          xbmcgui.NOTIFICATION_INFO)
         return
 
     def _cid_for(item):
@@ -3018,7 +3040,18 @@ def sync_resume(background=True):
     # No Container.Refresh: SetEpisodeDetails/SetMovieDetails already fire
     # VideoLibrary.OnUpdate, which reloads the library rows on Home on its own.
     # A manual refresh would disturb whatever list the user is browsing.
-    xbmc.log("[Videoland] Resume sync updated {} library item(s)".format(done), xbmc.LOGINFO)
+    xbmc.log("[Videoland] Resume sync updated {} library item(s) from {} position(s), "
+             "{} matched call(s)".format(done, len(positions or {}), len(calls)), xbmc.LOGINFO)
+    if not background:
+        if done:
+            xbmcgui.Dialog().notification("Videoland", "Verder kijken bijgewerkt ({})".format(done),
+                                          xbmcgui.NOTIFICATION_INFO)
+        else:
+            xbmcgui.Dialog().notification(
+                "Videoland",
+                "Geen afleveringen bijgewerkt (posities: {}, in bibliotheek gevonden: {})".format(
+                    len(positions or {}), len(calls)),
+                xbmcgui.NOTIFICATION_INFO, 6000)
 
 
 def recommended():
