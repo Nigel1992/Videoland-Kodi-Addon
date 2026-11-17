@@ -2244,6 +2244,14 @@ def _ensure_sources_xml():
     import xml.etree.ElementTree as ET
     lib = library_mod.Library(None, setting, store=_library_store())
     src_path = xbmcvfs.translatePath("special://userdata/sources.xml")
+    # Kodi (and the add-on's own diagnostics) expect the special:// form as the
+    # source path. Writing the translated absolute path (/storage/...) created a
+    # source Kodi did not treat as a library source, so series never scanned.
+    specials = _library_special_paths()  # [(special_tv, kind), (special_movies, kind)]
+    wanted = [("Videoland Series", specials[0][0]), ("Videoland Films", specials[1][0])]
+    # Absolute forms of the same folders, to clean up stale entries an earlier
+    # version wrote (those stay as broken file sources otherwise).
+    stale_abs = {p.rstrip("/") for p in (lib.tv_root(), lib.movies_root()) if p}
     added = 0
     try:
         if os.path.exists(src_path):
@@ -2256,19 +2264,21 @@ def _ensure_sources_xml():
         if video is None:
             video = ET.SubElement(root, "video")
             ET.SubElement(video, "default", {"pathversion": "1"})
+        changed = False
+        # Remove stale absolute-path sources for our own library folders.
+        for source in list(video.findall("source")):
+            node = source.find("path")
+            if node is not None and node.text and node.text.rstrip("/") in stale_abs:
+                video.remove(source)
+                changed = True
+                xbmc.log("[Videoland] ensure sources: removed stale source {}".format(
+                    node.text.rstrip("/")), xbmc.LOGINFO)
         existing = set()
         for source in video.findall("source"):
             node = source.find("path")
             if node is not None and node.text:
                 existing.add(node.text.rstrip("/"))
-        # Pair each name with its own root explicitly, so a missing/!empty root
-        # can never shift the names onto the wrong path (zip would do that).
-        wanted = [("Videoland Series", lib.tv_root()), ("Videoland Films", lib.movies_root())]
         for name, path in wanted:
-            if not path:
-                xbmc.log("[Videoland] ensure sources: {} has no path, skipped".format(name),
-                         xbmc.LOGINFO)
-                continue
             if path.rstrip("/") in existing:
                 xbmc.log("[Videoland] ensure sources: {} already present ({})".format(
                     name, path.rstrip("/")), xbmc.LOGINFO)
@@ -2278,9 +2288,10 @@ def _ensure_sources_xml():
             ET.SubElement(source, "path", {"pathversion": "1"}).text = path.rstrip("/") + "/"
             ET.SubElement(source, "allowsharing").text = "true"
             added += 1
+            changed = True
             xbmc.log("[Videoland] ensure sources: added {} -> {}".format(name, path.rstrip("/")),
                      xbmc.LOGINFO)
-        if added:
+        if changed:
             tree.write(src_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
         xbmc.log("[Videoland] ensure sources failed: {}".format(exc), xbmc.LOGERROR)
