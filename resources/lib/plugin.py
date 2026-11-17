@@ -2240,8 +2240,6 @@ def _ensure_sources_xml():
     Returns how many entries were added."""
     import xml.etree.ElementTree as ET
     lib = library_mod.Library(None, setting, store=_library_store())
-    paths = [p for p in (lib.tv_root(), lib.movies_root()) if p]
-    names = ["Videoland Series", "Videoland Films"]
     src_path = xbmcvfs.translatePath("special://userdata/sources.xml")
     added = 0
     try:
@@ -2260,14 +2258,25 @@ def _ensure_sources_xml():
             node = source.find("path")
             if node is not None and node.text:
                 existing.add(node.text.rstrip("/"))
-        for name, path in zip(names, paths):
+        # Pair each name with its own root explicitly, so a missing/!empty root
+        # can never shift the names onto the wrong path (zip would do that).
+        wanted = [("Videoland Series", lib.tv_root()), ("Videoland Films", lib.movies_root())]
+        for name, path in wanted:
+            if not path:
+                xbmc.log("[Videoland] ensure sources: {} has no path, skipped".format(name),
+                         xbmc.LOGINFO)
+                continue
             if path.rstrip("/") in existing:
+                xbmc.log("[Videoland] ensure sources: {} already present ({})".format(
+                    name, path.rstrip("/")), xbmc.LOGINFO)
                 continue
             source = ET.SubElement(video, "source")
             ET.SubElement(source, "name").text = name
             ET.SubElement(source, "path", {"pathversion": "1"}).text = path.rstrip("/") + "/"
             ET.SubElement(source, "allowsharing").text = "true"
             added += 1
+            xbmc.log("[Videoland] ensure sources: added {} -> {}".format(name, path.rstrip("/")),
+                     xbmc.LOGINFO)
         if added:
             tree.write(src_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
