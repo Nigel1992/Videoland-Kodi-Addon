@@ -2923,21 +2923,26 @@ def _library_rpc(method, params):
     return answer.get("result") or {}
 
 
-def _service_resume_positions(client):
-    """``{str(video_id): (position_seconds, duration_seconds)}`` from Videoland's
-    "Verder kijken" rail, for cross-device resume."""
-    def is_continue(block):
-        meta = (block.get("analytics") or {}).get("tealium") or {}
-        return (meta.get("from") == "feature.recommended_videos_by_user"
-                or str(meta.get("block_title", "")).casefold() == "verder kijken")
+def _service_resume_positions(client, log=False):
+    """``{str(video_id): (position_seconds, duration_seconds)}`` for cross-device
+    resume. A continue-watching item is any home-page video that carries a
+    resume position (``video.progress.tcResume``), regardless of which rail it
+    sits in -- Videoland's "Verder kijken" rail has been seen under more than
+    one block name, so matching on the resume position itself is robust."""
     client.cache_dir = None
     client.cache_ttl = 0
-    layout = client.layout("alias", "home", complete=True, block_filter=is_continue)
+    # No block_filter: load every rail's items, then keep the ones with a
+    # resume position. (Filtering by block name missed the rail when Videoland
+    # renamed it, which returned zero positions.)
+    layout = client.layout("alias", "home", complete=True)
     positions = {}
-    for item, _block in walk_item_content(layout):
+    blocks_seen = {}
+    for item, block in walk_item_content(layout):
         video = item.get("video")
         if not isinstance(video, dict):
             continue
+        name = str((block or {}).get("block_title") or (block or {}).get("feature") or "?")
+        blocks_seen[name] = blocks_seen.get(name, 0) + 1
         video_id = video.get("id")
         progress = video.get("progress") if isinstance(video.get("progress"), dict) else {}
         position = progress.get("tcResume")
@@ -2948,6 +2953,10 @@ def _service_resume_positions(client):
             continue
         total = int(duration) if isinstance(duration, (int, float)) and not isinstance(duration, bool) and duration > 0 else 0
         positions[str(video_id)] = (int(position), total)
+    if log:
+        xbmc.log("[Videoland] resume fetch: {} position(s) with tcResume; "
+                 "rails seen (title: item count): {}".format(len(positions), blocks_seen),
+                 xbmc.LOGINFO)
     return positions
 
 
@@ -2980,7 +2989,7 @@ def sync_resume(background=True):
         client = api()
         auth = ensure_login()
         ensure_profile(client, auth)
-        positions = _service_resume_positions(client)
+        positions = _service_resume_positions(client, log=not background)
     except Exception as exc:
         xbmc.log("[Videoland] Resume sync could not reach the service ({})".format(
             type(exc).__name__), xbmc.LOGWARNING)

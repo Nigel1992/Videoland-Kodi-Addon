@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.26 (November 17, 2026)
+> **Latest Version:** v1.10.27 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.27] - 2026-11-17
+
+### Opgelost
+- **Hervatten-sync vond geen kijkposities meer.** De sync zocht de "Verder kijken"-rij op naam (`recommended_videos_by_user` / "verder kijken"); als Videoland die rij anders noemt, viel hij eruit en kwam er niks terug. Nu pakt de sync élke aflevering op de home-pagina die een hervat-positie (`progress.tcResume`) heeft, ongeacht de rij-naam. De handmatige sync logt ook welke rijen hij ziet.
 
 ## [1.10.26] - 2026-11-17
 
