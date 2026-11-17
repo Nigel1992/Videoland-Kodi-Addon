@@ -2999,6 +2999,13 @@ def _service_resume_positions(client, log=False):
                              sorted(block.keys()), sorted(content.keys()), len(items),
                              sorted(items[0].keys()) if items and isinstance(items[0], dict) else None),
                          xbmc.LOGINFO)
+                if items and isinstance(items[0], dict):
+                    ic = items[0].get("itemContent")
+                    if isinstance(ic, dict):
+                        inner = {k: (sorted(v.keys()) if isinstance(v, dict) else type(v).__name__)
+                                 for k, v in ic.items()}
+                        xbmc.log("[Videoland] continue item itemContent: {} | itemType={}".format(
+                            inner, items[0].get("itemType")), xbmc.LOGINFO)
                 break
     return positions
 
