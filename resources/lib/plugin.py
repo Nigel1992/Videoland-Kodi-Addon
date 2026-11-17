@@ -2954,10 +2954,13 @@ def _service_resume_positions(client, log=False):
     client.cache_ttl = 0
     layout = client.layout("alias", "home", complete=True, block_filter=is_continue)
     positions = {}
-    for item, _block in walk_item_content(layout):
+    sample = None
+    for item, block in walk_item_content(layout):
         video = item.get("video")
         if not isinstance(video, dict):
             continue
+        if sample is None and is_continue(block or {}):
+            sample = video
         video_id = video.get("id")
         position = _resume_seconds(video.get("progress"))
         if not video_id or position <= 0:
@@ -2973,6 +2976,14 @@ def _service_resume_positions(client, log=False):
                 ids.append("{}|{}".format(meta.get("from"), meta.get("block_title") or block.get("title")))
         xbmc.log("[Videoland] resume fetch: {} position(s); home blocks: {}".format(
             len(positions), ids[:25]), xbmc.LOGINFO)
+        if sample is not None:
+            prog = sample.get("progress")
+            xbmc.log("[Videoland] continue sample: video keys {} | progress {}".format(
+                sorted(sample.keys()),
+                prog if isinstance(prog, dict) else type(prog).__name__), xbmc.LOGINFO)
+        else:
+            xbmc.log("[Videoland] continue sample: no items loaded from the "
+                     "continue-watching rail", xbmc.LOGINFO)
     return positions
 
 
