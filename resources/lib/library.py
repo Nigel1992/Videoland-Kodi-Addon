@@ -77,6 +77,42 @@ def safe_filename(value):
     return value or "Videoland"
 
 
+def _is_safe_folder(folder):
+    """True only for a single, relative folder name with no traversal.
+
+    ``folder`` is a single component produced by ``safe_filename``. A tampered
+    ``library.json`` must never be able to point ``remove`` at an arbitrary
+    location."""
+    if not isinstance(folder, str) or not folder:
+        return False
+    if "\x00" in folder or "\\" in folder or "/" in folder:
+        return False
+    if folder in (".", "..") or ".." in folder:
+        return False
+    if folder.startswith(".") or folder.endswith("."):
+        return False
+    if os.path.isabs(folder) or ":" in folder:
+        return False
+    if folder != folder.strip():
+        return False
+    return True
+
+
+def _path_inside_root(target, root):
+    """Best-effort containment check for a remove target."""
+    target = str(target or "")
+    root = str(root or "")
+    if "://" in target or "://" in root:
+        base = root.rstrip("/")
+        return target == base or target.startswith(base + "/")
+    try:
+        root_real = os.path.realpath(root)
+        target_real = os.path.realpath(target)
+        return os.path.commonpath([root_real, target_real]) == root_real
+    except (ValueError, OSError):
+        return False
+
+
 def _int_or_none(value):
     try:
         if value is None or isinstance(value, bool):
@@ -117,7 +153,10 @@ class LocalFS:
 
     @staticmethod
     def _remote(path):
-        return "://" in str(path) and xbmcvfs is not None
+        # A real URL scheme (smb://, nfs://, special://...), not a stray "://"
+        # that happens to appear inside a local filename.
+        return (xbmcvfs is not None
+                and bool(re.match(r"^[a-z][a-z0-9+.-]*://", str(path), re.I)))
 
     def join(self, *parts):
         if self._remote(parts[0]):
@@ -584,9 +623,17 @@ class Library:
         entry = self.store.section(kind).pop(str(item_id), None)
         if entry is None:
             return False
-        if entry.get("folder"):
+        folder = entry.get("folder")
+        if folder:
             root = self.tv_root() if kind == "series" else self.movies_root()
-            self.fs.remove_tree(self.fs.join(root, entry["folder"]))
+            if not _is_safe_folder(folder):
+                log("remove: unsafe folder in library.json, skipped: {!r}".format(folder))
+            else:
+                target = self.fs.join(root, folder)
+                if _path_inside_root(target, root):
+                    self.fs.remove_tree(target)
+                else:
+                    log("remove: target outside library root, skipped: {!r}".format(folder))
         if save:
             self.store.save()
         return True

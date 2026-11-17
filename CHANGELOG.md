@@ -1,8 +1,17 @@
 # Changelog
 
-> **Latest Version:** v1.10.21 (November 16, 2026)
+> **Latest Version:** v1.10.22 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.22] - 2026-11-17
+
+### Beveiliging
+- **Path traversal in de bibliotheek gedicht.** `Library.remove` valideert het map-pad uit `library.json` nu (`_is_safe_folder`) en controleert dat het binnen de bibliotheek-root blijft (`_path_inside_root` via `realpath`/`commonpath`); een geknoeide `library.json` kan niet langer een willekeurige map laten verwijderen.
+- **Nauwkeurigere remote-detectie:** `LocalFS._remote` herkent een echte URL-scheme (`smb://`, `nfs://`, …) via een anker-regex in plaats van een losse `"://"` ergens in een lokale bestandsnaam.
+- De gedeelde modules zijn bijgewerkt met de security-/robuustheidsfixes uit de code-review van Nigel1992 (o.a. metadata-URL-injectie afgevangen, gesigneerde afbeeldings-URL's blijven heel, guards tegen corrupte caches en rommelige data in `metadata`, `library_art`, `library_resume`, `logo_cache`, `playback_extras`, `watch_sync`, `errors`).
+
+> Command injection was hier al niet van toepassing: Videoland bouwt alle `RunPlugin`-URL's via `urlencode`.
 
 ## [1.10.21] - 2026-11-16
 
