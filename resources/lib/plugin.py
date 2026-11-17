@@ -1699,7 +1699,10 @@ def _start_playback_extras(client, layout, asset, video_id, seo, parent_id, pare
     if setting_bool("skip_markers", True) and markers:
         def ask(kind, seconds=12):
             # A small corner button (like the Videoland app), not a full-screen
-            # yes/no dialog. It stays until the intro/recap is over.
+            # yes/no dialog. The recap button stays for the whole recap; the
+            # intro button is capped at 15 seconds so it doesn't linger.
+            if kind == "intro":
+                seconds = min(seconds, 15)
             label = ADDON.getLocalizedString(31234 if kind == "recap" else 31233)
             return corner.ask(label, seconds=seconds)
         playback_extras.start_skip_watcher(markers, ask)
