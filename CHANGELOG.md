@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.22 (November 17, 2026)
+> **Latest Version:** v1.10.23 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.23] - 2026-11-17
+
+### Toegevoegd
+- **Bibliotheek automatisch in Kodi registreren.** De add-on zet de bibliotheekmappen nu zelf in `sources.xml` en stelt het content-type (series/films) + de lokale scraper in Kodi's database in, zodat je series en films zonder handmatige bron-wizard in "Series"/"Films" verschijnen. Gebeurt automatisch bij elke bibliotheek-update, plus een knop *Bibliotheekmappen in Kodi registreren* in de instellingen. (Overgenomen uit dezelfde PR #48-review als de NLZiet-add-on, hier nagebouwd voor Videoland.)
 
 ## [1.10.22] - 2026-11-17
 

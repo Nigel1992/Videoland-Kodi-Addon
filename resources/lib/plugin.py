@@ -2222,10 +2222,125 @@ def check_tmdb_key():
     xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31133 if ok else 31134), time=4000)
 
 
+def _library_special_paths():
+    """The two library folders in Kodi's preferred special:// form."""
+    base = "special://profile/addon_data/plugin.video.videoland.nl/library"
+    return [(base + "/TV Shows", "tvshows"), (base + "/Movies", "movies")]
+
+
+def _ensure_sources_xml():
+    """Write the library folders into sources.xml (idempotent, no UI).
+    Returns how many entries were added."""
+    import xml.etree.ElementTree as ET
+    lib = library_mod.Library(None, setting, store=_library_store())
+    paths = [p for p in (lib.tv_root(), lib.movies_root()) if p]
+    names = ["Videoland Series", "Videoland Films"]
+    src_path = xbmcvfs.translatePath("special://userdata/sources.xml")
+    added = 0
+    try:
+        if os.path.exists(src_path):
+            tree = ET.parse(src_path)
+            root = tree.getroot()
+        else:
+            root = ET.Element("sources")
+            tree = ET.ElementTree(root)
+        video = root.find("video")
+        if video is None:
+            video = ET.SubElement(root, "video")
+            ET.SubElement(video, "default", {"pathversion": "1"})
+        existing = set()
+        for source in video.findall("source"):
+            node = source.find("path")
+            if node is not None and node.text:
+                existing.add(node.text.rstrip("/"))
+        for name, path in zip(names, paths):
+            if path.rstrip("/") in existing:
+                continue
+            source = ET.SubElement(video, "source")
+            ET.SubElement(source, "name").text = name
+            ET.SubElement(source, "path", {"pathversion": "1"}).text = path.rstrip("/") + "/"
+            ET.SubElement(source, "allowsharing").text = "true"
+            added += 1
+        if added:
+            tree.write(src_path, encoding="utf-8", xml_declaration=True)
+    except Exception as exc:
+        xbmc.log("[Videoland] ensure sources failed: {}".format(exc), xbmc.LOGERROR)
+    return added
+
+
+def _fix_library_sources_db():
+    """Set content type + local scraper on the library paths in Kodi's DB, so
+    series/films land under "Series"/"Films" without the manual wizard."""
+    import glob
+    import sqlite3
+    lib = library_mod.Library(None, setting, store=_library_store())
+    pairs = [
+        (lib.tv_root(), _library_special_paths()[0][0], "tvshows"),
+        (lib.movies_root(), _library_special_paths()[1][0], "movies"),
+    ]
+    db_dir = xbmcvfs.translatePath("special://userdata/Database/")
+    dbs = sorted(glob.glob(os.path.join(db_dir, "MyVideos*.db")))
+    if not dbs:
+        return
+    db_path = dbs[-1]
+    try:
+        conn = sqlite3.connect(db_path, timeout=5)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM path WHERE strPath LIKE "
+                    "'/%addon_data/plugin.video.videoland.nl/library/%'")
+        for abs_path, special_path, content in pairs:
+            for base in (abs_path, special_path):
+                if not base:
+                    continue
+                norm = base.rstrip("/") + "/"
+                cur.execute(
+                    "UPDATE path SET strContent=?, strScraper=?, scanRecursive=1, "
+                    "useFolderNames=0, noUpdate=0, exclude=0, strSettings=? "
+                    "WHERE strPath=? OR strPath=?",
+                    (content, "metadata.local", "", norm, base))
+            cur.execute("SELECT 1 FROM path WHERE strPath=? OR strPath=?",
+                        (special_path.rstrip("/") + "/", abs_path.rstrip("/") + "/"))
+            if not cur.fetchone():
+                cur.execute(
+                    "INSERT INTO path (strPath, strContent, strScraper, scanRecursive, "
+                    "useFolderNames, noUpdate, exclude, strSettings, dateAdded) "
+                    "VALUES (?,?,?,?,?,?,?,?,datetime('now'))",
+                    (special_path.rstrip("/") + "/", content, "metadata.local", 1, 0, 0, 0, ""))
+        conn.commit()
+        conn.close()
+        xbmc.log("[Videoland] library sources fixed in DB", xbmc.LOGINFO)
+    except Exception as exc:
+        xbmc.log("[Videoland] fix library sources DB failed: {}".format(exc), xbmc.LOGERROR)
+
+
+def _register_sources_quiet():
+    """Best-effort source registration without any dialog, for the automatic
+    path (runs right before a library scan)."""
+    try:
+        _ensure_sources_xml()
+    except Exception:
+        pass
+    try:
+        _fix_library_sources_db()
+    except Exception:
+        pass
+
+
+def register_library_sources():
+    """Manual action: add the library folders as Kodi video sources."""
+    _fix_library_sources_db()
+    added = _ensure_sources_xml()
+    library_mod.run_library_jobs(scan=True)
+    message = "Bibliotheekbronnen toegevoegd ({})".format(added) if added else "Bronnen bestaan al"
+    xbmcgui.Dialog().notification("Videoland", message, xbmcgui.NOTIFICATION_INFO)
+
+
 def _after_library_change(scan=True, clean=False):
     scan = scan and setting_bool("library_scan_after", True)
     clean = clean and setting_bool("library_clean_after", True)
     if scan or clean:
+        if scan:
+            _register_sources_quiet()
         library_mod.run_library_jobs(scan=scan, clean=clean)
 
 
@@ -2325,6 +2440,7 @@ def _library_update(background):
     changed = bool(totals["added"] or totals["removed"])
     if changed or not background:
         # A manual update always scans, so titles a busy Kodi skipped get in too.
+        _register_sources_quiet()
         library_mod.run_library_jobs(scan=True, clean=bool(totals["removed"]) and setting_bool("library_clean_after", True))
     repair_library_art()
     if not background or (changed and setting_bool("sync_notifications", False)):
@@ -2469,6 +2585,7 @@ def library_from_watchlist(background=False):
         if dialog is not None:
             dialog.close()
     if added or removed:
+        _register_sources_quiet()
         library_mod.run_library_jobs(scan=True, clean=bool(removed) and setting_bool("library_clean_after", True))
     if not background or ((added or removed) and setting_bool("sync_notifications", False)):
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31151).format(added, removed, failed), time=5000)
@@ -3010,6 +3127,8 @@ def dispatch(params):
         library_remove(params.get("kind", ""), params.get("id", ""), params.get("title", ""))
     elif action == "library_update":
         library_update(background=params.get("background") == "1")
+    elif action == "register_library_sources":
+        register_library_sources()
     elif action == "repair_library_art":
         repair_library_art(background=params.get("background") == "1")
     elif action == "diagnostics":
