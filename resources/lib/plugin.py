@@ -2320,8 +2320,15 @@ def _ensure_sources_xml():
 
 
 def _fix_library_sources_db():
-    """Set content type + local scraper on the library paths in Kodi's DB, so
-    series/films land under "Series"/"Films" without the manual wizard."""
+    """Disabled: setting the content type by writing Kodi's video database
+    directly proved unsafe on some setups (it could wipe resume points and make
+    a library clean hang). The library source is written to sources.xml instead,
+    and the user sets the content type once in Kodi; after that Kodi scans on its
+    own. Kept as a no-op for call compatibility."""
+    return
+
+
+def _fix_library_sources_db_disabled():
     import glob
     import sqlite3
     lib = library_mod.Library(None, setting, store=_library_store())
@@ -2423,11 +2430,61 @@ def library_add(kind, item_id, seo="", title="", poster="", fanart=""):
     _after_library_change(scan=True)
 
 
+def _removed_item_path(lib, kind, item_id):
+    """The on-disk folder of a library item, worked out before it is removed."""
+    try:
+        section = lib.store.section("series" if kind == "series" else "movie")
+        entry = section.get(str(item_id)) if hasattr(section, "get") else None
+        folder = (entry or {}).get("folder")
+        if not folder:
+            return ""
+        root = lib.tv_root() if kind == "series" else lib.movies_root()
+        return lib.fs.join(root, folder)
+    except Exception:
+        return ""
+
+
+def _remove_from_kodi_library(kind, path):
+    """Drop exactly one show/movie from the Kodi library by its folder, instead
+    of a full VideoLibrary.Clean (which walks every source and can hang Kodi)."""
+    if not path:
+        return
+    def _norm(value):
+        try:
+            return os.path.normcase(os.path.normpath(xbmcvfs.translatePath(str(value or "")))).rstrip("/\\")
+        except Exception:
+            return ""
+    want = _norm(path)
+    if not want:
+        return
+    try:
+        if kind == "series":
+            shows = _library_rpc("VideoLibrary.GetTVShows",
+                                 {"properties": ["file"]}).get("tvshows", [])
+            for show in shows:
+                if _norm(show.get("file")) == want:
+                    _library_rpc("VideoLibrary.RemoveTVShow", {"tvshowid": show["tvshowid"]})
+                    return
+        else:
+            movies = _library_rpc("VideoLibrary.GetMovies",
+                                  {"properties": ["file"]}).get("movies", [])
+            for movie in movies:
+                f = _norm(movie.get("file"))
+                if f == want or os.path.dirname(f) == want:
+                    _library_rpc("VideoLibrary.RemoveMovie", {"movieid": movie["movieid"]})
+                    return
+    except Exception as exc:
+        xbmc.log("[Videoland] targeted library removal failed ({})".format(type(exc).__name__),
+                 xbmc.LOGWARNING)
+
+
 def library_remove(kind, item_id, title=""):
+    kind = "series" if kind == "series" else "movie"
     lib = library_mod.Library(None, setting, store=_library_store())
+    path = _removed_item_path(lib, kind, item_id)
     if lib.remove(kind, item_id):
         xbmcgui.Dialog().notification("Videoland", ADDON.getLocalizedString(31116).format(title), time=3000)
-        _after_library_change(scan=False, clean=True)
+        _remove_from_kodi_library(kind, path)
         xbmc.executebuiltin("Container.Refresh")
 
 

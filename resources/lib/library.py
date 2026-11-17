@@ -684,6 +684,11 @@ def scan_flag_path():
 
 
 def run_library_jobs(scan=True, clean=False):
-    """Ask Kodi to clean and/or scan the video library without dialogs. When
-    Kodi is already scanning, the request waits until that scan is done."""
-    library_art.request_scan(scan_flag_path(), scan=scan, clean=clean)
+    """Ask Kodi to scan the video library without dialogs. When Kodi is already
+    scanning, the request waits until that scan is done.
+
+    The add-on never issues VideoLibrary.Clean: a full clean walks every video
+    source and hangs Kodi on some setups, and removal already drops items
+    directly. The ``clean`` argument is kept for call compatibility but ignored.
+    """
+    library_art.request_scan(scan_flag_path(), scan=scan, clean=False)
