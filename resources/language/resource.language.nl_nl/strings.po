@@ -66,23 +66,12 @@ msgid "Video quality and device compatibility"
 msgstr "Beeldkwaliteit en apparaatondersteuning"
 
 msgctxt "#31012"
-msgid ""
-"Compatible playback is the default and uses the software-protected stream, "
-"suitable for Raspberry Pi and similar devices. Highest available requests "
-"the higher-quality stream when offered, but may fail if your device cannot "
-"decrypt it. Neither option guarantees HD; the available quality also depends"
-" on the title and the licence granted by Videoland."
-msgstr ""
-"Geschikt voor dit apparaat is de standaard en gebruikt de stream met "
-"softwarebeveiliging, geschikt voor onder meer de Raspberry Pi. Hoogste "
-"beschikbare kwaliteit kiest de stream met hogere kwaliteit als die wordt "
-"aangeboden, maar kan mislukken als je apparaat deze niet kan ontsleutelen. "
-"Geen van beide opties garandeert HD; de kwaliteit hangt ook af van de titel "
-"en de licentie die Videoland verleent."
+msgid "Compatible playback is the default and uses the software-protected stream (up to 540p), which works on every device. Highest available uses the HD stream (720p/1080p) on Android devices with Widevine L1. Videoland only grants its HD key to L1, so on Linux/LibreELEC (Raspberry Pi), Windows and macOS it automatically plays the best stream that works there."
+msgstr "Geschikt voor dit apparaat is de standaard en gebruikt de software-beveiligde stream (tot 540p), die op elk apparaat werkt. Hoogste beschikbare kwaliteit gebruikt de HD-stream (720p/1080p) op Android-apparaten met Widevine L1. Videoland geeft de HD-sleutel alleen aan L1, dus op Linux/LibreELEC (Raspberry Pi), Windows en macOS wordt vanzelf de beste stream afgespeeld die daar werkt."
 
 msgctxt "#31013"
-msgid "Highest available (requires device support)"
-msgstr "Hoogste beschikbare kwaliteit (apparaat moet dit ondersteunen)"
+msgid "Highest available (HD only on Android with Widevine L1)"
+msgstr "Hoogste beschikbare kwaliteit (HD alleen op Android met Widevine L1)"
 
 msgctxt "#31014"
 msgid "Compatible playback (recommended for Raspberry Pi)"
@@ -407,3 +396,515 @@ msgctxt "#31101"
 msgid "Videoland has no related titles for this selection at the moment."
 msgstr ""
 "Videoland heeft op dit moment geen vergelijkbare titels voor deze selectie."
+
+msgctxt "#31110"
+msgid "Add to library"
+msgstr "Toevoegen aan bibliotheek"
+
+msgctxt "#31111"
+msgid "Remove from library"
+msgstr "Verwijderen uit bibliotheek"
+
+msgctxt "#31112"
+msgid "Adding to library: {0}"
+msgstr "Toevoegen aan bibliotheek: {0}"
+
+msgctxt "#31113"
+msgid "This title could not be added to the library right now."
+msgstr "Deze titel kon nu niet aan de bibliotheek worden toegevoegd."
+
+msgctxt "#31114"
+msgid "{0} added to library ({1} episodes)"
+msgstr "{0} toegevoegd aan bibliotheek ({1} afleveringen)"
+
+msgctxt "#31115"
+msgid "{0} added to library"
+msgstr "{0} toegevoegd aan bibliotheek"
+
+msgctxt "#31116"
+msgid "{0} removed from library"
+msgstr "{0} verwijderd uit bibliotheek"
+
+msgctxt "#31117"
+msgid "The library is empty. Add series or films through their context menu."
+msgstr "De bibliotheek is nog leeg. Voeg series of films toe via hun contextmenu."
+
+msgctxt "#31118"
+msgid "Updating library..."
+msgstr "Bibliotheek bijwerken..."
+
+msgctxt "#31119"
+msgid "Library updated: {0} new, {1} removed"
+msgstr "Bibliotheek bijgewerkt: {0} nieuw, {1} verwijderd"
+
+msgctxt "#31120"
+msgid "Library"
+msgstr "Bibliotheek"
+
+msgctxt "#31121"
+msgid "Update library now"
+msgstr "Bibliotheek nu bijwerken"
+
+msgctxt "#31122"
+msgid "Series"
+msgstr "Serie"
+
+msgctxt "#31123"
+msgid "Film"
+msgstr "Film"
+
+msgctxt "#31124"
+msgid "Folder for series"
+msgstr "Map voor series"
+
+msgctxt "#31125"
+msgid "Add this folder once in Kodi as a video source with content type TV shows and the scraper \"Local information only\"."
+msgstr "Voeg deze map één keer toe in Kodi als videobron, met inhoud Series en de scraper \"Lokale informatie\"."
+
+msgctxt "#31126"
+msgid "Folder for films"
+msgstr "Map voor films"
+
+msgctxt "#31127"
+msgid "Add this folder once in Kodi as a video source with content type Movies and the scraper \"Local information only\"."
+msgstr "Voeg deze map één keer toe in Kodi als videobron, met inhoud Films en de scraper \"Lokale informatie\"."
+
+msgctxt "#31128"
+msgid "Update library automatically"
+msgstr "Bibliotheek automatisch bijwerken"
+
+msgctxt "#31129"
+msgid "Adds new episodes and removes titles that left Videoland. Never runs during playback. A title is only removed after it is missing three updates in a row."
+msgstr "Voegt nieuwe afleveringen toe en verwijdert titels die van Videoland zijn verdwenen. Draait nooit tijdens het afspelen. Een titel wordt pas verwijderd als hij drie keer achter elkaar ontbreekt."
+
+msgctxt "#31130"
+msgid "Update every (hours)"
+msgstr "Bijwerken elke (uren)"
+
+msgctxt "#31131"
+msgid "Scan the Kodi library after a change"
+msgstr "Kodi-bibliotheek scannen na een wijziging"
+
+msgctxt "#31132"
+msgid "Clean removed titles from the Kodi library"
+msgstr "Verwijderde titels uit de Kodi-bibliotheek opruimen"
+
+msgctxt "#31133"
+msgid "TMDb key works"
+msgstr "TMDb-sleutel werkt"
+
+msgctxt "#31134"
+msgid "TMDb does not accept this key. Check that you pasted the complete API Key (32 characters) or API Read Access Token."
+msgstr "TMDb accepteert deze sleutel niet. Controleer of je de API Key (32 tekens) of het API Read Access Token volledig hebt geplakt."
+
+msgctxt "#31135"
+msgid "Extra metadata"
+msgstr "Extra gegevens"
+
+msgctxt "#31136"
+msgid "Fill in missing data from TMDb / TVmaze"
+msgstr "Ontbrekende gegevens aanvullen via TMDb / TVmaze"
+
+msgctxt "#31137"
+msgid "Videoland data is always used first. Only empty fields (description, poster, background, year, genre, rating, episode descriptions and images) are filled in. Also adds TMDb, TVDB and IMDb ids. Series work without a key through TVmaze; films need a TMDb key."
+msgstr "De gegevens van Videoland worden altijd eerst gebruikt. Alleen lege velden (beschrijving, poster, achtergrond, jaar, genre, waardering, beschrijvingen en plaatjes van afleveringen) worden aangevuld. Voegt ook TMDb-, TVDB- en IMDb-nummers toe. Series werken zonder sleutel via TVmaze; films hebben een TMDb-sleutel nodig."
+
+msgctxt "#31138"
+msgid "TMDb API key (optional)"
+msgstr "TMDb API-sleutel (optioneel)"
+
+msgctxt "#31139"
+msgid "Free key from themoviedb.org: Settings > API. Paste the \"API Key\" or the \"API Read Access Token\"."
+msgstr "Gratis sleutel via themoviedb.org: Instellingen > API. Plak de \"API Key\" of het \"API Read Access Token\"."
+
+msgctxt "#31140"
+msgid "Test TMDb key"
+msgstr "TMDb-sleutel testen"
+
+msgctxt "#31141"
+msgid "Sign in"
+msgstr "Aanmelden"
+
+msgctxt "#31142"
+msgid "Sign out"
+msgstr "Afmelden"
+
+msgctxt "#31143"
+msgid "Clear cache"
+msgstr "Cache wissen"
+
+msgctxt "#31144"
+msgid "Artwork updated for {0} titles"
+msgstr "Posters bijgewerkt voor {0} titels"
+
+msgctxt "#31145"
+msgid "Repair artwork in the Kodi library"
+msgstr "Posters in Kodi-bibliotheek herstellen"
+
+msgctxt "#31146"
+msgid "No TMDb key is saved yet. Enter the key, press OK to save the settings and test again."
+msgstr "Er is nog geen TMDb-sleutel opgeslagen. Vul de sleutel in, druk op OK om de instellingen op te slaan en test daarna opnieuw."
+
+msgctxt "#31147"
+msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
+msgstr "TMDb is niet bereikbaar. Controleer je internetverbinding; de sleutel zelf is niet getest."
+
+msgctxt "#31148"
+msgid "Run diagnostics"
+msgstr "Diagnose uitvoeren"
+
+msgctxt "#31149"
+msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
+msgstr "Controleert aanmelding, InputStream Adaptive, Widevine, de verbinding met Videoland, TMDb en TVmaze, en of alle bibliotheektitels in Kodi staan. Slaat een rapport zonder privégegevens op dat je bij een foutmelding kunt meesturen."
+
+msgctxt "#31150"
+msgid "Adding My watchlist to the library..."
+msgstr "Mijn Kijklijst naar de bibliotheek..."
+
+msgctxt "#31151"
+msgid "Watchlist: {0} added, {1} removed, {2} failed"
+msgstr "Kijklijst: {0} toegevoegd, {1} verwijderd, {2} mislukt"
+
+msgctxt "#31152"
+msgid "Add My watchlist to the library now"
+msgstr "Mijn Kijklijst nu naar de bibliotheek"
+
+msgctxt "#31153"
+msgid "Keep My watchlist in the library automatically"
+msgstr "Mijn Kijklijst automatisch in de bibliotheek"
+
+msgctxt "#31154"
+msgid "Every series and film in My watchlist is added to the Kodi library, and new titles are added at every automatic update. A bookmarked episode adds its series."
+msgstr "Elke serie en film uit Mijn Kijklijst komt in de Kodi-bibliotheek, en nieuwe titels komen er bij elke automatische update bij. Een bewaarde aflevering voegt de hele serie toe."
+
+msgctxt "#31155"
+msgid "Remove titles that left My watchlist"
+msgstr "Titels die uit Mijn Kijklijst verdwijnen ook verwijderen"
+
+msgctxt "#31156"
+msgid "Only titles that were added from the watchlist are removed; titles you added yourself stay."
+msgstr "Alleen titels die via de kijklijst zijn toegevoegd worden verwijderd; titels die je zelf hebt toegevoegd blijven staan."
+
+msgctxt "#31157"
+msgid "Show logos in the menus too"
+msgstr "Logo's ook in de menu's tonen"
+
+msgctxt "#31158"
+msgid "Logos of titles outside the library are looked up on TMDb in the background (needs the TMDb key). Lists never wait: a logo appears the next time you open the list."
+msgstr "Logo's van titels buiten de bibliotheek worden op de achtergrond bij TMDb opgezocht (TMDb-sleutel nodig). Lijsten wachten daar nooit op: een logo verschijnt de volgende keer dat je de lijst opent."
+
+msgctxt "#31159"
+msgid "Posters and backgrounds: TMDb first"
+msgstr "Posters en achtergronden: TMDb eerst"
+
+msgctxt "#31160"
+msgid "On: posters and backgrounds come from TMDb when it has them, with Videoland's own images as fallback. Descriptions always come from Videoland first. Artwork you chose yourself in Kodi is never replaced."
+msgstr "Aan: posters en achtergronden komen van TMDb als die ze heeft, met de plaatjes van Videoland als reserve. Beschrijvingen komen altijd eerst van Videoland. Plaatjes die je zelf in Kodi hebt gekozen worden nooit vervangen."
+
+msgctxt "#31161"
+msgid "Choose the right TMDb title"
+msgstr "Juiste TMDb-titel kiezen"
+
+msgctxt "#31162"
+msgid "Other search term..."
+msgstr "Andere zoekterm..."
+
+msgctxt "#31163"
+msgid "TMDb title set; details and artwork are updated"
+msgstr "TMDb-titel ingesteld; gegevens en plaatjes worden bijgewerkt"
+
+msgctxt "#31164"
+msgid "Profile for the library"
+msgstr "Profiel voor de bibliotheek"
+
+msgctxt "#31165"
+msgid "The active profile"
+msgstr "Het actieve profiel"
+
+msgctxt "#31166"
+msgid "Whose watchlist goes into the Kodi library. Handy when the family uses several profiles but the library should follow one."
+msgstr "Van welk profiel de kijklijst in de Kodi-bibliotheek komt. Handig als het gezin meerdere profielen gebruikt, maar de bibliotheek er één moet volgen."
+
+msgctxt "#31167"
+msgid "Choose the profile for the library"
+msgstr "Profiel voor de bibliotheek kiezen"
+
+msgctxt "#31168"
+msgid "Folders"
+msgstr "Mappen"
+
+msgctxt "#31169"
+msgid "My watchlist to the library"
+msgstr "Mijn Kijklijst naar de bibliotheek"
+
+msgctxt "#31170"
+msgid "Automatic updates"
+msgstr "Automatisch bijwerken"
+
+msgctxt "#31171"
+msgid "Maintenance"
+msgstr "Onderhoud"
+
+msgctxt "#31172"
+msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
+msgstr "HD is op dit apparaat niet beschikbaar (Videoland staat dat alleen toe met Widevine L1, op Android). De beste kwaliteit die hier werkt wordt afgespeeld."
+
+msgctxt "#31173"
+msgid "Skip the intro?"
+msgstr "Intro overslaan?"
+
+msgctxt "#31174"
+msgid "Skip the recap?"
+msgstr "Samenvatting overslaan?"
+
+msgctxt "#31175"
+msgid "Next episode (Up Next)"
+msgstr "Volgende aflevering (Up Next)"
+
+msgctxt "#31176"
+msgid "Near the end of an episode the Up Next add-on offers the next episode, also when playing from the Kodi library. Needs the Up Next add-on (service.upnext)."
+msgstr "Aan het eind van een aflevering biedt de Up Next-add-on de volgende aflevering aan, ook bij afspelen vanuit de Kodi-bibliotheek. De Up Next-add-on (service.upnext) is nodig."
+
+msgctxt "#31177"
+msgid "Install the Up Next add-on"
+msgstr "Up Next-add-on installeren"
+
+msgctxt "#31178"
+msgid "Offer to skip intro and recap"
+msgstr "Intro en samenvatting overslaan aanbieden"
+
+msgctxt "#31179"
+msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
+msgstr "Als Videoland bij een video de tijden van intro of samenvatting meestuurt, verschijnt op dat moment de vraag om over te slaan. Of Videoland ze meestuurt staat in het Kodi-logboek (\"markers found\")."
+
+msgctxt "#31180"
+msgid "Send watched status to Videoland"
+msgstr "Kijkstatus naar Videoland sturen"
+
+msgctxt "#31181"
+msgid "When you mark something as watched or unwatched in the Kodi library, Videoland gets the same status."
+msgstr "Als je iets in de Kodi-bibliotheek als bekeken of niet bekeken markeert, krijgt Videoland dezelfde status."
+
+msgctxt "#31182"
+msgid "Widgets for the home screen"
+msgstr "Widgets voor je startscherm"
+
+msgctxt "#31183"
+msgid "Pick these lists as a widget in your skin settings."
+msgstr "Kies deze lijsten als widget in de instellingen van je skin."
+
+msgctxt "#31184"
+msgid "Also search in NLZiet"
+msgstr "Ook zoeken in NLZiet"
+
+msgctxt "#31185"
+msgid "Watched status sent to Videoland"
+msgstr "Kijkstatus naar Videoland gestuurd"
+
+msgctxt "#31186"
+msgid "My watchlist"
+msgstr "Mijn kijklijst"
+
+msgctxt "#31187"
+msgid "Automatically play the next episode (binge)"
+msgstr "Volgende aflevering automatisch afspelen (binge)"
+
+msgctxt "#31188"
+msgid "When an episode ends, the next one starts by itself. With the Up Next add-on installed, leave this off and let Up Next do it."
+msgstr "Als een aflevering eindigt, start de volgende vanzelf. Heb je de Up Next-addon, laat dit dan uit en laat Up Next het doen."
+
+msgctxt "#31189"
+msgid "Stop after this episode"
+msgstr "Stop na deze aflevering"
+
+msgctxt "#31190"
+msgid "The next episode will not start automatically"
+msgstr "De volgende aflevering start niet automatisch"
+
+msgctxt "#31191"
+msgid "Automatic next episode is on again"
+msgstr "Automatisch volgende aflevering staat weer aan"
+
+msgctxt "#31192"
+msgid "Play a random episode"
+msgstr "Willekeurige aflevering afspelen"
+
+msgctxt "#31193"
+msgid "No episodes found to pick from"
+msgstr "Geen afleveringen gevonden om uit te kiezen"
+
+msgctxt "#31194"
+msgid "Watch history"
+msgstr "Kijkgeschiedenis"
+
+msgctxt "#31195"
+msgid "Nothing watched yet"
+msgstr "Nog niets gekeken"
+
+msgctxt "#31196"
+msgid "Clear watch history"
+msgstr "Kijkgeschiedenis wissen"
+
+msgctxt "#31197"
+msgid "Watch history cleared"
+msgstr "Kijkgeschiedenis gewist"
+
+msgctxt "#31198"
+msgid "Preferred audio language"
+msgstr "Voorkeur gesproken taal"
+
+msgctxt "#31199"
+msgid "Automatically choose this spoken language when a video starts, if available."
+msgstr "Kies deze gesproken taal automatisch als een video start, als die beschikbaar is."
+
+msgctxt "#31200"
+msgid "Preferred subtitle language"
+msgstr "Voorkeur ondertiteltaal"
+
+msgctxt "#31201"
+msgid "Automatically turn on subtitles in this language when a video starts, if available."
+msgstr "Zet automatisch ondertiteling in deze taal aan als een video start, als die beschikbaar is."
+
+msgctxt "#31202"
+msgid "Off"
+msgstr "Uit"
+
+msgctxt "#31203"
+msgid "Dutch"
+msgstr "Nederlands"
+
+msgctxt "#31204"
+msgid "English"
+msgstr "Engels"
+
+msgctxt "#31205"
+msgid "Original"
+msgstr "Origineel"
+
+msgctxt "#31206"
+msgid "Mark whole series as watched"
+msgstr "Hele serie als bekeken markeren"
+
+msgctxt "#31207"
+msgid "{0} episodes marked as watched"
+msgstr "{0} afleveringen als bekeken gemarkeerd"
+
+msgctxt "#31208"
+msgid "Marking as watched..."
+msgstr "Bezig met markeren..."
+
+msgctxt "#31209"
+msgid "New episode: {0}"
+msgstr "Nieuwe aflevering: {0}"
+
+msgctxt "#31210"
+msgid "Notify about new episodes"
+msgstr "Melding bij nieuwe afleveringen"
+
+msgctxt "#31211"
+msgid "Show a Kodi notification when a series in your watchlist gets a new episode."
+msgstr "Toon een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt."
+
+msgctxt "#31212"
+msgid "Recommended for you"
+msgstr "Aanbevolen voor jou"
+
+msgctxt "#31213"
+msgid "New on Videoland"
+msgstr "Nieuw op Videoland"
+
+msgctxt "#31214"
+msgid "Counts as watched at"
+msgstr "Telt als bekeken bij"
+
+msgctxt "#31215"
+msgid "How much of a video you must see before it is sent to Videoland as watched."
+msgstr "Hoeveel van een video je gezien moet hebben voordat die als bekeken naar Videoland gaat."
+
+msgctxt "#31216"
+msgid "Continue watching (both services)"
+msgstr "Verder kijken (beide diensten)"
+
+msgctxt "#31217"
+msgid "Open NLZiet: Continue watching"
+msgstr "Open NLZiet: Verder kijken"
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr "Ondertitels zoeken als de stream er geen heeft"
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr "Als een video geen eigen ondertiteling heeft, open de ondertitelzoeker van Kodi zodat je ondertitel-addon (bijv. OpenSubtitles) er een kan zoeken."
+
+msgctxt "#31220"
+msgid "Add new episodes to the library automatically"
+msgstr "Nieuwe afleveringen automatisch aan de bibliotheek toevoegen"
+
+msgctxt "#31221"
+msgid "When a series you follow gets a new episode, update the library so the episode is placed with the others right away."
+msgstr "Als een serie die je volgt een nieuwe aflevering krijgt, werk de bibliotheek bij zodat de aflevering meteen bij de rest komt te staan."
+
+msgctxt "#31222"
+msgid "Library dates updated ({0} episodes)"
+msgstr "Bibliotheekdatums bijgewerkt ({0} afleveringen)"
+
+msgctxt "#31223"
+msgid "Also show what you watched on another device"
+msgstr "Ook tonen wat je op een ander apparaat keek"
+
+msgctxt "#31224"
+msgid "Once an hour, copy your Videoland watch position into the Kodi library, so episodes you started on your phone or tablet also appear in the continue-watching rows here."
+msgstr "Eén keer per uur je Videoland-kijkpositie naar de Kodi-bibliotheek kopiëren, zodat afleveringen die je op je telefoon of tablet begon ook hier in de 'verder kijken'-rijen verschijnen."
+
+msgctxt "#31225"
+msgid "Next episode"
+msgstr "Volgende aflevering"
+
+msgctxt "#31226"
+msgid "What happens after an episode. Up Next add-on: the familiar card (needs service.upnext). By the add-on itself: a built-in question, no Up Next needed. Automatic: the next episode just starts. Off: nothing."
+msgstr "Wat er gebeurt na een aflevering. Up Next-add-on: de bekende kaart (vereist service.upnext). Door de add-on zelf: een ingebouwde vraag, geen Up Next nodig. Automatisch: de volgende aflevering begint vanzelf. Uit: niets."
+
+msgctxt "#31227"
+msgid "Up Next add-on"
+msgstr "Up Next-add-on"
+
+msgctxt "#31228"
+msgid "Play the next episode?"
+msgstr "Volgende aflevering afspelen?"
+
+msgctxt "#31229"
+msgid "By the add-on itself (ask)"
+msgstr "Door de add-on zelf (met vraag)"
+
+msgctxt "#31230"
+msgid "By the add-on itself (automatic)"
+msgstr "Door de add-on zelf (automatisch)"
+
+msgctxt "#31231"
+msgid "Off"
+msgstr "Uit"
+
+msgctxt "#31232"
+msgid "No next episode found"
+msgstr "Geen volgende aflevering gevonden"
+
+msgctxt "#31233"
+msgid "Skip intro"
+msgstr "Intro overslaan"
+
+msgctxt "#31234"
+msgid "Skip recap"
+msgstr "Terugblik overslaan"
+
+msgctxt "#31235"
+msgid "Next episode"
+msgstr "Volgende aflevering"
+
+msgctxt "#31236"
+msgid "Register library folders in Kodi"
+msgstr "Bibliotheekmappen in Kodi registreren"
+
+msgctxt "#31237"
+msgid "Sync continue watching now"
+msgstr "Verder kijken nu synchroniseren"

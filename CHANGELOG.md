@@ -1,8 +1,371 @@
 # Changelog
 
-> **Latest Version:** v1.2.1 (September 18, 2026)
+> **Latest Version:** v1.10.28 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.28] - 2026-11-17
+
+### Opgelost
+- **Hervatten-sync herstel.** De rij met kijkposities laadt alleen als zijn blok gekozen wordt; 1.10.27 haalde dat filter weg waardoor er niets laadde. Nu matcht het filter de "Verder kijken"-rij veel ruimer (continue/verder/resume/recommended) en wordt de positie uit elk positie-veld gelezen. De handmatige sync logt nu ook alle rij-namen op de home-pagina, zodat de juiste rij zichtbaar is.
+
+## [1.10.27] - 2026-11-17
+
+### Opgelost
+- **Hervatten-sync vond geen kijkposities meer.** De sync zocht de "Verder kijken"-rij op naam (`recommended_videos_by_user` / "verder kijken"); als Videoland die rij anders noemt, viel hij eruit en kwam er niks terug. Nu pakt de sync élke aflevering op de home-pagina die een hervat-positie (`progress.tcResume`) heeft, ongeacht de rij-naam. De handmatige sync logt ook welke rijen hij ziet.
+
+## [1.10.26] - 2026-11-17
+
+### Toegevoegd / diagnose
+- **Knop "Verder kijken nu synchroniseren"** in de instellingen (bibliotheek-sectie). Zet de kijkposities van de dienst meteen in de bibliotheek, zonder op de uursync of een herstart te wachten, met een melding over het resultaat.
+- De hervatten-sync logt nu wat hij doet (aantal posities, bijgewerkte afleveringen, en de reden als hij stopt: niet ingelogd, sync uit, of lokale-geschiedenis-modus aan). Zo wordt zichtbaar waaróm "verder kijken" leeg zou blijven.
+
+## [1.10.25] - 2026-11-17
+
+### Opgelost
+- **"EXCEPTION: Invalid setting type" bij elke serie tijdens de bibliotheek-update.** De `setting()`-helper las instellingen met `getSettingString`, wat voor een boolean-instelling (zoals `art_tmdb_first`) de fout opgooit; Kodi logt die dan per serie, en de add-on viel terug op de standaardwaarde in plaats van jouw instelling. De helper gebruikt nu de ongetypeerde `getSetting`, die voor elk type werkt. (NLZiet had dit al goed.)
+
+## [1.10.24] - 2026-11-17
+
+### Opgelost (belangrijk)
+- **"Verder kijken" van de bibliotheek werd gewist.** De automatische bronregistratie (1.10.23) verwijderde bij elke scan dubbele pad-rijen uit Kodi's database met een `DELETE`; in Kodi haalt dat óók de afleveringen eronder en hun hervat-posities weg. De `DELETE` is verwijderd — de registratie zet nu alleen het content-type/scraper goed en voegt een ontbrekende rij toe, zonder iets te verwijderen. Hervat-posities komen bij de volgende synchronisatie weer terug.
+
+## [1.10.23] - 2026-11-17
+
+### Toegevoegd
+- **Bibliotheek automatisch in Kodi registreren.** De add-on zet de bibliotheekmappen nu zelf in `sources.xml` en stelt het content-type (series/films) + de lokale scraper in Kodi's database in, zodat je series en films zonder handmatige bron-wizard in "Series"/"Films" verschijnen. Gebeurt automatisch bij elke bibliotheek-update, plus een knop *Bibliotheekmappen in Kodi registreren* in de instellingen. (Overgenomen uit dezelfde PR #48-review als de NLZiet-add-on, hier nagebouwd voor Videoland.)
+
+## [1.10.22] - 2026-11-17
+
+### Beveiliging
+- **Path traversal in de bibliotheek gedicht.** `Library.remove` valideert het map-pad uit `library.json` nu (`_is_safe_folder`) en controleert dat het binnen de bibliotheek-root blijft (`_path_inside_root` via `realpath`/`commonpath`); een geknoeide `library.json` kan niet langer een willekeurige map laten verwijderen.
+- **Nauwkeurigere remote-detectie:** `LocalFS._remote` herkent een echte URL-scheme (`smb://`, `nfs://`, …) via een anker-regex in plaats van een losse `"://"` ergens in een lokale bestandsnaam.
+- De gedeelde modules zijn bijgewerkt met de security-/robuustheidsfixes uit de code-review van Nigel1992 (o.a. metadata-URL-injectie afgevangen, gesigneerde afbeeldings-URL's blijven heel, guards tegen corrupte caches en rommelige data in `metadata`, `library_art`, `library_resume`, `logo_cache`, `playback_extras`, `watch_sync`, `errors`).
+
+> Command injection was hier al niet van toepassing: Videoland bouwt alle `RunPlugin`-URL's via `urlencode`.
+
+## [1.10.21] - 2026-11-16
+
+### Toegevoegd
+- **"Terugblik overslaan" zoals in de Videoland-app.** Uit de logs bleek dat Videoland geen apart recap-hoofdstuk levert (web geeft alleen intro + aftiteling, het mobiele layout helemaal geen hoofdstukken). Wat de app "Terugblik overslaan" noemt, is het lange openingssegment dat de backend simpelweg `intro` noemt. Een lange opening (≥45s) wordt nu als terugblik getoond met "Terugblik overslaan"; een korte opening blijft "Intro overslaan".
+
+### Verwijderd
+- De mobiele-platform-proef voor de recap (deed elke keer een nutteloze netwerk-call; bewezen dat dat endpoint geen recap levert).
+
+## [1.10.20] - 2026-11-16
+
+### Gewijzigd
+- De recap-scanner herkent nu markers met wélke tijdcode-veldnaam dan ook (niet alleen `tcStart`), zodat een Android-marker met afwijkende veldnamen toch gevonden wordt. Als er nog niets gevonden wordt, logt de addon de top-sleutels van het Android-antwoord en de veldnamen van elk object met een `type`, zodat zichtbaar wordt waar een eventuele terugblik-markering zit.
+
+## [1.10.19] - 2026-11-16
+
+### Gewijzigd
+- De recap-zoeker op het Android-platform doorzoekt nu het hele antwoord naar chapter-data in plaats van alleen het `chapters`-veld van de hoofdvideo. Zo wordt een terugblik-markering ook gevonden als Videoland die elders in het Android-antwoord plaatst. De log toont nu zowel de chapters van de hoofdvideo als álle gevonden chapter-types (`matched [...] | all chapter types [...]`).
+
+## [1.10.18] - 2026-11-16
+
+### Toegevoegd
+- **Terugblik-skip via het Android-platform van Videoland.** Het juiste adres is gevonden: platform `m6group_androidmob` met token `token-web-31`, mét de paginatie-parameters die de web-layout ook gebruikt. De addon haalt de recap-markering nu uit Videoland's mobiele kant en toont "Terugblik overslaan" zodra die er is. De verkeerde combinaties (niet-bestaande android-tokens, het niet-ondersteunde iOS-platform) zijn eruit.
+
+## [1.10.17] - 2026-11-16
+
+### Diagnose
+- De mobiele-platform-proef logt nu de volledige foutmelding (met HTTP-status) in plaats van alleen "ApiError", zodat zichtbaar wordt waaróm een combinatie faalt (bv. 404 verkeerde token, 400 verkeerd verzoek, of JWT-fout). Alle web-functies blijven ongewijzigd.
+
+## [1.10.16] - 2026-11-16
+
+### Toegevoegd (proef)
+- **Terugblik-skip via Videoland's mobiele kant.** De web-API geeft geen recap-markering; de addon probeert die nu op de achtergrond uit Videoland's mobiele platform te halen en toont dan "Terugblik overslaan". Logt welke platform/token-combinatie werkt (`[Videoland] mobile …`), zodat de juiste vastgezet kan worden.
+
+### Verwijderd
+- De volledige video-dump-probe.
+## [1.10.15] - 2026-11-16
+
+### Diagnose
+- Dumpt de volledige video-info (`video-dump …`) om te bepalen of de recap-markering ergens in de web-data zit. Wordt daarna weggehaald.
+
+## [1.10.14] - 2026-11-16
+
+### Gewijzigd
+- **"Overslaan"-knop blijft staan tot de intro/terugblik voorbij is** (i.p.v. na ~12 sec te sluiten). Met Terug weg te klikken als je wilt doorkijken.
+- Logt nu ook de ruwe chapter-types (`chapter types: [...]`), zodat een niet-herkende terugblik-type zichtbaar wordt en toegevoegd kan worden.
+
+## [1.10.13] - 2026-11-16
+
+### Opgelost
+- **Niet meer twee keer de "volgende aflevering"-vraag.** Bij de overgang naar de volgende aflevering las de nieuwe wachter heel even nog de oude positie (bijna het eind), waardoor de kaart meteen weer verscheen. De kaart komt nu alleen als de video eerst vóór de aftiteling is gezien.
+
+## [1.10.12] - 2026-11-16
+
+### Gewijzigd
+- **"Overslaan" nu als klein knopje in de hoek, zoals de Videoland-app.** De intro/terugblik-vraag en de "volgende aflevering"-vraag verschijnen niet meer als beeldvullend ja/nee-venster, maar als een wit pilletje rechtsonder (druk op OK om te doen, negeren om door te kijken). De video blijft erachter zichtbaar.
+
+## [1.10.11] - 2026-11-16
+
+### Toegevoegd
+- **Intro overslaan, zoals de Videoland-app.** Videoland levert z'n eigen intro- en aftiteling-markeringen (in `video.chapters`). De add-on gebruikt die nu: aan het begin van de intro verschijnt "Intro overslaan?", en hij springt naar het einde van de intro.
+- **"Volgende aflevering" op het juiste moment.** De vraag verschijnt nu precies als de **aftiteling** begint (uit dezelfde markeringen), niet meer ~45 sec voor het eind geschat.
+
+### Verwijderd
+- De tijdelijke marker-probe.
+
+## [1.10.10] - 2026-11-16
+
+### Diagnose
+- Probe om Videoland's intro-markeringen te vinden, nu ook over de volledige afspeel-data (niet alleen de kaart). Logt `[Videoland] marker-probe …`.
+
+## [1.10.9] - 2026-11-16
+
+### Diagnose
+- **Probe om Videoland's intro-markeringen te vinden.** Logt bij het afspelen `[Videoland] marker-probe …` met de velden waarin Videoland z'n intro/aftiteling-markeringen bewaart, zodat de echte "Overslaan" (zoals de app) ingebouwd kan worden. Wordt daarna weggehaald.
+
+## [1.10.8] - 2026-11-15
+
+### Opgelost
+- **"Nee" bij de vraag start de volgende aflevering niet meer.** De achtergronddienst leest de instelling nu vers bij elke beslissing (hield 'm anders vast zoals bij het opstarten), en "Nee" zet een "stop na deze"-vlag zodat de dienst sowieso niets meer doet.
+
+## [1.10.7] - 2026-11-15
+
+### Opgelost
+- **Automatisch doorspelen werkt nu echt.** De volgende aflevering start nu zodra de aflevering als *bekeken* telt (voorbij de drempel), net zoals de Lucent Video-add-on het doet — niet meer alleen bij het "afgelopen"-signaal, dat bij DRM vaak als "gestopt" met een iets verouderde positie binnenkomt.
+- Tijdelijke diagnose-meldingen weer verwijderd.
+
+## [1.10.6] - 2026-11-15
+
+### Diagnose
+- **Tijdelijke meldingen om "volgende aflevering" te vinden.** Aan het eind tonen "Einde: volgende aflevering zoeken…", en daarna "Volgende aflevering starten…" of "Geen volgende aflevering gevonden". Zo is zichtbaar waar het vastloopt. Worden later weer weggehaald.
+
+## [1.10.5] - 2026-11-15
+
+### Opgelost
+- **Dubbele "volgende aflevering"-vraag echt weg.** Het slot stond in de achtergrondtaak en het wissen bij het starten maakte het stuk (een race). Het slot wordt nu meteen in de afspeel-aanroep gezet, zodat een tweede start het al ziet voordat er iets draait. Eén vraag (of melding) per aflevering.
+
+## [1.10.4] - 2026-11-15
+
+### Opgelost
+- **De vraag komt nu maar één keer.** Kodi start hetzelfde afspelen soms dubbel, waardoor "Volgende aflevering afspelen?" twee keer verscheen. Er zit nu een slot op: per aflevering één keer.
+
+## [1.10.3] - 2026-11-15
+
+### Opgelost
+- **Automatisch doorspelen werkt nu ook bij DRM-afspelen.** Kodi meldt het einde van een beveiligde video (inputstream adaptive) vaak als "gestopt" in plaats van "afgelopen", waardoor de volgende aflevering niet startte. De add-on ziet nu aan de positie (laatste seconden) dat de aflevering klaar is en speelt in de stand "automatisch" de volgende af.
+
+## [1.10.2] - 2026-11-15
+
+### Opgelost
+- **Speelt nooit meer dezelfde aflevering opnieuw.** Als de "volgende" aflevering toch de huidige blijkt te zijn, slaat de add-on het over in plaats van opnieuw te starten. Dit verhelpt het opnieuw afspelen van dezelfde aflevering.
+- **Je ziet nu waarom er geen popup komt.** In de stand "met vraag" toont de add-on kort op het scherm "Geen volgende aflevering gevonden" als er geen volgende is.
+- **Betere timing van de popup.** De aftiteling-markering wordt alleen gebruikt als die in de tweede helft van de aflevering ligt; anders komt de vraag ~45 sec voor het eind.
+
+## [1.10.1] - 2026-11-15
+
+### Opgelost
+- **Eigen "volgende aflevering"-popup kwam niet.** De aankondiging liep in een thread die Kodi te vroeg kon afbreken, waardoor de popup-wachter nooit startte. Die draait nu in een blijvende thread, met een logregel (`Next episode: own prompt armed` / `Next episode prompt at ...`) zodat te zien is wanneer hij afgaat.
+
+## [1.10.0] - 2026-11-15
+
+### Gewijzigd
+- **Volgende aflevering: nu zonder Up Next te kunnen.** Nieuwe instelling *Volgende aflevering* met vier keuzes: **Up Next-add-on** (zoals voorheen, de bekende kaart), **Door de add-on zelf (met vraag)** — een ingebouwde "Volgende aflevering afspelen?" vlak voor het einde, zonder dat `service.upnext` nodig is, **Door de add-on zelf (automatisch)** — de volgende aflevering begint vanzelf, en **Uit**. Handig als de Up Next-add-on bij jou problemen geeft. De oude losse schakelaars "Up Next" en "Automatisch doorspelen" zijn hierin samengevoegd.
+
+## [1.9.11] - 2026-11-14
+
+### Gewijzigd
+- **Net-elders-gekeken titels komen vooraan.** Bij het overnemen van je kijkpositie schrijft Videoland nu ook de tijd mee (`lastplayed`), zodat een aflevering die je zojuist op je telefoon keek vooraan in de skin-rij "Afleveringen die je kijkt" verschijnt (die sorteert op laatst gekeken), en niet ergens in het midden.
+- **Geen onnodige verversing meer.** De sync laat het beeld niet meer apart verversen; Kodi werkt de bibliotheekrijen op het hoofdscherm vanzelf bij. Zo springt een lijst waar je op dat moment doorheen bladert niet meer op het verkeerde moment terug.
+
+## [1.9.10] - 2026-11-14
+
+### Toegevoegd
+- **Ook tonen wat je op een ander apparaat keek.** Eén keer per uur (en kort na het opstarten) haalt Videoland je kijkpositie uit je "Verder kijken"-rij op en zet die als hervatpunt in de Kodi-bibliotheek. Zo verschijnt een aflevering of film die je op je telefoon, tablet of in de Videoland-app begon ook hier in de rij "Afleveringen die je kijkt" van de skin. Werkt met cloudgeschiedenis; uit te zetten met de nieuwe instelling *Ook tonen wat je op een ander apparaat keek* (standaard aan). Raakt alleen titels die Videoland zelf in je bibliotheek heeft gezet.
+
+## [1.9.9] - 2026-11-14
+
+### Fixed
+- **Datum-reparatie draait één keer opnieuw met de melding.** In 1.9.7 draaide de reparatie al stil; hij draait nu nog één keer en toont "Bibliotheekdatums bijgewerkt (N afleveringen)".
+## [1.9.8] - 2026-11-14
+
+### Added
+- **Melding als de datum-reparatie klaar is.** De eenmalige achtergrondreparatie toont nu "Bibliotheekdatums bijgewerkt (N afleveringen)" zodra hij klaar is, en ververst de huidige lijst.
+## [1.9.7] - 2026-11-14
+
+### Changed
+- **"Recent toegevoegd" volgt nu de uitzenddatum, met terugwerkende kracht.** De datum van een aflevering volgt nu de uitzenddatum, zodat de nieuwste aflevering bovenaan "recent toegevoegde afleveringen" komt. Een eenmalige achtergrondreparatie zet dit ook recht voor afleveringen die al in je bibliotheek stonden (direct in de Kodi-database).
+## [1.9.6] - 2026-11-14
+
+### Fixed
+- **Nieuwe afleveringen verschijnen in "recent toegevoegd".** Nieuw toegevoegde afleveringen krijgen nu een `dateadded` op het moment van toevoegen, zodat ze bovenaan komen in "recent toegevoegde afleveringen"-widgets. Bestaande afleveringen houden hun datum.
+## [1.9.5] - 2026-11-14
+
+### Fixed
+- **Dubbele "verder kijken" definitief weg.** Videoland toont nu helemaal geen eigen hervat-venster meer; het hervatten gaat volledig via Kodi (de "Hervatten?"-vraag van Kodi, of automatisch volgens je Kodi-instelling). Dus nog maar één venster, en je hoeft niets bij te werken. Je plek (ook van Videoland zelf) wordt gewoon toegepast.
+
+### Added
+- **Nieuwe afleveringen automatisch in de bibliotheek.** Als een serie die je volgt een nieuwe aflevering krijgt, werkt de addon de bibliotheek bij zodat die aflevering meteen bij de rest komt te staan (Instellingen → Geschiedenis; standaard aan).
+## [1.9.4] - 2026-11-14
+
+### Fixed
+- **Dubbele "verder kijken" bij afspelen vanuit de Kodi-bibliotheek, nu echt opgelost.** De detectie via Kodi-infolabels werkt niet tijdens het afspelen van een .strm-bestand, dus Videoland stelde z'n eigen vraag toch nog. De .strm-bestanden krijgen nu een merkje (inlib=1) waaraan Videoland betrouwbaar ziet dat het afspelen uit de bibliotheek komt; dan laat Videoland de hervat-vraag volledig aan Kodi over. Let op: draai één keer Bibliotheek > Bibliotheek nu bijwerken, zodat de bestaande .strm-bestanden dit merkje krijgen.
+## [1.9.3] - 2026-11-14
+
+### Fixed
+- **Nog steeds twee keer "verder kijken".** De vorige poging keek alleen naar bibliotheek-items met een database-id, maar bij afspelen vanuit de Videoland-pagina's zelf heeft Kodi vaak al een eigen hervatpunt (en toont dan z'n eigen "Hervatten?"-venster). Videoland slaat nu z'n eigen vraag over zodra Kodi al een hervatpunt voor het item heeft, zodat je nog maar één keer kiest. Heeft Kodi nog geen hervatpunt (bijv. eerste keer, verder kijken vanaf een ander apparaat), dan toont Videoland zelf de vraag zoals voorheen.
+## [1.9.2] - 2026-11-14
+
+### Fixed
+- **Twee keer gevraagd om verder te kijken vanuit de bibliotheek.** Bij afspelen vanuit de Kodi-bibliotheek vroeg eerst Kodi "Hervatten?" en daarna Videoland nog een keer. Videoland herkent nu betrouwbaar dat het afspelen uit de bibliotheek komt en laat die vraag aan Kodi over, dus je krijgt nog maar één keuze. Binnen de Videoland-addon zelf blijft Videolands eigen "Verder kijken" gewoon werken.
+## [1.9.1] - 2026-11-14
+
+### Added
+- **Ondertitels zoeken als de stream er geen heeft**: optioneel opent de addon automatisch de ondertitelzoeker van Kodi, zodat je eigen ondertitel-addon (bijv. OpenSubtitles) er een kan vinden (Instellingen → Afspelen).
+## [1.9.0] - 2026-11-14
+
+### Added
+- **Hele serie als bekeken markeren**: contextmenu op een serie in je bibliotheek stuurt de afleveringen als bekeken naar Videoland (begrensd voor hele grote series).
+- **Melding bij nieuwe afleveringen**: een Kodi-melding als een serie in je kijklijst een nieuwe aflevering krijgt (Instellingen → Geschiedenis).
+- **Aanbevolen-widget**: een lijst met Videolands eigen aanbevelingen.
+- **Verder kijken (beide diensten)**: een widget die Videolands Verder kijken toont met een snelkoppeling naar die van NLZiet.
+- **Instelbaar bekeken-percentage**: kies bij hoeveel procent een video als bekeken naar Videoland gaat (Instellingen → Geschiedenis, standaard 90%). Bij vroegtijdig stoppen boven dat percentage wordt de titel alsnog als bekeken doorgegeven.
+## [1.8.0] - 2026-11-14
+
+### Added
+- **Binge-modus**: schakelaar "Volgende aflevering automatisch afspelen" (Instellingen → Afspelen). Met Up Next geïnstalleerd: laat dit uit en laat Up Next het doen.
+- **Stop na deze aflevering**: zet de automatische volgende aflevering voor die sessie uit.
+- **Willekeurige aflevering (shuffle)**: contextmenu op een serie in je bibliotheek.
+- **Vaste taal- en ondertitelvoorkeur**: automatische keuze van gesproken taal/ondertitels bij het starten (Instellingen → Afspelen).
+- **Kijkgeschiedenis**: lokale lijst van wat je gekeken hebt, in het hoofdmenu en als widget, met wisknop.
+
+### Development
+- Deelt de nieuwe `watch_history.py`-module en de taalkeuze in `playback_extras.py` met NLZiet. Extra tests.
+## [1.7.0] - 2026-11-14
+
+### Added
+- **Watched status back to Videoland**: when you mark something as watched or unwatched in Kodi's own library, Videoland gets the same status (Settings → History → Send watched status to Videoland; needs cloud history). Watching to the end already updated Videoland and still does.
+- **Widgets for the home screen**: a new "Widgets" menu that groups Continue watching, My watchlist and the Library as ready-made lists for your skin's home-screen widgets.
+- **Search both services**: when NLZiet is installed, a search offers the same search in NLZiet at the top of the results.
+
+### Development
+- Shares the new `watch_sync.py` module with NLZiet (watched-status logic), kept identical via `scripts/sync-shared.py`.
+- 21 new unit tests (watch_sync, chapter markers).
+
+## [1.6.5] - 2026-11-14
+
+### Fixed
+- **No TMDb match for some series** (e.g. Chateau Meiland): when Videoland's page has no plain title the add-on used the page's browser title ("Show - Kijk online bij Videoland"), which never matches TMDb. Site suffixes are now stripped, the title of the card you added is used as a second try, and the Kodi log shows per series which TMDb/TVmaze match was found ("metadata for ...").
+
+### Added
+- **Next episode (Up Next)**: with the Up Next add-on installed, the next episode is offered near the end of an episode, also from the Kodi library (Settings → Playback; includes an install button).
+- **Skip intro/recap**: when Videoland sends intro or recap times with a video, "Skip the intro?" appears at that moment. Whether it sends them is logged per video ("markers found").
+
+## [1.6.4] - 2026-11-14
+
+### Changed
+- Same as 1.6.2: the video quality setting is back (1.6.3 removed it by mistake). "Highest available" uses HD only on Android and otherwise plays the best stream that works.
+
+## [1.6.2] - 2026-11-14
+
+### Fixed
+- **"Highest available" quality did not play** on Linux/LibreELEC, Windows and macOS: Videoland only grants its HD key (720p/1080p) to Widevine L1, which Kodi has only on Android, so the HD stream could never be decrypted there (see docs/playback-quality-investigation.md). The setting now uses the HD stream only on Android and otherwise plays the best software stream (up to 540p) and says so once. The setting label and help explain this.
+
+## [1.6.1] - 2026-11-14
+
+### Changed
+- **Settings → Library** is now right below Account and split into groups with a heading: Folders, Lists to the library, Automatic updates, Extra metadata and Maintenance.
+
+### Added
+- **Profile for the library**: choose whose watchlist goes into the Kodi library (Settings → Library → My watchlist to the library); by default the active profile.
+
+### Development
+- Modules shared with the other add-on are listed in `scripts/sync-shared.py` and pinned in `SHARED.lock`; a test fails when one is changed without copying it to the other add-on.
+
+## [1.6.0] - 2026-11-14
+
+### Added
+- **Posters and backgrounds: TMDb first** (Settings → Library → Extra metadata, on by default): posters and backgrounds come from TMDb when it has them, with the service's own images as fallback; descriptions stay service-first. Artwork the add-on set earlier in Kodi is replaced when a better image is known (Kodi gets the image url, so the change shows at once); artwork you chose yourself in Kodi is never replaced.
+- **Choose the right TMDb title** (Library menu, context menu of a title): pick the matching TMDb series or film by hand, or search with another term, when the automatic match missed it. Titles with a trailing year or "- Seizoen N" now also match automatically.
+- **Season posters**: each season gets its own poster from TMDb (`season01-poster.jpg`), also for seasons Kodi already scanned.
+- **Logos in the menus**: logos of titles outside the library are looked up on TMDb in the background and appear the next time a list is opened (setting "Show logos in the menus too", needs the TMDb key).
+- **One resume question**: playing from Kodi's library no longer asks "Resume?" twice: when Kodi already asked with its own resume point, the add-on does not ask again (cloud progress is still saved).
+
+## [1.5.1] - 2026-11-14
+
+### Added
+- **Series and film logos (clearlogo)**: with a TMDb key, every series and film in the library gets its logo (Dutch first, then English, then one without text) as `clearlogo.png` (films: `<name>-clearlogo.png`) and in the `.nfo`. Titles Kodi already scanned get the logo through the artwork repair. Skins that show logos instead of titles (widgets, info screens) now use them; browse lists in the add-on show the logo for titles that are in the library.
+
+## [1.5.0] - 2026-11-14
+
+### Added
+- **My watchlist in the Kodi library**: "Add My watchlist to the library now" (Library menu and Settings → Library) puts every series and film from My watchlist in the Kodi library; a bookmarked episode adds its series. With "Keep My watchlist in the library automatically" new watchlist titles are added at every automatic update, and optionally titles that left the watchlist are removed (only those that came from the watchlist).
+
+### Fixed
+- **Diagnostics**: a library folder is no longer reported as "not a Kodi source" when Kodi already has titles from it (for example when the parent folder was added as the source); editorial rails on the watchlist page are shown as info instead of a warning.
+
+## [1.4.1] - 2026-11-14
+
+### Fixed
+- **My watchlist (Mijn Kijklijst) incomplete or outdated**: the watchlist was served from the browsing cache (30 minutes up to a week, depending on the cache setting), so recently added titles were missing. It is now always loaded fresh from Videoland.
+- **Lists of the wrong profile**: the browsing cache was shared by all profiles; each profile now has its own cache folder ("Clear cache" still clears all of them).
+- **Progress notices after a restart**: "progress saved/failed" notices were suppressed during the first minute after the device started.
+
+### Added
+- **Diagnostics**: per watchlist block, how many titles Videoland reports, how many were loaded and how many are shown, to pin down any remaining gap.
+
+## [1.4.0] - 2026-11-14
+
+### Added
+- **Search filters**: a Filter entry on top of search results narrows them by type (series, films, episodes), period and genre (period and genre when Videoland supplies them).
+- The diagnostics button moved to Settings → Library.
+
+## [1.3.4] - 2026-11-14
+
+### Fixed
+- **Library titles missing from Kodi**: Kodi ignores a scan request while it is still scanning, so titles added in quick succession were written to the library folder but never scanned. Such a request now waits and runs as soon as Kodi's scan is finished, and **Update library now** always lets Kodi scan, so titles that were skipped before get in too.
+
+### Added
+- **Diagnostics** (Settings): one screen that checks sign-in, InputStream Adaptive, Widevine, the connection to the service, TMDb and TVmaze, the TMDb key, whether the library folders are Kodi sources, and how many library titles Kodi really has. A privacy-safe report with a log excerpt is saved for bug reports.
+
+## [1.3.3] - 2026-11-14
+
+### Added
+- **Sorting**: list pages offer Kodi's sort options (default order, title, year; episode and date inside seasons).
+- **Clear error messages**: unexpected problems show one sentence that says what happened (no internet, slow response, session expired, not in your subscription, no longer available, too many requests, service outage); the details go to the Kodi log.
+- **GitHub Actions**: tests and an installable zip on every push and pull request; pushing a `v*` tag publishes a release with the zip.
+
+### Fixed
+- **TMDb key test**: the button now saves the settings first (Kodi only saves when the settings window closes, so the test used to see an empty key) and says exactly what is wrong: no key saved, key not accepted, or TMDb not reachable. Connections retry with a bundled certificate list on devices without system certificates.
+- **Menu icons not changing**: the new icons now live in `resources/icons/tiles/`. Kodi caches images by file name, so with the old names it kept showing the previous icons.
+
+## [1.3.2] - 2026-11-14
+
+### Changed
+- **Menu icons**: coloured tiles per menu group (red = browse, plum = your own lists, orange = live tv, grey = account) with white line glyphs, rebuilt by `scripts/build-menu-icons.py`. Live TV has its own broadcast icon.
+- **Main menu order**: Videoland's own navigation first, then Continue Watching and Library, then profile, sign out and clear cache at the bottom.
+- **Translations**: "Sign in", "Sign out" and "Clear cache" are now translatable instead of fixed Dutch text.
+
+### Fixed
+- **Library posters**: series and films now get their poster and background in Kodi's library. The portrait and widescreen images of the card you added are remembered and used when the title page has none, and the images are saved as `poster.jpg`/`fanart.jpg` (films: `<name>-poster.jpg`/`<name>-fanart.jpg`) next to the files, which Kodi always uses.
+- **Library posters**: titles Kodi had already scanned without artwork get their poster and background after every library update and every Kodi library scan; artwork you chose in Kodi is never replaced. Settings → Library has a "Repair artwork in the Kodi library" button.
+
+## [1.3.1] - 2026-11-14
+
+### Added
+- **Library metadata**: Videoland's own data is always used first; only empty fields are filled in from TMDb (series and films, needs a free TMDb API key) and TVmaze (series, no key needed): description, poster, background, year, genres, rating, network/studio, and per-episode titles, descriptions, images and air dates. Placeholder titles such as "Aflevering 3" are replaced by the real episode title.
+- **Library metadata**: `.nfo` files also carry TMDb, TVDB, IMDb and TVmaze ids, so Kodi, skins and Trakt match titles reliably. TVDB is not queried directly (its API needs a paid key); the id comes from TMDb/TVmaze.
+- **Settings → Library → Extra metadata**: on/off switch, TMDb API key field and a "Test TMDb key" button.
+- Only exact title matches are used (films also need a matching year), answers are cached for 7 days, and an unreachable service is skipped for a few minutes.
+
+## [1.3.0] - 2026-11-14
+
+### Added
+- **Kodi library**: series and films get **Add to library** / **Remove from library** in their context menu. The add-on writes `.strm` + `.nfo` files (title, plot, season/episode, poster, fanart and a Videoland id), so titles appear in Kodi's own library and in skin widgets.
+- **Automatic updates**: added titles are refreshed in the background (default every 12 hours, never during playback). New episodes are added; titles that left Videoland are removed after three missed updates in a row. Network or login problems never count as missing.
+- **Library menu**: a new main menu entry lists everything in the library, with **Update library now** and a remove option per title.
+- **Library settings**: folders for series and films (folder browser, smb:// and nfs:// supported), automatic update and interval, and options to scan and clean the Kodi library after a change.
+
+### Changed
+- Episode numbers in the library are assigned once and stored, so file names stay the same when episodes come and go. Kodi keeps watched status and resume points.
+
+### Tests
+- 9 tests for library export, stable numbering, removal rules, context menus and the silent background update.
 
 ## [1.2.1] - 2026-09-18
 

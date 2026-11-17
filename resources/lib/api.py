@@ -133,16 +133,15 @@ class VideolandApi:
         if not cache_dir or not os.path.isdir(cache_dir):
             return 0
         removed = 0
-        try:
-            for name in os.listdir(cache_dir):
+        # Includes the per-profile subfolders.
+        for root, _dirs, names in os.walk(cache_dir):
+            for name in names:
                 if name.startswith("cache_") and name.endswith(".json"):
                     try:
-                        os.remove(os.path.join(cache_dir, name))
+                        os.remove(os.path.join(root, name))
                         removed += 1
                     except OSError:
                         pass
-        except OSError:
-            pass
         return removed
 
     def login(self, email, password):
@@ -180,6 +179,99 @@ class VideolandApi:
         if not all((uid, signature, timestamp)):
             raise ApiError("Login response did not contain a Videoland session signature")
         return {"uid": uid, "signature": signature, "timestamp": str(timestamp)}
+
+    def _platform_jwt(self, auth, platform):
+        """A JWT for another platform (e.g. mobile), without touching the
+        playback token. Uses the same account Gigya signature."""
+        headers = self._headers(authenticated=False)
+        headers.update({
+            "X-Auth-gigya-uid": auth["uid"],
+            "X-Auth-gigya-signature": auth["signature"],
+            "X-Auth-gigya-signature-timestamp": auth["timestamp"],
+            "X-Auth-Device-Id": self.device_id,
+            "X-Auth-Device-Name": "Kodi",
+        })
+        result = self._request(self.FRONT_AUTH + "/v2/platforms/{}/getJwt".format(platform), headers)
+        token = result.get("token")
+        if not token:
+            raise ApiError("no JWT for " + platform)
+        return token
+
+    # The Android app platform (m6group_androidmob) carries a recap
+    # ("Terugblik") chapter that the m6group_web layout omits. The capacity
+    # token is token-web-31 (the android-* tokens return "capacity token not
+    # found"; m6group_ios is an unsupported platform for rtlnl). The layout
+    # endpoint requires the same pagination query as the web layout.
+    MOBILE_LAYOUTS = (
+        ("m6group_androidmob", "token-web-31"),
+    )
+
+    def mobile_chapters(self, auth, video_id, location, log=None):
+        """Best-effort chapters (incl. recap) from a mobile platform, or None.
+        Does not disturb the playback token. ``log`` is called with short
+        progress strings for diagnosis."""
+        def say(message):
+            if log:
+                try:
+                    log(message)
+                except Exception:
+                    pass
+        for platform, token in self.MOBILE_LAYOUTS:
+            try:
+                jwt = self._platform_jwt(auth, platform)
+            except Exception as exc:
+                say("mobile {}/{}: jwt {} | {}".format(
+                    platform, token, type(exc).__name__, str(exc)[:200]))
+                continue
+            url = self.LAYOUT + "/front/v1/{}/{}/main/{}/video/{}/layout".format(
+                self.CUSTOMER, platform, token, video_id)
+            # The layout endpoint has pagination blocks enabled on this token
+            # and rejects the request without the paging query (same as web).
+            url += "?" + urlencode({"blockPage": 1, "nbPages": 2})
+            headers = self._headers(location)
+            headers["Authorization"] = "Bearer " + jwt
+            try:
+                data = self._request(url, headers)
+            except Exception as exc:
+                say("mobile {}/{}: get {} | {}".format(
+                    platform, token, type(exc).__name__, str(exc)[:200]))
+                continue
+            # The matching video item is the first place to look, but the
+            # Android layout may carry the recap elsewhere (another item, a
+            # different field). Collect every chapter list in the response.
+            matched = None
+            for item, _block in walk_item_content(data):
+                video = item.get("video")
+                if isinstance(video, dict) and str(video.get("id")) == str(video_id):
+                    matched = video.get("chapters")
+                    break
+            all_lists = _deep_chapter_lists(data)
+            matched_types = [c.get("type") for c in (matched or [])
+                             if isinstance(c, dict)]
+            all_types = sorted({str(c.get("type")) for lst in all_lists
+                                for c in lst if isinstance(c, dict)})
+            say("mobile {}/{}: matched {} | all chapter types {}".format(
+                platform, token, matched_types, all_types))
+            if not all_types:
+                # No recognised chapter list anywhere: log the top-level keys
+                # and the shape of every typed object, to see where (if at all)
+                # a recap marker lives in the Android response.
+                top = sorted(data.keys()) if isinstance(data, dict) else type(data).__name__
+                say("mobile {}/{}: top keys {} | typed objects {}".format(
+                    platform, token, top, _typed_object_shapes(data)))
+
+            def has_recap(types):
+                return any("recap" in str(t).lower() or "previous" in str(t).lower()
+                           or "terugblik" in str(t).lower() for t in types)
+
+            # Prefer the matched video's own chapters, then any list in the
+            # response that contains a recap marker.
+            if has_recap(matched_types):
+                return matched
+            for lst in all_lists:
+                if has_recap(c.get("type") for c in lst if isinstance(c, dict)):
+                    return lst
+        return None
 
     def jwt(self, auth, profile_id=None):
         # front-auth rejects an existing Bearer token when exchanging the
@@ -403,6 +495,67 @@ def _block_context(value):
     if isinstance(content, dict) and content.get("contentTemplateId"):
         context["template"] = content["contentTemplateId"]
     return context
+
+
+def _deep_chapter_lists(value):
+    """Collect every list of chapter/marker dicts anywhere in a layout
+    response. A chapter dict is recognised by a timecode key (tcStart/tcIn/
+    start) plus a ``type``. Returns a list of the lists found, so a recap
+    marker is caught even when it is not under the matched video's
+    ``chapters`` field."""
+    found = []
+
+    def looks_like_chapter(entry):
+        if not isinstance(entry, dict) or "type" not in entry:
+            return False
+        # Accept any timecode-ish field name (tcStart/start/startTime/from/
+        # begin/tcIn/...), so a differently-named Android marker is still caught.
+        for key in entry:
+            low = str(key).lower()
+            if "start" in low or low.startswith("tc") or low in ("from", "begin", "in"):
+                return True
+        return False
+
+    def walk(node):
+        if isinstance(node, dict):
+            for child in node.values():
+                if (isinstance(child, list) and child
+                        and all(looks_like_chapter(c) for c in child)):
+                    found.append(child)
+                else:
+                    walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(value)
+    return found
+
+
+def _typed_object_shapes(value, limit=12):
+    """Collect the distinct field-name sets of every dict that carries a
+    ``type`` key, plus their ``type`` values. Field names only (no values),
+    so a differently-named marker object reveals its shape in the log without
+    leaking data."""
+    shapes = []
+    seen = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if "type" in node:
+                keys = tuple(sorted(node.keys()))
+                sig = (keys, str(node.get("type")))
+                if sig not in seen and len(shapes) < limit:
+                    seen.add(sig)
+                    shapes.append("{}={}".format(node.get("type"), list(keys)))
+            for child in node.values():
+                walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(value)
+    return shapes
 
 
 def walk_item_content(value, block=None):

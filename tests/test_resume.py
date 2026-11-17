@@ -49,9 +49,11 @@ class ResumeTests(unittest.TestCase):
             client.layout()
             self.assertEqual(client._request.call_count, 1)
 
-    def test_resume_restart_and_no_progress(self):
-        for position, answer, expected in ((347, 1, '347'), (347, 0, '0'), (0, 1, '0')):
-            with self.subTest(position=position, answer=answer):
+    def test_resume_sets_server_position_without_its_own_dialog(self):
+        # Kodi owns the resume prompt now; the add-on only carries the server
+        # position onto the item and never shows its own dialog.
+        for position, expected in ((347, '347'), (0, '0')):
+            with self.subTest(position=position):
                 plugin = load_plugin()
                 client = MagicMock()
                 client.layout.return_value = layout(position)
@@ -60,40 +62,30 @@ class ResumeTests(unittest.TestCase):
                 plugin.api = lambda: client
                 plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
                 plugin.ensure_profile = MagicMock()
-                plugin.xbmcgui.Dialog.return_value.yesnocustom.return_value = answer
+                plugin.xbmc.getCondVisibility = lambda cond: False
+                plugin.xbmc.getInfoLabel = lambda label: ""
                 with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
                     plugin.play('clip_46228')
-                dialog = plugin.xbmcgui.Dialog.return_value.yesnocustom
-                if position:
-                    self.assertIn('5:47', dialog.call_args.args[1])
-                else:
-                    dialog.assert_not_called()
+                plugin.xbmcgui.Dialog.return_value.yesnocustom.assert_not_called()
                 plugin.xbmcgui.ListItem.return_value.getVideoInfoTag.return_value.setResumePoint.assert_called_once_with(float(expected), 770.0)
                 plugin.xbmcgui.ListItem.return_value.setProperty.assert_any_call('StartOffset', expected)
                 plugin.xbmcplugin.setResolvedUrl.assert_called_once_with(
                     plugin.HANDLE, True, plugin.xbmcgui.ListItem.return_value)
 
-    def test_dismissed_resume_dialog_never_plays_or_syncs(self):
-        for answer in (-1, 2, None):
-            with self.subTest(answer=answer):
-                plugin = load_plugin()
-                client = MagicMock()
-                client.layout.return_value = layout()
-                plugin.api = lambda: client
-                plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
-                plugin.ensure_profile = MagicMock()
-                plugin.video_assets = MagicMock()
-                plugin.progress_tracker = MagicMock()
-                plugin.xbmcgui.Dialog.return_value.yesnocustom.return_value = answer
-                with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
-                    plugin.play('clip_46228')
-                plugin.xbmcplugin.setResolvedUrl.assert_called_once_with(
-                    plugin.HANDLE, False, plugin.xbmcgui.ListItem.return_value)
-                plugin.video_assets.assert_not_called()
-                client.upfront_token.assert_not_called()
-                plugin.progress_tracker.assert_not_called()
-                client.progress_session.assert_not_called()
-                client.progress_view.assert_not_called()
+    def test_library_strm_defers_resume_to_kodi(self):
+        plugin = load_plugin()
+        client = MagicMock()
+        client.layout.return_value = layout(347)
+        client.upfront_token.return_value = 'test'
+        plugin.api = lambda: client
+        plugin.ensure_login = MagicMock(return_value={'uid': 'user'})
+        plugin.ensure_profile = MagicMock()
+        plugin.xbmc.getCondVisibility = lambda cond: False
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        with patch.dict('sys.modules', {'inputstreamhelper': MagicMock()}):
+            plugin.play('clip_46228', from_library=True)
+        # Playback from a library .strm must not show the add-on's own dialog.
+        plugin.xbmcgui.Dialog.return_value.yesnocustom.assert_not_called()
 
     def test_browse_items_explicitly_suppress_local_progress(self):
         plugin = load_plugin()
@@ -130,3 +122,22 @@ class ResumeTests(unittest.TestCase):
                     plugin.xbmc.executebuiltin.assert_called_once_with('Container.Refresh')
                 else:
                     plugin.xbmc.executebuiltin.assert_not_called()
+
+
+class LibraryResumeTests(unittest.TestCase):
+    def test_kodi_library_resume_detects_kodi_owned_resume(self):
+        plugin = load_plugin()
+        # Kodi already has a resume point for the item -> Kodi will prompt.
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        plugin.xbmc.getCondVisibility = lambda cond: cond == "ListItem.IsResumable"
+        self.assertTrue(plugin.kodi_library_resume())
+        # No Kodi resume point, but a library database id still counts.
+        plugin.xbmc.getCondVisibility = lambda cond: False
+        plugin.xbmc.getInfoLabel = lambda label: "42" if label == "ListItem.DBID" else ""
+        self.assertTrue(plugin.kodi_library_resume())
+        # Played from the video-library view.
+        plugin.xbmc.getInfoLabel = lambda label: "videodb://tvshows/" if label == "Container.FolderPath" else ""
+        self.assertTrue(plugin.kodi_library_resume())
+        # Nothing: an in-add-on play with no Kodi resume, so the add-on may ask.
+        plugin.xbmc.getInfoLabel = lambda label: ""
+        self.assertFalse(plugin.kodi_library_resume())

@@ -61,16 +61,11 @@ msgid "Video quality and device compatibility"
 msgstr ""
 
 msgctxt "#31012"
-msgid ""
-"Compatible playback is the default and uses the software-protected stream, "
-"suitable for Raspberry Pi and similar devices. Highest available requests "
-"the higher-quality stream when offered, but may fail if your device cannot "
-"decrypt it. Neither option guarantees HD; the available quality also depends"
-" on the title and the licence granted by Videoland."
+msgid "Compatible playback is the default and uses the software-protected stream (up to 540p), which works on every device. Highest available uses the HD stream (720p/1080p) on Android devices with Widevine L1. Videoland only grants its HD key to L1, so on Linux/LibreELEC (Raspberry Pi), Windows and macOS it automatically plays the best stream that works there."
 msgstr ""
 
 msgctxt "#31013"
-msgid "Highest available (requires device support)"
+msgid "Highest available (HD only on Android with Widevine L1)"
 msgstr ""
 
 msgctxt "#31014"
@@ -336,4 +331,516 @@ msgstr ""
 
 msgctxt "#31101"
 msgid "Videoland has no related titles for this selection at the moment."
+msgstr ""
+
+msgctxt "#31110"
+msgid "Add to library"
+msgstr ""
+
+msgctxt "#31111"
+msgid "Remove from library"
+msgstr ""
+
+msgctxt "#31112"
+msgid "Adding to library: {0}"
+msgstr ""
+
+msgctxt "#31113"
+msgid "This title could not be added to the library right now."
+msgstr ""
+
+msgctxt "#31114"
+msgid "{0} added to library ({1} episodes)"
+msgstr ""
+
+msgctxt "#31115"
+msgid "{0} added to library"
+msgstr ""
+
+msgctxt "#31116"
+msgid "{0} removed from library"
+msgstr ""
+
+msgctxt "#31117"
+msgid "The library is empty. Add series or films through their context menu."
+msgstr ""
+
+msgctxt "#31118"
+msgid "Updating library..."
+msgstr ""
+
+msgctxt "#31119"
+msgid "Library updated: {0} new, {1} removed"
+msgstr ""
+
+msgctxt "#31120"
+msgid "Library"
+msgstr ""
+
+msgctxt "#31121"
+msgid "Update library now"
+msgstr ""
+
+msgctxt "#31122"
+msgid "Series"
+msgstr ""
+
+msgctxt "#31123"
+msgid "Film"
+msgstr ""
+
+msgctxt "#31124"
+msgid "Folder for series"
+msgstr ""
+
+msgctxt "#31125"
+msgid "Add this folder once in Kodi as a video source with content type TV shows and the scraper \"Local information only\"."
+msgstr ""
+
+msgctxt "#31126"
+msgid "Folder for films"
+msgstr ""
+
+msgctxt "#31127"
+msgid "Add this folder once in Kodi as a video source with content type Movies and the scraper \"Local information only\"."
+msgstr ""
+
+msgctxt "#31128"
+msgid "Update library automatically"
+msgstr ""
+
+msgctxt "#31129"
+msgid "Adds new episodes and removes titles that left Videoland. Never runs during playback. A title is only removed after it is missing three updates in a row."
+msgstr ""
+
+msgctxt "#31130"
+msgid "Update every (hours)"
+msgstr ""
+
+msgctxt "#31131"
+msgid "Scan the Kodi library after a change"
+msgstr ""
+
+msgctxt "#31132"
+msgid "Clean removed titles from the Kodi library"
+msgstr ""
+
+msgctxt "#31133"
+msgid "TMDb key works"
+msgstr ""
+
+msgctxt "#31134"
+msgid "TMDb does not accept this key. Check that you pasted the complete API Key (32 characters) or API Read Access Token."
+msgstr ""
+
+msgctxt "#31135"
+msgid "Extra metadata"
+msgstr ""
+
+msgctxt "#31136"
+msgid "Fill in missing data from TMDb / TVmaze"
+msgstr ""
+
+msgctxt "#31137"
+msgid "Videoland data is always used first. Only empty fields (description, poster, background, year, genre, rating, episode descriptions and images) are filled in. Also adds TMDb, TVDB and IMDb ids. Series work without a key through TVmaze; films need a TMDb key."
+msgstr ""
+
+msgctxt "#31138"
+msgid "TMDb API key (optional)"
+msgstr ""
+
+msgctxt "#31139"
+msgid "Free key from themoviedb.org: Settings > API. Paste the \"API Key\" or the \"API Read Access Token\"."
+msgstr ""
+
+msgctxt "#31140"
+msgid "Test TMDb key"
+msgstr ""
+
+msgctxt "#31141"
+msgid "Sign in"
+msgstr ""
+
+msgctxt "#31142"
+msgid "Sign out"
+msgstr ""
+
+msgctxt "#31143"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#31144"
+msgid "Artwork updated for {0} titles"
+msgstr ""
+
+msgctxt "#31145"
+msgid "Repair artwork in the Kodi library"
+msgstr ""
+
+msgctxt "#31146"
+msgid "No TMDb key is saved yet. Enter the key, press OK to save the settings and test again."
+msgstr ""
+
+msgctxt "#31147"
+msgid "TMDb could not be reached. Check your internet connection; the key itself was not tested."
+msgstr ""
+
+msgctxt "#31148"
+msgid "Run diagnostics"
+msgstr ""
+
+msgctxt "#31149"
+msgid "Checks sign-in, InputStream Adaptive, Widevine, the connection to Videoland, TMDb and TVmaze, and whether every library title is in Kodi. Saves a privacy-safe report you can attach to a bug report."
+msgstr ""
+
+msgctxt "#31150"
+msgid "Adding My watchlist to the library..."
+msgstr ""
+
+msgctxt "#31151"
+msgid "Watchlist: {0} added, {1} removed, {2} failed"
+msgstr ""
+
+msgctxt "#31152"
+msgid "Add My watchlist to the library now"
+msgstr ""
+
+msgctxt "#31153"
+msgid "Keep My watchlist in the library automatically"
+msgstr ""
+
+msgctxt "#31154"
+msgid "Every series and film in My watchlist is added to the Kodi library, and new titles are added at every automatic update. A bookmarked episode adds its series."
+msgstr ""
+
+msgctxt "#31155"
+msgid "Remove titles that left My watchlist"
+msgstr ""
+
+msgctxt "#31156"
+msgid "Only titles that were added from the watchlist are removed; titles you added yourself stay."
+msgstr ""
+
+msgctxt "#31157"
+msgid "Show logos in the menus too"
+msgstr ""
+
+msgctxt "#31158"
+msgid "Logos of titles outside the library are looked up on TMDb in the background (needs the TMDb key). Lists never wait: a logo appears the next time you open the list."
+msgstr ""
+
+msgctxt "#31159"
+msgid "Posters and backgrounds: TMDb first"
+msgstr ""
+
+msgctxt "#31160"
+msgid "On: posters and backgrounds come from TMDb when it has them, with Videoland's own images as fallback. Descriptions always come from Videoland first. Artwork you chose yourself in Kodi is never replaced."
+msgstr ""
+
+msgctxt "#31161"
+msgid "Choose the right TMDb title"
+msgstr ""
+
+msgctxt "#31162"
+msgid "Other search term..."
+msgstr ""
+
+msgctxt "#31163"
+msgid "TMDb title set; details and artwork are updated"
+msgstr ""
+
+msgctxt "#31164"
+msgid "Profile for the library"
+msgstr ""
+
+msgctxt "#31165"
+msgid "The active profile"
+msgstr ""
+
+msgctxt "#31166"
+msgid "Whose watchlist goes into the Kodi library. Handy when the family uses several profiles but the library should follow one."
+msgstr ""
+
+msgctxt "#31167"
+msgid "Choose the profile for the library"
+msgstr ""
+
+msgctxt "#31168"
+msgid "Folders"
+msgstr ""
+
+msgctxt "#31169"
+msgid "My watchlist to the library"
+msgstr ""
+
+msgctxt "#31170"
+msgid "Automatic updates"
+msgstr ""
+
+msgctxt "#31171"
+msgid "Maintenance"
+msgstr ""
+
+msgctxt "#31172"
+msgid "HD is not available on this device (Videoland only allows it with Widevine L1, on Android). Playing the best quality that works here."
+msgstr ""
+
+msgctxt "#31173"
+msgid "Skip the intro?"
+msgstr ""
+
+msgctxt "#31174"
+msgid "Skip the recap?"
+msgstr ""
+
+msgctxt "#31175"
+msgid "Next episode (Up Next)"
+msgstr ""
+
+msgctxt "#31176"
+msgid "Near the end of an episode the Up Next add-on offers the next episode, also when playing from the Kodi library. Needs the Up Next add-on (service.upnext)."
+msgstr ""
+
+msgctxt "#31177"
+msgid "Install the Up Next add-on"
+msgstr ""
+
+msgctxt "#31178"
+msgid "Offer to skip intro and recap"
+msgstr ""
+
+msgctxt "#31179"
+msgid "When Videoland sends the times of an intro or recap with a video, a question to skip it appears at that moment. Whether Videoland sends them is written to the Kodi log (\"markers found\")."
+msgstr ""
+
+msgctxt "#31180"
+msgid "Send watched status to Videoland"
+msgstr ""
+
+msgctxt "#31181"
+msgid "When you mark something as watched or unwatched in the Kodi library, Videoland gets the same status."
+msgstr ""
+
+msgctxt "#31182"
+msgid "Widgets for the home screen"
+msgstr ""
+
+msgctxt "#31183"
+msgid "Pick these lists as a widget in your skin settings."
+msgstr ""
+
+msgctxt "#31184"
+msgid "Also search in NLZiet"
+msgstr ""
+
+msgctxt "#31185"
+msgid "Watched status sent to Videoland"
+msgstr ""
+
+msgctxt "#31186"
+msgid "My watchlist"
+msgstr ""
+
+msgctxt "#31187"
+msgid "Automatically play the next episode (binge)"
+msgstr ""
+
+msgctxt "#31188"
+msgid "When an episode ends, the next one starts by itself. With the Up Next add-on installed, leave this off and let Up Next do it."
+msgstr ""
+
+msgctxt "#31189"
+msgid "Stop after this episode"
+msgstr ""
+
+msgctxt "#31190"
+msgid "The next episode will not start automatically"
+msgstr ""
+
+msgctxt "#31191"
+msgid "Automatic next episode is on again"
+msgstr ""
+
+msgctxt "#31192"
+msgid "Play a random episode"
+msgstr ""
+
+msgctxt "#31193"
+msgid "No episodes found to pick from"
+msgstr ""
+
+msgctxt "#31194"
+msgid "Watch history"
+msgstr ""
+
+msgctxt "#31195"
+msgid "Nothing watched yet"
+msgstr ""
+
+msgctxt "#31196"
+msgid "Clear watch history"
+msgstr ""
+
+msgctxt "#31197"
+msgid "Watch history cleared"
+msgstr ""
+
+msgctxt "#31198"
+msgid "Preferred audio language"
+msgstr ""
+
+msgctxt "#31199"
+msgid "Automatically choose this spoken language when a video starts, if available."
+msgstr ""
+
+msgctxt "#31200"
+msgid "Preferred subtitle language"
+msgstr ""
+
+msgctxt "#31201"
+msgid "Automatically turn on subtitles in this language when a video starts, if available."
+msgstr ""
+
+msgctxt "#31202"
+msgid "Off"
+msgstr ""
+
+msgctxt "#31203"
+msgid "Dutch"
+msgstr ""
+
+msgctxt "#31204"
+msgid "English"
+msgstr ""
+
+msgctxt "#31205"
+msgid "Original"
+msgstr ""
+
+msgctxt "#31206"
+msgid "Mark whole series as watched"
+msgstr ""
+
+msgctxt "#31207"
+msgid "{0} episodes marked as watched"
+msgstr ""
+
+msgctxt "#31208"
+msgid "Marking as watched..."
+msgstr ""
+
+msgctxt "#31209"
+msgid "New episode: {0}"
+msgstr ""
+
+msgctxt "#31210"
+msgid "Notify about new episodes"
+msgstr ""
+
+msgctxt "#31211"
+msgid "Show a Kodi notification when a series in your watchlist gets a new episode."
+msgstr ""
+
+msgctxt "#31212"
+msgid "Recommended for you"
+msgstr ""
+
+msgctxt "#31213"
+msgid "New on Videoland"
+msgstr ""
+
+msgctxt "#31214"
+msgid "Counts as watched at"
+msgstr ""
+
+msgctxt "#31215"
+msgid "How much of a video you must see before it is sent to Videoland as watched."
+msgstr ""
+
+msgctxt "#31216"
+msgid "Continue watching (both services)"
+msgstr ""
+
+msgctxt "#31217"
+msgid "Open NLZiet: Continue watching"
+msgstr ""
+
+msgctxt "#31218"
+msgid "Find subtitles if the stream has none"
+msgstr ""
+
+msgctxt "#31219"
+msgid "When a video has no subtitles of its own, open Kodi's subtitle search so your subtitle add-on (e.g. OpenSubtitles) can find one."
+msgstr ""
+
+msgctxt "#31220"
+msgid "Add new episodes to the library automatically"
+msgstr ""
+
+msgctxt "#31221"
+msgid "When a series you follow gets a new episode, update the library so the episode is placed with the others right away."
+msgstr ""
+
+msgctxt "#31222"
+msgid "Library dates updated ({0} episodes)"
+msgstr ""
+
+msgctxt "#31223"
+msgid "Also show what you watched on another device"
+msgstr ""
+
+msgctxt "#31224"
+msgid "Once an hour, copy your Videoland watch position into the Kodi library, so episodes you started on your phone or tablet also appear in the continue-watching rows here."
+msgstr ""
+
+msgctxt "#31225"
+msgid "Next episode"
+msgstr ""
+
+msgctxt "#31226"
+msgid "What happens after an episode. Up Next add-on: the familiar card (needs service.upnext). By the add-on itself: a built-in question, no Up Next needed. Automatic: the next episode just starts. Off: nothing."
+msgstr ""
+
+msgctxt "#31227"
+msgid "Up Next add-on"
+msgstr ""
+
+msgctxt "#31228"
+msgid "Play the next episode?"
+msgstr ""
+
+msgctxt "#31229"
+msgid "By the add-on itself (ask)"
+msgstr ""
+
+msgctxt "#31230"
+msgid "By the add-on itself (automatic)"
+msgstr ""
+
+msgctxt "#31231"
+msgid "Off"
+msgstr ""
+
+msgctxt "#31232"
+msgid "No next episode found"
+msgstr ""
+
+msgctxt "#31233"
+msgid "Skip intro"
+msgstr ""
+
+msgctxt "#31234"
+msgid "Skip recap"
+msgstr ""
+
+msgctxt "#31235"
+msgid "Next episode"
+msgstr ""
+
+msgctxt "#31236"
+msgid "Register library folders in Kodi"
+msgstr ""
+
+msgctxt "#31237"
+msgid "Sync continue watching now"
 msgstr ""
