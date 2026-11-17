@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.23 (November 17, 2026)
+> **Latest Version:** v1.10.24 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.24] - 2026-11-17
+
+### Opgelost (belangrijk)
+- **"Verder kijken" van de bibliotheek werd gewist.** De automatische bronregistratie (1.10.23) verwijderde bij elke scan dubbele pad-rijen uit Kodi's database met een `DELETE`; in Kodi haalt dat óók de afleveringen eronder en hun hervat-posities weg. De `DELETE` is verwijderd — de registratie zet nu alleen het content-type/scraper goed en voegt een ontbrekende rij toe, zonder iets te verwijderen. Hervat-posities komen bij de volgende synchronisatie weer terug.
 
 ## [1.10.23] - 2026-11-17
 

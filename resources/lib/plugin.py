@@ -2286,8 +2286,10 @@ def _fix_library_sources_db():
     try:
         conn = sqlite3.connect(db_path, timeout=5)
         cur = conn.cursor()
-        cur.execute("DELETE FROM path WHERE strPath LIKE "
-                    "'/%addon_data/plugin.video.videoland.nl/library/%'")
+        # NOTE: never DELETE path rows here. Removing a path row cascades to the
+        # episodes/movies beneath it and their resume bookmarks, which wiped the
+        # user's "continue watching". Only set the content type/scraper on the
+        # existing rows and insert a row when it is missing.
         for abs_path, special_path, content in pairs:
             for base in (abs_path, special_path):
                 if not base:
