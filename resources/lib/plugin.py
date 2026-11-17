@@ -2923,40 +2923,56 @@ def _library_rpc(method, params):
     return answer.get("result") or {}
 
 
+def _resume_seconds(progress):
+    """A positive resume position (seconds) from a video ``progress`` dict, under
+    whatever field Videoland uses (tcResume and friends)."""
+    if not isinstance(progress, dict):
+        return 0
+    position = progress.get("tcResume")
+    if isinstance(position, (int, float)) and not isinstance(position, bool) and position > 0:
+        return int(position)
+    for key, value in progress.items():
+        low = str(key).lower()
+        if ("resume" in low or "position" in low or low.startswith("tc")) \
+                and isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+            return int(value)
+    return 0
+
+
 def _service_resume_positions(client, log=False):
-    """``{str(video_id): (position_seconds, duration_seconds)}`` for cross-device
-    resume. A continue-watching item is any home-page video that carries a
-    resume position (``video.progress.tcResume``), regardless of which rail it
-    sits in -- Videoland's "Verder kijken" rail has been seen under more than
-    one block name, so matching on the resume position itself is robust."""
+    """``{str(video_id): (position_seconds, duration_seconds)}`` from Videoland's
+    "Verder kijken" rail, for cross-device resume. The rail's items only load
+    when its block is selected, so match the block generously (its name has
+    varied) and read the resume position from whatever progress field it uses."""
+    def is_continue(block):
+        meta = (block.get("analytics") or {}).get("tealium") or {}
+        frm = str(meta.get("from", "")).casefold()
+        title = str(meta.get("block_title", "") or block.get("title", "")).casefold()
+        return ("recommended_videos_by_user" in frm or "continue" in frm
+                or "resume" in frm or "verder kijken" in title or "continue" in title)
     client.cache_dir = None
     client.cache_ttl = 0
-    # No block_filter: load every rail's items, then keep the ones with a
-    # resume position. (Filtering by block name missed the rail when Videoland
-    # renamed it, which returned zero positions.)
-    layout = client.layout("alias", "home", complete=True)
+    layout = client.layout("alias", "home", complete=True, block_filter=is_continue)
     positions = {}
-    blocks_seen = {}
-    for item, block in walk_item_content(layout):
+    for item, _block in walk_item_content(layout):
         video = item.get("video")
         if not isinstance(video, dict):
             continue
-        name = str((block or {}).get("block_title") or (block or {}).get("feature") or "?")
-        blocks_seen[name] = blocks_seen.get(name, 0) + 1
         video_id = video.get("id")
-        progress = video.get("progress") if isinstance(video.get("progress"), dict) else {}
-        position = progress.get("tcResume")
+        position = _resume_seconds(video.get("progress"))
+        if not video_id or position <= 0:
+            continue
         duration = video.get("duration")
-        if not video_id or not isinstance(position, (int, float)) or isinstance(position, bool):
-            continue
-        if position <= 0:
-            continue
         total = int(duration) if isinstance(duration, (int, float)) and not isinstance(duration, bool) and duration > 0 else 0
-        positions[str(video_id)] = (int(position), total)
+        positions[str(video_id)] = (position, total)
     if log:
-        xbmc.log("[Videoland] resume fetch: {} position(s) with tcResume; "
-                 "rails seen (title: item count): {}".format(len(positions), blocks_seen),
-                 xbmc.LOGINFO)
+        ids = []
+        for block in (layout.get("blocks") if isinstance(layout, dict) else None) or []:
+            if isinstance(block, dict):
+                meta = (block.get("analytics") or {}).get("tealium") or {}
+                ids.append("{}|{}".format(meta.get("from"), meta.get("block_title") or block.get("title")))
+        xbmc.log("[Videoland] resume fetch: {} position(s); home blocks: {}".format(
+            len(positions), ids[:25]), xbmc.LOGINFO)
     return positions
 
 

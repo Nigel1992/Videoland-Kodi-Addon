@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.27 (November 17, 2026)
+> **Latest Version:** v1.10.28 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.28] - 2026-11-17
+
+### Opgelost
+- **Hervatten-sync herstel.** De rij met kijkposities laadt alleen als zijn blok gekozen wordt; 1.10.27 haalde dat filter weg waardoor er niets laadde. Nu matcht het filter de "Verder kijken"-rij veel ruimer (continue/verder/resume/recommended) en wordt de positie uit elk positie-veld gelezen. De handmatige sync logt nu ook alle rij-namen op de home-pagina, zodat de juiste rij zichtbaar is.
 
 ## [1.10.27] - 2026-11-17
 
