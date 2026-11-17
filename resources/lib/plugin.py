@@ -2984,6 +2984,22 @@ def _service_resume_positions(client, log=False):
         else:
             xbmc.log("[Videoland] continue sample: no items loaded from the "
                      "continue-watching rail", xbmc.LOGINFO)
+            # Dump the continue block's own structure so we can see why its
+            # items do not come through walk_item_content.
+            for block in (layout.get("blocks") if isinstance(layout, dict) else None) or []:
+                if not isinstance(block, dict):
+                    continue
+                meta = (block.get("analytics") or {}).get("tealium") or {}
+                if str(meta.get("from", "")) != "feature.recommended_videos_by_user":
+                    continue
+                content = block.get("content") if isinstance(block.get("content"), dict) else {}
+                items = content.get("items") if isinstance(content.get("items"), list) else []
+                xbmc.log("[Videoland] continue block: keys {} | content keys {} | "
+                         "{} item(s); first item keys {}".format(
+                             sorted(block.keys()), sorted(content.keys()), len(items),
+                             sorted(items[0].keys()) if items and isinstance(items[0], dict) else None),
+                         xbmc.LOGINFO)
+                break
     return positions
 
 
