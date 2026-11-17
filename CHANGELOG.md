@@ -1,8 +1,13 @@
 # Changelog
 
-> **Latest Version:** v1.10.24 (November 17, 2026)
+> **Latest Version:** v1.10.25 (November 17, 2026)
 
 All notable changes to this project are recorded in this file.
+
+## [1.10.25] - 2026-11-17
+
+### Opgelost
+- **"EXCEPTION: Invalid setting type" bij elke serie tijdens de bibliotheek-update.** De `setting()`-helper las instellingen met `getSettingString`, wat voor een boolean-instelling (zoals `art_tmdb_first`) de fout opgooit; Kodi logt die dan per serie, en de add-on viel terug op de standaardwaarde in plaats van jouw instelling. De helper gebruikt nu de ongetypeerde `getSetting`, die voor elk type werkt. (NLZiet had dit al goed.)
 
 ## [1.10.24] - 2026-11-17
 

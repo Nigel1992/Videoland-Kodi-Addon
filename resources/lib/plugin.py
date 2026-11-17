@@ -122,7 +122,14 @@ def read_breadcrumb(value):
 
 
 def setting(name, default=""):
-    return ADDON.getSettingString(name) or default
+    # Use the untyped getSetting: it returns the value as a string for any
+    # declared setting type (string/bool/int). getSettingString() throws
+    # "Invalid setting type" when the setting is declared as e.g. boolean
+    # (art_tmdb_first), and Kodi logs that even though we catch it.
+    try:
+        return ADDON.getSetting(name) or default
+    except Exception:
+        return default
 
 
 def local_history():
